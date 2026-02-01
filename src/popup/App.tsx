@@ -55,21 +55,11 @@ export default function App() {
   // Handle CSV upload
   const handleCsvUpload = (content: string) => {
     const parsed = parseCsv(content);
-    if (parsed.errors.length > 0) {
-      console.error('CSV parsing errors:', parsed.errors);
-    }
     setCsvData({ headers: parsed.headers, rows: parsed.rows });
-
-    // Debug: Log all headers
-    console.log('CSV headers:', parsed.headers);
 
     // Separate headers into deal columns vs contact columns
     const contactHeaders = parsed.headers.filter((h) => isContactColumn(h));
     const dealHeaders = parsed.headers.filter((h) => !isContactColumn(h));
-
-    // Debug: Log which headers were detected as contact columns
-    console.log('Contact headers detected:', contactHeaders);
-    console.log('Deal headers:', dealHeaders);
 
     // Auto-map deal columns (only non-contact columns)
     if (schema) {
@@ -85,10 +75,7 @@ export default function App() {
     // Auto-map contact columns
     if (contactSchema) {
       const contactMappings = autoMapContactColumns(contactHeaders, contactSchema.fields);
-      console.log('Auto-mapped contact columns:', contactMappings);
       setContactColumnMappings(contactMappings);
-    } else {
-      console.warn('Contact schema not loaded yet - contact columns will not be auto-mapped');
     }
 
     setStep('map');
@@ -103,9 +90,6 @@ export default function App() {
     // Apply deal defaults to each row (only fills missing fields)
     const enrichedData = mappedData.map((row) => applyDealDefaults(row, 'csv'));
 
-    // Debug: Log contact column mappings
-    console.log('Contact column mappings:', contactColumnMappings);
-
     // Apply contact mapping if any contact columns are mapped
     const contactData =
       contactColumnMappings.length > 0
@@ -117,18 +101,10 @@ export default function App() {
       Object.keys(contact).length > 0 ? applyContactDefaults(contact) : contact
     );
 
-    // Debug: Log contact data
-    console.log('Contact data after mapping:', enrichedContactData);
-
     // Create company objects with validation
     const newCompanies: Company[] = enrichedData.map((data, index) => {
       const contact = enrichedContactData[index] as Record<string, string>;
       const hasContactName = contact && contact.Name;
-
-      // Debug: Log each contact
-      if (Object.keys(contact).length > 0) {
-        console.log(`Row ${index} contact:`, contact, 'hasName:', hasContactName);
-      }
 
       return {
         id: `company-${index}-${Date.now()}`,
@@ -226,46 +202,30 @@ export default function App() {
         prev.map((c) => (c.id === company.id ? { ...c, uploadStatus: 'uploading' as const } : c))
       );
 
-      // Log to console for debugging
-      console.log('Uploading company:', company.data);
-      console.log('Company contact data:', company.contactData);
-
       try {
         const response = await chrome.runtime.sendMessage({
           type: 'CREATE_DEAL',
           data: company.data,
         });
 
-        console.log('Create deal response:', response);
-
         if (response.success) {
           const dealId = response.data?.dealId;
 
           // Create contact if we have contact data and a deal ID
           let createdContactId: string | undefined;
-          console.log('Checking contact creation:', {
-            dealId,
-            hasContactData: !!company.contactData,
-            contactData: company.contactData,
-            hasName: company.contactData?.Name,
-          });
 
           if (dealId && company.contactData && company.contactData.Name) {
-            console.log('Creating contact for deal:', dealId, company.contactData);
             try {
               const contactResponse = await chrome.runtime.sendMessage({
                 type: 'CREATE_CONTACT',
                 data: company.contactData,
                 companyId: dealId,
               });
-              console.log('Contact response:', contactResponse);
               if (contactResponse.success) {
                 createdContactId = contactResponse.data?.contactId;
-              } else {
-                console.warn('Failed to create contact:', contactResponse.error);
               }
-            } catch (contactError) {
-              console.error('Contact creation error:', contactError);
+            } catch {
+              // Contact creation failed silently - deal was created successfully
             }
           }
 
@@ -298,8 +258,7 @@ export default function App() {
             prev ? { ...prev, completed: prev.completed + 1, failed: prev.failed + 1 } : null
           );
         }
-      } catch (error) {
-        console.error('Upload error:', error);
+      } catch {
         setCompanies((prev) =>
           prev.map((c) =>
             c.id === company.id
