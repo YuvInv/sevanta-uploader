@@ -8,6 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
+    "check": "npm run lint && prettier --check \"src/**/*.{ts,tsx,css,md}\"",
     "test": "vitest run",
     "bump": "node scripts/version-bump.js",
     "release": "npm run bump && git commit -am \"chore: bump version\" && git tag v$(grep '\"version\":' package.json | cut -d\\\" -f4 | head -n 1)"
