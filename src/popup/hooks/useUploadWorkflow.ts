@@ -16,8 +16,16 @@ import type {
   Schema,
   ContactSchema,
 } from '../../lib/types';
+import type { DuplicateCheckProgress } from './useDuplicateCheck';
 
-export type Step = 'upload' | 'map' | 'review' | 'preview' | 'uploading' | 'complete';
+export type Step =
+  | 'upload'
+  | 'map'
+  | 'checking-duplicates'
+  | 'review'
+  | 'preview'
+  | 'uploading'
+  | 'complete';
 
 interface CsvData {
   headers: string[];
@@ -28,7 +36,10 @@ interface UseUploadWorkflowProps {
   schema: Schema | null;
   contactSchema: ContactSchema | null;
   validateCompanies: (companies: Company[]) => Company[];
-  checkDuplicates: (companies: Company[]) => Promise<Company[]>;
+  checkDuplicates: (
+    companies: Company[],
+    onProgress?: (progress: DuplicateCheckProgress) => void
+  ) => Promise<Company[]>;
 }
 
 export function useUploadWorkflow({
@@ -44,6 +55,9 @@ export function useUploadWorkflow({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [duplicateCheckProgress, setDuplicateCheckProgress] =
+    useState<DuplicateCheckProgress | null>(null);
+  const [autoDiscardedCount, setAutoDiscardedCount] = useState(0);
 
   // Handle CSV upload
   const handleCsvUpload = useCallback(
@@ -105,9 +119,31 @@ export function useUploadWorkflow({
     const validated = validateCompanies(newCompanies);
     setCompanies(validated);
 
-    const withDuplicates = await checkDuplicates(validated);
-    setCompanies(withDuplicates);
+    // Show duplicate check progress
+    setStep('checking-duplicates');
+    setDuplicateCheckProgress({
+      current: 0,
+      total: validated.length,
+      currentCompany: validated[0]?.data.CompanyName || '',
+    });
 
+    const withDuplicates = await checkDuplicates(validated, (progress) => {
+      setDuplicateCheckProgress(progress);
+    });
+
+    // Auto-discard duplicates
+    let discardedCount = 0;
+    const withAutoDiscard = withDuplicates.map((company) => {
+      if (company.duplicate?.isDuplicate) {
+        discardedCount++;
+        return { ...company, skipped: true };
+      }
+      return company;
+    });
+
+    setCompanies(withAutoDiscard);
+    setAutoDiscardedCount(discardedCount);
+    setDuplicateCheckProgress(null);
     setStep('review');
   }, [csvData, schema, columnMappings, contactColumnMappings, validateCompanies, checkDuplicates]);
 
@@ -144,6 +180,11 @@ export function useUploadWorkflow({
         return { ...company, skipped: !company.skipped };
       })
     );
+  }, []);
+
+  // Clear auto-discarded notification
+  const clearAutoDiscardedNotification = useCallback(() => {
+    setAutoDiscardedCount(0);
   }, []);
 
   // Handle confirmed upload (after preview)
@@ -255,6 +296,8 @@ export function useUploadWorkflow({
     setCompanies([]);
     setSelectedCompanyId(null);
     setUploadProgress(null);
+    setDuplicateCheckProgress(null);
+    setAutoDiscardedCount(0);
     setStep('upload');
   }, []);
 
@@ -280,6 +323,8 @@ export function useUploadWorkflow({
     selectedCompanyId,
     setSelectedCompanyId,
     uploadProgress,
+    duplicateCheckProgress,
+    autoDiscardedCount,
 
     // Handlers
     handleCsvUpload,
@@ -288,6 +333,7 @@ export function useUploadWorkflow({
     handleToggleSkip,
     handleConfirmedUpload,
     handleReset,
+    clearAutoDiscardedNotification,
 
     // Computed
     selectedCompany,

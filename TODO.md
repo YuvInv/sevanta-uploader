@@ -13,9 +13,6 @@
 
 ## High Priority
 
-### Bugs
-- [ ] **Fix Failing Lint Test in GitHub Actions** ([#30](https://github.com/YuvInv/sevanta-uploader/issues/30)) - CI lint check is failing
-
 ### Contact Features
 - [ ] **Allow Optional Contacts** ([#11](https://github.com/YuvInv/sevanta-uploader/issues/11)) - Don't require contact data if not provided
 - [ ] **Multiple Contacts per Company** ([#12](https://github.com/YuvInv/sevanta-uploader/issues/12)) - Support multiple rows for same company
@@ -44,6 +41,7 @@
 
 ## Completed
 
+- [x] **Fix Failing Lint Test in GitHub Actions** ([#30](https://github.com/YuvInv/sevanta-uploader/issues/30)) - CI lint check is failing
 - [x] **Tech Debt Phase 5: Hardening** ([#21](https://github.com/YuvInv/sevanta-uploader/issues/21)) - Constants, validation, rate limiter
 - [x] **Tech Debt Phase 4: Claude Ecosystem** ([#20](https://github.com/YuvInv/sevanta-uploader/issues/20)) - Skills, subagents, knowledge graph
 - [x] **Tech Debt Phase 3: Documentation** ([#19](https://github.com/YuvInv/sevanta-uploader/issues/19)) - README, templates, cleanup

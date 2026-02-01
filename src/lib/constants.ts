@@ -12,6 +12,7 @@ export const REQUEST_TIMEOUT_MS = 30000; // 30 second timeout for API requests
 
 // Duplicate detection
 export const SEMANTIC_SCORE_THRESHOLD = 0.8; // Minimum semantic match score for duplicates
+export const DUPLICATE_CHECK_BATCH_SIZE = 5; // Number of companies to check in parallel
 
 // Cache settings
 export const SCHEMA_CACHE_TTL_MS = 3600000; // 1 hour cache for schema data
