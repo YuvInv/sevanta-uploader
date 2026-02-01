@@ -1,5 +1,6 @@
 import { sevantaApi } from '../lib/api';
 import type { MessageType, MessageResponse, Schema, ContactSchema, Deal } from '../lib/types';
+import { SCHEMA_CACHE_TTL_MS } from '../lib/constants';
 
 // Cache schemas in memory
 let cachedSchema: Schema | null = null;
@@ -71,14 +72,14 @@ async function handleCheckConnection(): Promise<MessageResponse<boolean>> {
 
 async function handleGetSchema(): Promise<MessageResponse<Schema>> {
   try {
-    // Return cached schema if less than 1 hour old
-    if (cachedSchema && Date.now() - cachedSchema.fetchedAt < 3600000) {
+    // Return cached schema if not expired
+    if (cachedSchema && Date.now() - cachedSchema.fetchedAt < SCHEMA_CACHE_TTL_MS) {
       return { success: true, data: cachedSchema };
     }
 
     // Try to get from chrome.storage first
     const stored = await chrome.storage.local.get('schema');
-    if (stored.schema && Date.now() - stored.schema.fetchedAt < 3600000) {
+    if (stored.schema && Date.now() - stored.schema.fetchedAt < SCHEMA_CACHE_TTL_MS) {
       cachedSchema = stored.schema;
       return { success: true, data: cachedSchema! };
     }
@@ -101,14 +102,14 @@ async function handleGetSchema(): Promise<MessageResponse<Schema>> {
 
 async function handleGetContactSchema(): Promise<MessageResponse<ContactSchema>> {
   try {
-    // Return cached contact schema if less than 1 hour old
-    if (cachedContactSchema && Date.now() - cachedContactSchema.fetchedAt < 3600000) {
+    // Return cached contact schema if not expired
+    if (cachedContactSchema && Date.now() - cachedContactSchema.fetchedAt < SCHEMA_CACHE_TTL_MS) {
       return { success: true, data: cachedContactSchema };
     }
 
     // Try to get from chrome.storage first
     const stored = await chrome.storage.local.get('contactSchema');
-    if (stored.contactSchema && Date.now() - stored.contactSchema.fetchedAt < 3600000) {
+    if (stored.contactSchema && Date.now() - stored.contactSchema.fetchedAt < SCHEMA_CACHE_TTL_MS) {
       cachedContactSchema = stored.contactSchema;
       return { success: true, data: cachedContactSchema! };
     }

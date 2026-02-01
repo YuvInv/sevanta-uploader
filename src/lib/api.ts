@@ -1,11 +1,19 @@
 import type { Schema, ContactSchema, Deal, SchemaField } from './types';
-
-const BASE_URL = 'https://run.mydealflow.com/inv/api';
+import {
+  API_BASE_URL,
+  RATE_LIMIT_DELAY_MS,
+  RATE_LIMIT_MAX_QUEUE_SIZE,
+  REQUEST_TIMEOUT_MS,
+  SEMANTIC_SCORE_THRESHOLD,
+} from './constants';
 
 // Rate limiting state
-const requestQueue: (() => Promise<void>)[] = [];
+interface QueuedRequest {
+  execute: () => Promise<void>;
+  reject: (error: Error) => void;
+}
+const requestQueue: QueuedRequest[] = [];
 let isProcessingQueue = false;
-const RATE_LIMIT_DELAY = 600; // 100 requests per minute = ~600ms between requests
 
 async function processQueue() {
   if (isProcessingQueue || requestQueue.length === 0) return;
@@ -15,9 +23,13 @@ async function processQueue() {
   while (requestQueue.length > 0) {
     const request = requestQueue.shift();
     if (request) {
-      await request();
+      try {
+        await request.execute();
+      } catch (error) {
+        // Error is already handled in the execute function
+      }
       if (requestQueue.length > 0) {
-        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY));
+        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
       }
     }
   }
@@ -26,38 +38,59 @@ async function processQueue() {
 }
 
 async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  // Queue overflow protection
+  if (requestQueue.length >= RATE_LIMIT_MAX_QUEUE_SIZE) {
+    throw new Error('QUEUE_OVERFLOW: Too many pending requests');
+  }
+
   return new Promise((resolve, reject) => {
-    requestQueue.push(async () => {
-      try {
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
-          ...options,
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...options?.headers,
-          },
-        });
+    const queuedRequest: QueuedRequest = {
+      execute: async () => {
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-        if (!response.ok) {
-          if (response.status === 401 || response.status === 403) {
-            reject(new Error('NOT_AUTHENTICATED'));
+        try {
+          const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            credentials: 'include',
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              ...options?.headers,
+            },
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              reject(new Error('NOT_AUTHENTICATED'));
+              return;
+            }
+            if (response.status === 429) {
+              reject(new Error('RATE_LIMITED'));
+              return;
+            }
+            reject(new Error(`API Error: ${response.status}`));
             return;
           }
-          if (response.status === 429) {
-            reject(new Error('RATE_LIMITED'));
-            return;
+
+          const data = await response.json();
+          resolve(data as T);
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error instanceof Error && error.name === 'AbortError') {
+            reject(new Error('REQUEST_TIMEOUT'));
+          } else {
+            reject(error);
           }
-          reject(new Error(`API Error: ${response.status}`));
-          return;
         }
+      },
+      reject,
+    };
 
-        const data = await response.json();
-        resolve(data as T);
-      } catch (error) {
-        reject(error);
-      }
-    });
-
+    requestQueue.push(queuedRequest);
     processQueue();
   });
 }
@@ -233,11 +266,11 @@ export async function checkDuplicate(
     // If no exact matches, try semantic search for close matches
     if (exactMatches.length === 0) {
       const semanticResults = await searchDealsSemantically(companyName);
-      // Only include semantic matches with high confidence (score > 0.8)
+      // Only include semantic matches with high confidence
       const highConfidenceMatches = semanticResults.filter(
         (deal) =>
           deal.semanticScore &&
-          deal.semanticScore > 0.8 &&
+          deal.semanticScore > SEMANTIC_SCORE_THRESHOLD &&
           deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
       );
       matches.push(...highConfidenceMatches);
@@ -306,7 +339,7 @@ export async function createDeal(
       }
     }
 
-    const response = await fetch(`${BASE_URL}/deal/add`, {
+    const response = await fetch(`${API_BASE_URL}/deal/add`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -372,7 +405,7 @@ export async function createContact(
       }
     }
 
-    const response = await fetch(`${BASE_URL}/contact/add`, {
+    const response = await fetch(`${API_BASE_URL}/contact/add`, {
       method: 'POST',
       credentials: 'include',
       headers: {

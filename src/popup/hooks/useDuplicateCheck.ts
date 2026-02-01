@@ -1,8 +1,21 @@
 import { useCallback } from 'react';
 import type { Company, DuplicateInfo } from '../../lib/types';
 
+// Check if Chrome extension APIs are available
+function isChromeExtension(): boolean {
+  return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.sendMessage;
+}
+
 export function useDuplicateCheck() {
   const checkDuplicates = useCallback(async (companies: Company[]): Promise<Company[]> => {
+    // Guard: If not running as Chrome extension, skip duplicate check
+    if (!isChromeExtension()) {
+      return companies.map((company) => ({
+        ...company,
+        duplicate: { isDuplicate: false, matchedOn: 'CompanyName' as const },
+      }));
+    }
+
     const results: Company[] = [];
 
     for (const company of companies) {
