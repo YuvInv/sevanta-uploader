@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { CsvUpload } from './components/CsvUpload';
 import { ColumnMapper } from './components/ColumnMapper';
@@ -10,37 +9,10 @@ import { UploadPreview } from './components/UploadPreview';
 import { useSevantaApi } from './hooks/useSevantaApi';
 import { useValidation } from './hooks/useValidation';
 import { useDuplicateCheck } from './hooks/useDuplicateCheck';
-import {
-  parseCsv,
-  autoMapColumns,
-  applyMapping,
-  autoMapContactColumns,
-  applyContactMapping,
-  isContactColumn,
-} from '../lib/csv';
-import { applyDealDefaults, applyContactDefaults } from '../lib/defaults';
-import type {
-  Company,
-  ColumnMapping,
-  ContactColumnMapping,
-  UploadProgress as UploadProgressType,
-} from '../lib/types';
+import { useUploadWorkflow } from './hooks/useUploadWorkflow';
 import logo from '../assets/icons/inv-logo.png';
 
-type Step = 'upload' | 'map' | 'review' | 'preview' | 'uploading' | 'complete';
-
 export default function App() {
-  const [step, setStep] = useState<Step>('upload');
-  const [csvData, setCsvData] = useState<{
-    headers: string[];
-    rows: Record<string, string>[];
-  } | null>(null);
-  const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<UploadProgressType | null>(null);
-  const [contactColumnMappings, setContactColumnMappings] = useState<ContactColumnMapping[]>([]);
-
   const {
     connected,
     loading: connectionLoading,
@@ -49,252 +21,39 @@ export default function App() {
     error: connectionError,
     refreshConnection,
   } = useSevantaApi();
+
   const { validateCompanies } = useValidation(schema);
   const { checkDuplicates } = useDuplicateCheck();
 
-  // Handle CSV upload
-  const handleCsvUpload = (content: string) => {
-    const parsed = parseCsv(content);
-    setCsvData({ headers: parsed.headers, rows: parsed.rows });
-
-    // Separate headers into deal columns vs contact columns
-    const contactHeaders = parsed.headers.filter((h) => isContactColumn(h));
-    const dealHeaders = parsed.headers.filter((h) => !isContactColumn(h));
-
-    // Auto-map deal columns (only non-contact columns)
-    if (schema) {
-      const mappings = autoMapColumns(dealHeaders, schema.fields);
-      // Add contact columns as unmapped (they'll appear in the unified UI)
-      const contactColumnsAsDealMappings = contactHeaders.map((h) => ({
-        csvColumn: h,
-        crmField: null, // These are contact columns, not deal fields
-      }));
-      setColumnMappings([...mappings, ...contactColumnsAsDealMappings]);
-    }
-
-    // Auto-map contact columns
-    if (contactSchema) {
-      const contactMappings = autoMapContactColumns(contactHeaders, contactSchema.fields);
-      setContactColumnMappings(contactMappings);
-    }
-
-    setStep('map');
-  };
-
-  // Handle column mapping confirmation
-  const handleMappingConfirm = async () => {
-    if (!csvData || !schema) return;
-
-    const mappedData = applyMapping(csvData.rows, columnMappings);
-
-    // Apply deal defaults to each row (only fills missing fields)
-    const enrichedData = mappedData.map((row) => applyDealDefaults(row, 'csv'));
-
-    // Apply contact mapping if any contact columns are mapped
-    const contactData =
-      contactColumnMappings.length > 0
-        ? applyContactMapping(csvData.rows, contactColumnMappings)
-        : csvData.rows.map(() => ({}));
-
-    // Apply contact defaults to each contact (only fills missing fields)
-    const enrichedContactData = contactData.map((contact) =>
-      Object.keys(contact).length > 0 ? applyContactDefaults(contact) : contact
-    );
-
-    // Create company objects with validation
-    const newCompanies: Company[] = enrichedData.map((data, index) => {
-      const contact = enrichedContactData[index] as Record<string, string>;
-      const hasContactName = contact && contact.Name;
-
-      return {
-        id: `company-${index}-${Date.now()}`,
-        data,
-        validation: { valid: true, errors: [], warnings: [] },
-        uploadStatus: 'pending' as const,
-        // Add contact data if there's a Name field
-        contactData: hasContactName ? contact : undefined,
-      };
-    });
-
-    // Validate all companies
-    const validated = validateCompanies(newCompanies);
-    setCompanies(validated);
-
-    // Check for duplicates
-    const withDuplicates = await checkDuplicates(validated);
-    setCompanies(withDuplicates);
-
-    setStep('review');
-  };
-
-  // Handle company edit
-  const handleCompanyEdit = (id: string, field: string, value: string) => {
-    setCompanies((prev) =>
-      prev.map((company) => {
-        if (company.id !== id) return company;
-
-        const updatedData = { ...company.data, [field]: value };
-        return {
-          ...company,
-          data: updatedData,
-        };
-      })
-    );
-  };
-
-  // Re-validate after edit
-  // Re-validate after edit
-  const companiesHash = companies.map((c) => JSON.stringify(c.data)).join(',');
-  useEffect(() => {
-    if (schema && companies.length > 0 && step === 'review') {
-      const revalidated = validateCompanies(companies);
-      if (JSON.stringify(revalidated) !== JSON.stringify(companies)) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        setCompanies(revalidated);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companiesHash, schema]);
-
-  // Handle upload preview (shows dry-run before actual upload)
-  const handleShowPreview = () => {
-    setStep('preview');
-  };
-
-  // Handle toggling skip/discard status
-  const handleToggleSkip = (id: string) => {
-    setCompanies((prev) =>
-      prev.map((company) => {
-        if (company.id !== id) return company;
-        return { ...company, skipped: !company.skipped };
-      })
-    );
-  };
-
-  // Handle confirmed upload (after preview)
-  const handleConfirmedUpload = async () => {
-    const toUpload = companies.filter(
-      (c) =>
-        c.validation.valid &&
-        c.uploadStatus === 'pending' &&
-        !c.duplicate?.isDuplicate &&
-        !c.skipped
-    );
-
-    if (toUpload.length === 0) return;
-
-    setStep('uploading');
-    setUploadProgress({
-      total: toUpload.length,
-      completed: 0,
-      successful: 0,
-      failed: 0,
-    });
-
-    for (const company of toUpload) {
-      // Double check skipped status just in case
-      if (company.skipped) continue;
-
-      setUploadProgress((prev) => (prev ? { ...prev, current: company.data.CompanyName } : null));
-
-      // Update status to uploading
-      setCompanies((prev) =>
-        prev.map((c) => (c.id === company.id ? { ...c, uploadStatus: 'uploading' as const } : c))
-      );
-
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: 'CREATE_DEAL',
-          data: company.data,
-        });
-
-        if (response.success) {
-          const dealId = response.data?.dealId;
-
-          // Create contact if we have contact data and a deal ID
-          let createdContactId: string | undefined;
-
-          if (dealId && company.contactData && company.contactData.Name) {
-            try {
-              const contactResponse = await chrome.runtime.sendMessage({
-                type: 'CREATE_CONTACT',
-                data: company.contactData,
-                companyId: dealId,
-              });
-              if (contactResponse.success) {
-                createdContactId = contactResponse.data?.contactId;
-              }
-            } catch {
-              // Contact creation failed silently - deal was created successfully
-            }
-          }
-
-          setCompanies((prev) =>
-            prev.map((c) =>
-              c.id === company.id
-                ? {
-                    ...c,
-                    uploadStatus: 'success' as const,
-                    createdDealId: dealId,
-                    createdContactId,
-                  }
-                : c
-            )
-          );
-          setUploadProgress((prev) =>
-            prev
-              ? { ...prev, completed: prev.completed + 1, successful: prev.successful + 1 }
-              : null
-          );
-        } else {
-          setCompanies((prev) =>
-            prev.map((c) =>
-              c.id === company.id
-                ? { ...c, uploadStatus: 'error' as const, uploadError: response.error }
-                : c
-            )
-          );
-          setUploadProgress((prev) =>
-            prev ? { ...prev, completed: prev.completed + 1, failed: prev.failed + 1 } : null
-          );
-        }
-      } catch {
-        setCompanies((prev) =>
-          prev.map((c) =>
-            c.id === company.id
-              ? { ...c, uploadStatus: 'error' as const, uploadError: 'Network error' }
-              : c
-          )
-        );
-        setUploadProgress((prev) =>
-          prev ? { ...prev, completed: prev.completed + 1, failed: prev.failed + 1 } : null
-        );
-      }
-    }
-
-    setUploadProgress((prev) => (prev ? { ...prev, current: undefined } : null));
-    setStep('complete');
-  };
-
-  // Reset to start
-  const handleReset = () => {
-    setCsvData(null);
-    setColumnMappings([]);
-    setContactColumnMappings([]);
-    setCompanies([]);
-    setSelectedCompanyId(null);
-    setUploadProgress(null);
-    setStep('upload');
-  };
-
-  const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
-  // Update counts to exclude skipped rows where appropriate
-  const validCount = companies.filter(
-    (c) => c.validation.valid && !c.duplicate?.isDuplicate && !c.skipped
-  ).length;
-  const invalidCount = companies.filter((c) => !c.validation.valid && !c.skipped).length;
-  const duplicateCount = companies.filter((c) => c.duplicate?.isDuplicate && !c.skipped).length;
-  const skippedCount = companies.filter((c) => c.skipped).length;
+  const {
+    step,
+    setStep,
+    csvData,
+    columnMappings,
+    setColumnMappings,
+    contactColumnMappings,
+    setContactColumnMappings,
+    companies,
+    selectedCompanyId,
+    setSelectedCompanyId,
+    uploadProgress,
+    handleCsvUpload,
+    handleMappingConfirm,
+    handleCompanyEdit,
+    handleToggleSkip,
+    handleConfirmedUpload,
+    handleReset,
+    selectedCompany,
+    validCount,
+    invalidCount,
+    duplicateCount,
+    skippedCount,
+  } = useUploadWorkflow({
+    schema,
+    contactSchema,
+    validateCompanies,
+    checkDuplicates,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -404,7 +163,7 @@ export default function App() {
                 </button>
                 {step === 'review' && (
                   <button
-                    onClick={handleShowPreview}
+                    onClick={() => setStep('preview')}
                     disabled={validCount === 0}
                     className="px-4 py-1.5 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
