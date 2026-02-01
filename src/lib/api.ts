@@ -454,6 +454,61 @@ export async function createContact(
   }
 }
 
+// Contact search types
+interface ContactSearchResponse {
+  status?: string;
+  data?: Array<{
+    ContactID?: number;
+    'Contact Name'?: string;
+    Email?: string;
+    Company?: string;
+    CompanyID?: number;
+    [key: string]: unknown;
+  }>;
+  count_returned?: number;
+  count_total?: number;
+  [key: string]: unknown;
+}
+
+export interface SearchedContact {
+  contactId: string;
+  name: string;
+  email?: string;
+  company?: string;
+  companyId?: string;
+}
+
+// Search contacts by name or email using text search
+export async function searchContacts(name?: string, email?: string): Promise<SearchedContact[]> {
+  // Use the search term - prefer email if provided, otherwise use name
+  const searchTerm = email || name;
+  if (!searchTerm) {
+    return [];
+  }
+
+  const params = new URLSearchParams();
+  // Use _text search which searches across all text fields
+  // This is more reliable than filter[Email] which may not work correctly
+  params.append('_text', searchTerm);
+
+  // Request the fields we need
+  params.append('_x[]', 'Name');
+  params.append('_x[]', 'Email');
+  params.append('_x[]', 'Company');
+  params.append('_x[]', 'CompanyID');
+
+  const response = await apiRequest<ContactSearchResponse>(`/contact/list?${params.toString()}`);
+
+  const rawData = response.data || [];
+  return rawData.map((item) => ({
+    contactId: item.ContactID?.toString() || '',
+    name: item['Contact Name'] || '',
+    email: item.Email || undefined,
+    company: item.Company || undefined,
+    companyId: item.CompanyID?.toString() || undefined,
+  }));
+}
+
 // Export for use in background service worker
 export const sevantaApi = {
   checkConnection,
@@ -465,4 +520,5 @@ export const sevantaApi = {
   checkDuplicate,
   createDeal,
   createContact,
+  searchContacts,
 };

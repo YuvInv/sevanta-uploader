@@ -111,13 +111,13 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
     const warning = getFieldWarning(field.name);
     const disabled = company.skipped || false;
 
-    const inputClass = `w-full border rounded px-3 py-2 text-sm ${
+    const inputClass = `w-full border-2 rounded-xl px-3 py-2 text-sm transition-all duration-200 ${
       error
-        ? 'border-red-500 bg-red-50'
+        ? 'border-danger-500 bg-danger-50 focus:ring-danger-500/20'
         : warning
-          ? 'border-yellow-500 bg-yellow-50'
-          : 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-    } ${disabled ? 'bg-gray-100 text-gray-400' : ''}`;
+          ? 'border-caution-500 bg-caution-50 focus:ring-caution-500/20'
+          : 'border-warm-200 focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10'
+    } ${disabled ? 'bg-warm-100 text-warm-400' : 'bg-white'}`;
 
     let input;
     if (field.type === 'dropdown') {
@@ -180,13 +180,13 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
 
     return (
       <div key={field.name} className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-warm-700">
           {field.label}
-          {field.required && <span className="text-red-500 ml-1">*</span>}
+          {field.required && <span className="text-danger-500 ml-1">*</span>}
         </label>
         {input}
-        {error && <p className="text-xs text-red-600">{error.message}</p>}
-        {warning && !error && <p className="text-xs text-yellow-600">{warning.message}</p>}
+        {error && <p className="text-xs text-danger-600">{error.message}</p>}
+        {warning && !error && <p className="text-xs text-caution-600">{warning.message}</p>}
       </div>
     );
   };
@@ -195,8 +195,10 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
     if (fields.length === 0) return null;
 
     return (
-      <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-        <h4 className="font-medium text-gray-900 text-sm border-b border-gray-200 pb-2">{title}</h4>
+      <div className="bg-warm-50 rounded-xl p-4 space-y-4">
+        <h4 className="font-semibold text-warm-800 text-sm border-b border-warm-200 pb-2">
+          {title}
+        </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {fields.map((field) => renderField(field))}
         </div>
@@ -211,13 +213,13 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
   ) => {
     const value = contact.data[fieldDef.name] || '';
     const disabled = company.skipped || false;
-    const inputClass = `w-full border rounded px-3 py-2 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${disabled ? 'bg-gray-100 text-gray-400' : ''}`;
+    const inputClass = `w-full border-2 rounded-xl px-3 py-2 text-sm border-warm-200 focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 transition-all duration-200 ${disabled ? 'bg-warm-100 text-warm-400' : 'bg-white'}`;
 
     return (
       <div key={fieldDef.name} className="space-y-1">
-        <label className="block text-sm font-medium text-gray-600">
+        <label className="block text-sm font-medium text-warm-600">
           {fieldDef.label}
-          {fieldDef.required && <span className="text-red-500 ml-1">*</span>}
+          {fieldDef.required && <span className="text-danger-500 ml-1">*</span>}
         </label>
         <input
           type={fieldDef.type === 'email' ? 'email' : 'text'}
@@ -232,16 +234,16 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 truncate">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
+          <h2 className="text-lg font-semibold text-warm-800 truncate">
             Edit: {company.data.CompanyName || 'New Company'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1"
+            className="text-warm-400 hover:text-warm-600 p-1 transition-colors"
             aria-label="Close"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,23 +258,23 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 px-6">
+        <div className="flex gap-1 p-1 mx-6 mt-4 bg-warm-100 rounded-xl">
           <button
             onClick={() => setActiveTab('company')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
               activeTab === 'company'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'bg-white text-warm-800 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             Company Details
           </button>
           <button
             onClick={() => setActiveTab('contacts')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
               activeTab === 'contacts'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'bg-white text-warm-800 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             Contacts ({editedContacts.length})
@@ -281,7 +283,7 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
 
         {/* Discarded notice */}
         {company.skipped && (
-          <div className="mx-6 mt-4 px-4 py-3 bg-gray-100 border border-gray-300 rounded text-sm text-gray-600">
+          <div className="mx-6 mt-4 px-4 py-3 bg-warm-100 border border-warm-300 rounded-xl text-sm text-warm-600">
             This company is discarded and will not be uploaded.
           </div>
         )}
@@ -300,17 +302,17 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
           {activeTab === 'contacts' && (
             <div className="space-y-4">
               {editedContacts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-warm-500">
                   <p>No contacts associated with this company.</p>
                 </div>
               ) : (
                 editedContacts.map((contact, index) => (
                   <div
                     key={index}
-                    className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4"
+                    className="bg-accent-50 border border-accent-200 rounded-xl p-4 space-y-4"
                   >
                     <div className="flex items-center justify-between">
-                      <h5 className="font-medium text-purple-700">
+                      <h5 className="font-semibold text-accent-700">
                         Contact {index + 1}
                         {contact.data.Name && `: ${contact.data.Name}`}
                       </h5>
@@ -328,17 +330,17 @@ export function CompanyEditorModal({ company, schema, onSave, onClose }: Company
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            className="px-5 py-2.5 text-sm font-medium text-warm-700 bg-white border border-warm-200 rounded-xl hover:bg-warm-50 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!hasChanges}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-accent-500 rounded-xl hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Save Changes
           </button>
