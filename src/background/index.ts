@@ -1,4 +1,4 @@
-import { sevantaApi } from '../lib/api';
+import { sevantaApi, type SearchedContact } from '../lib/api';
 import type { MessageType, MessageResponse, Schema, ContactSchema, Deal } from '../lib/types';
 import { SCHEMA_CACHE_TTL_MS } from '../lib/constants';
 
@@ -49,6 +49,9 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
 
     case 'CHECK_DUPLICATE':
       return handleCheckDuplicate(message.companyName, message.website);
+
+    case 'SEARCH_CONTACTS':
+      return handleSearchContacts(message.name, message.email);
 
     case 'CLEAR_CACHE':
       return handleClearCache();
@@ -188,6 +191,21 @@ async function handleCheckDuplicate(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Duplicate check failed',
+    };
+  }
+}
+
+async function handleSearchContacts(
+  name?: string,
+  email?: string
+): Promise<MessageResponse<SearchedContact[]>> {
+  try {
+    const contacts = await sevantaApi.searchContacts(name, email);
+    return { success: true, data: contacts };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Contact search failed',
     };
   }
 }

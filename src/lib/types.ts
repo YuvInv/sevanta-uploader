@@ -129,7 +129,8 @@ export type MessageType =
   | { type: 'SEARCH_DEALS'; filter: string }
   | { type: 'CREATE_DEAL'; data: Record<string, string> }
   | { type: 'CREATE_CONTACT'; data: Record<string, string>; companyId: string }
-  | { type: 'CHECK_DUPLICATE'; companyName: string; website?: string };
+  | { type: 'CHECK_DUPLICATE'; companyName: string; website?: string }
+  | { type: 'SEARCH_CONTACTS'; name?: string; email?: string };
 
 export interface MessageResponse<T = unknown> {
   success: boolean;
@@ -140,4 +141,39 @@ export interface MessageResponse<T = unknown> {
 export interface ConnectionStatus {
   connected: boolean;
   error?: string;
+}
+
+// Contact Lookup Types
+
+export type MatchType = 'strong' | 'possible' | 'none';
+
+export interface LookupContact {
+  id: string;
+  name: string;
+  email?: string;
+  rawInput: string;
+}
+
+export interface CRMContact {
+  contactId: string;
+  name: string;
+  email?: string;
+  company?: string;
+  companyId?: string;
+}
+
+export interface ContactLookupResult {
+  id: string;
+  input: LookupContact;
+  matchType: MatchType;
+  bestMatch?: CRMContact;
+  allMatches: CRMContact[];
+}
+
+export interface ContactLookupProgress {
+  total: number;
+  completed: number;
+  current?: string;
+  strongCount: number;
+  possibleCount: number;
 }

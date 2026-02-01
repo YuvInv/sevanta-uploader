@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Spacing - generous for accessibility */
+  --space-xs: 0.5rem; /* 8px */
+  --space-sm: 0.75rem; /* 12px */
+  --space-md: 1rem; /* 16px */
+  --space-lg: 1.5rem; /* 24px */
+  --space-xl: 2rem; /* 32px */
+
+  /* Border radius - softer, modern */
+  --radius-sm: 0.5rem; /* 8px */
+  --radius-md: 0.75rem; /* 12px */
+  --radius-lg: 1rem; /* 16px */
+  --radius-full: 9999px;
+
+  /* Shadows - subtle, warm */
+  --shadow-sm: 0 1px 2px rgba(37, 35, 25, 0.05);
+  --shadow-md: 0 4px 12px rgba(37, 35, 25, 0.08);
+  --shadow-lg: 0 8px 24px rgba(37, 35, 25, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(13, 148, 136, 0.2);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+}
+
 html,
 body,
 #root {
@@ -14,7 +39,9 @@ body {
   width: 100%;
   min-height: 100vh;
   overflow-y: auto;
-  background-color: #f9fafb;
+  background-color: #fafaf8; /* warm-50 */
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: #3d3a33; /* warm-700 */
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -24,22 +51,22 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f5f4f0; /* warm-100 */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #d4d1c9; /* warm-300 */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: #a8a49a; /* warm-400 */
 }
 
-/* Table styles */
+/* Table styles - updated with warm colors */
 .data-table {
-  @apply w-full text-sm border-collapse;
+  @apply w-full text-base border-collapse;
 }
 
 .data-table.table-fixed {
@@ -47,43 +74,70 @@ body {
 }
 
 .data-table th {
-  @apply bg-gray-100 px-2 py-2 text-left font-medium text-gray-700 border-b border-gray-200 sticky top-0 whitespace-nowrap overflow-hidden text-ellipsis;
+  @apply bg-warm-100 px-3 py-3 text-left font-semibold text-warm-600 border-b border-warm-200 sticky top-0 whitespace-nowrap overflow-hidden text-ellipsis;
 }
 
 .data-table td {
-  @apply px-2 py-2 border-b border-gray-100 overflow-hidden text-ellipsis whitespace-nowrap;
+  @apply px-3 py-3 border-b border-warm-100 overflow-hidden text-ellipsis whitespace-nowrap text-warm-700;
 }
 
 .data-table tr:hover {
-  @apply bg-gray-50;
+  @apply bg-warm-50;
 }
 
-/* Status colors */
+/* Status colors - updated with semantic colors */
 .status-valid {
-  @apply bg-green-50 border-l-4 border-l-green-500;
+  @apply bg-success-50 border-l-4 border-l-success-500;
 }
 
 .status-warning {
-  @apply bg-yellow-50 border-l-4 border-l-yellow-500;
+  @apply bg-caution-50 border-l-4 border-l-caution-500;
 }
 
 .status-error {
-  @apply bg-red-50 border-l-4 border-l-red-500;
+  @apply bg-danger-50 border-l-4 border-l-danger-500;
 }
 
 .status-duplicate {
-  @apply bg-orange-50 border-l-4 border-l-orange-500;
+  @apply bg-caution-50 border-l-4 border-l-caution-500;
 }
 
-/* Card styles for sidepanel */
+/* Card styles for sidepanel - updated */
 .card {
-  @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  @apply bg-white rounded-2xl shadow-sm border border-warm-200;
 }
 
 .card-header {
-  @apply px-4 py-3 border-b border-gray-200 font-medium;
+  @apply px-5 py-4 border-b border-warm-200 font-semibold text-warm-800;
 }
 
 .card-body {
-  @apply p-4;
+  @apply p-5;
+}
+
+/* Button base styles */
+.btn {
+  @apply px-5 py-2.5 font-medium text-base rounded-xl transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-accent-500 hover:bg-accent-600 text-white shadow-sm hover:shadow-md;
+}
+
+.btn-secondary {
+  @apply bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 hover:border-warm-300;
+}
+
+.btn-danger {
+  @apply bg-danger-500 hover:bg-danger-600 text-white shadow-sm;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-4 py-3 bg-warm-50 border-2 border-warm-200 rounded-xl text-base text-warm-700 placeholder:text-warm-400 focus:border-accent-500 focus:ring-4 focus:ring-accent-500/10 focus:outline-none transition-all duration-200;
+}
+
+/* Focus ring utility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-4 focus:ring-accent-500/20 focus:border-accent-500;
 }
