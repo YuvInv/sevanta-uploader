@@ -25,7 +25,7 @@ async function processQueue() {
     if (request) {
       try {
         await request.execute();
-      } catch (error) {
+      } catch (_error) {
         // Error is already handled in the execute function
       }
       if (requestQueue.length > 0) {
