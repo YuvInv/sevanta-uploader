@@ -273,11 +273,11 @@ export default function App() {
             prev.map((c) =>
               c.id === company.id
                 ? {
-                  ...c,
-                  uploadStatus: 'success' as const,
-                  createdDealId: dealId,
-                  createdContactId,
-                }
+                    ...c,
+                    uploadStatus: 'success' as const,
+                    createdDealId: dealId,
+                    createdContactId,
+                  }
                 : c
             )
           );
