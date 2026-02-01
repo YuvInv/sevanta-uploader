@@ -163,3 +163,17 @@ When adding new tasks, update both locations to keep them in sync.
 
 ## api examples
 the folder .schema_examples/ contains example JSON responses from various API endpoints for reference when working with the Sevanta Dealflow API. you can use these files to understand the structure of API responses and to test your code against real data formats.
+
+
+## Field Reference (Commonly Used)
+
+| DB Name | Label | Type |
+|---------|-------|------|
+| `CompanyName` | Deal Name | string (required) |
+| `Description` | Description | textarea |
+| `Website` | Website | url |
+| `SourceTypeID` | Source Type | dropdown |
+| `SourceNotes` | Source Notes | textarea |
+| `PastInvestments` | Past Investments | textarea |
+| `StageID` | Stage | dropdown |
+| `SectorID` | Sector | dropdown |

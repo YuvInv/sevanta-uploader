@@ -143,14 +143,18 @@ export default function App() {
   };
 
   // Re-validate after edit
+  // Re-validate after edit
+  const companiesHash = companies.map(c => JSON.stringify(c.data)).join(',');
   useEffect(() => {
     if (schema && companies.length > 0 && step === 'review') {
       const revalidated = validateCompanies(companies);
       if (JSON.stringify(revalidated) !== JSON.stringify(companies)) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         setCompanies(revalidated);
       }
     }
-  }, [companies.map(c => JSON.stringify(c.data)).join(','), schema]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companiesHash, schema]);
 
   // Handle upload preview (shows dry-run before actual upload)
   const handleShowPreview = () => {

@@ -3,7 +3,7 @@ import type { Schema, ContactSchema, Deal, SchemaField } from './types';
 const BASE_URL = 'https://run.mydealflow.com/inv/api';
 
 // Rate limiting state
-let requestQueue: Array<() => Promise<void>> = [];
+const requestQueue: (() => Promise<void>)[] = [];
 let isProcessingQueue = false;
 const RATE_LIMIT_DELAY = 600; // 100 requests per minute = ~600ms between requests
 
@@ -29,7 +29,7 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T
   return new Promise((resolve, reject) => {
     requestQueue.push(async () => {
       try {
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+        const response = await fetch(`${BASE_URL}${endpoint} `, {
           ...options,
           credentials: 'include',
           headers: {
@@ -47,7 +47,7 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T
             reject(new Error('RATE_LIMITED'));
             return;
           }
-          reject(new Error(`API Error: ${response.status}`));
+          reject(new Error(`API Error: ${response.status} `));
           return;
         }
 
@@ -218,7 +218,7 @@ interface SearchResponse {
 
 export async function searchDeals(filter: string): Promise<Deal[]> {
   const response = await apiRequest<SearchResponse>(
-    `/deal/list?${filter}&_x[]=CompanyName&_x[]=Website`
+    `/ deal / list ? ${filter}& _x[]=CompanyName & _x[]=Website`
   );
 
   // API returns data array, not deals
@@ -238,7 +238,7 @@ export async function searchDeals(filter: string): Promise<Deal[]> {
 export async function searchDealsByText(searchText: string): Promise<Deal[]> {
   const encoded = encodeURIComponent(searchText);
   const response = await apiRequest<SearchResponse>(
-    `/deal/list?_text=${encoded}&_x[]=CompanyName&_x[]=Website`
+    `/ deal / list ? _text = ${encoded}& _x[]=CompanyName & _x[]=Website`
   );
 
   const rawData = response.data || [];
@@ -255,7 +255,7 @@ export async function searchDealsByText(searchText: string): Promise<Deal[]> {
 export async function searchDealsSemantically(searchText: string): Promise<Deal[]> {
   const encoded = encodeURIComponent(searchText);
   const response = await apiRequest<SearchResponse>(
-    `/deal/list?_ss=${encoded}&_x[]=CompanyName&_x[]=Website`
+    `/ deal / list ? _ss = ${encoded}& _x[]=CompanyName & _x[]=Website`
   );
 
   const rawData = response.data || [];
@@ -290,7 +290,7 @@ export async function checkDuplicate(
       // Only include semantic matches with high confidence (score > 0.8)
       const highConfidenceMatches = semanticResults.filter(
         deal => deal.semanticScore && deal.semanticScore > 0.8 &&
-                deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
+          deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
       );
       matches.push(...highConfidenceMatches);
     } else {
@@ -358,7 +358,7 @@ export async function createDeal(
       }
     }
 
-    const response = await fetch(`${BASE_URL}/deal/add`, {
+    const response = await fetch(`${BASE_URL} /deal/add`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -426,7 +426,7 @@ export async function createContact(
       }
     }
 
-    const response = await fetch(`${BASE_URL}/contact/add`, {
+    const response = await fetch(`${BASE_URL} /contact/add`, {
       method: 'POST',
       credentials: 'include',
       headers: {

@@ -202,7 +202,7 @@ export function ColumnMapper({
       {hasContactFields && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p className="text-sm text-blue-700">
-            <strong>Tip:</strong> For each column, choose whether it's a <span className="font-semibold text-blue-800">Deal</span> field, a <span className="font-semibold text-purple-800">Contact</span> field, or should be <span className="font-semibold text-gray-600">Skipped</span>. Contact fields will be created as contacts linked to each deal.
+            <strong>Tip:</strong> For each column, choose whether it&apos;s a <span className="font-semibold text-blue-800">Deal</span> field, a <span className="font-semibold text-purple-800">Contact</span> field, or should be <span className="font-semibold text-gray-600">Skipped</span>. Contact fields will be created as contacts linked to each deal.
           </p>
         </div>
       )}
@@ -231,13 +231,12 @@ export function ColumnMapper({
                     <select
                       value={mapping.type}
                       onChange={e => handleTypeChange(mapping.csvColumn, e.target.value as MappingType)}
-                      className={`w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        mapping.type === 'deal'
+                      className={`w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${mapping.type === 'deal'
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : mapping.type === 'contact'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : 'bg-gray-50 text-gray-600 border-gray-200'
-                      }`}
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-gray-50 text-gray-600 border-gray-200'
+                        }`}
                     >
                       <option value="deal">Deal</option>
                       {hasContactFields && <option value="contact">Contact</option>}

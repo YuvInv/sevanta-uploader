@@ -1,12 +1,16 @@
 {
   "name": "sevanta-uploader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bulk upload companies to Sevanta Dealflow CRM",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts,.tsx",
+    "test": "vitest run",
+    "bump": "node scripts/version-bump.js",
+    "release": "npm run bump && git commit -am \"chore: bump version\" && git tag v$(grep '\"version\":' package.json | cut -d\\\" -f4 | head -n 1)"
   },
   "dependencies": {
     "papaparse": "^5.4.1",
@@ -19,11 +23,21 @@
     "@types/papaparse": "^5.3.14",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.0",
+    "jsdom": "^27.4.0",
     "postcss": "^8.4.33",
+    "prettier": "^3.8.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
-    "vite": "^5.0.12"
+    "vite": "^5.0.12",
+    "vitest": "^4.0.18"
   }
 }
