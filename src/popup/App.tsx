@@ -43,6 +43,7 @@ export default function App() {
     handleCsvUpload,
     handleMappingConfirm,
     handleCompanyEdit,
+    handleContactEdit,
     handleToggleSkip,
     handleConfirmedUpload,
     handleReset,
@@ -237,6 +238,9 @@ export default function App() {
                     company={selectedCompany}
                     schema={schema}
                     onEdit={(field, value) => handleCompanyEdit(selectedCompany.id, field, value)}
+                    onContactEdit={(contactIndex, field, value) =>
+                      handleContactEdit(selectedCompany.id, contactIndex, field, value)
+                    }
                     onClose={() => setSelectedCompanyId(null)}
                   />
                   <ValidationPanel company={selectedCompany} />

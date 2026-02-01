@@ -7,6 +7,9 @@ import {
   applyMapping,
   applyContactMapping,
   generateCsvTemplate,
+  normalizeWebsite,
+  generateCompanyKey,
+  groupRowsByCompany,
   SIMPLE_TEMPLATE_FIELDS,
   SIMPLE_CONTACT_FIELDS,
 } from './csv';
@@ -367,5 +370,171 @@ describe('generateCsvTemplate', () => {
     for (const field of SIMPLE_CONTACT_FIELDS) {
       expect(result).toContain(`Contact_${field.name}`);
     }
+  });
+});
+
+describe('normalizeWebsite', () => {
+  it('should return empty string for empty input', () => {
+    expect(normalizeWebsite('')).toBe('');
+    expect(normalizeWebsite('   ')).toBe('');
+  });
+
+  it('should remove http:// and https://', () => {
+    expect(normalizeWebsite('https://acme.com')).toBe('acme.com');
+    expect(normalizeWebsite('http://acme.com')).toBe('acme.com');
+  });
+
+  it('should remove www. prefix', () => {
+    expect(normalizeWebsite('www.acme.com')).toBe('acme.com');
+    expect(normalizeWebsite('https://www.acme.com')).toBe('acme.com');
+  });
+
+  it('should remove trailing slashes', () => {
+    expect(normalizeWebsite('acme.com/')).toBe('acme.com');
+    expect(normalizeWebsite('https://acme.com///')).toBe('acme.com');
+  });
+
+  it('should lowercase the URL', () => {
+    expect(normalizeWebsite('ACME.COM')).toBe('acme.com');
+    expect(normalizeWebsite('https://WWW.Acme.Com/')).toBe('acme.com');
+  });
+});
+
+describe('generateCompanyKey', () => {
+  it('should generate key from CompanyName and Website', () => {
+    const row = { CompanyName: 'Acme Corp', Website: 'acme.com' };
+    expect(generateCompanyKey(row)).toBe('acme corp|||acme.com');
+  });
+
+  it('should normalize company name to lowercase', () => {
+    const row = { CompanyName: 'ACME Corp', Website: 'acme.com' };
+    expect(generateCompanyKey(row)).toBe('acme corp|||acme.com');
+  });
+
+  it('should handle empty website', () => {
+    const row = { CompanyName: 'Acme Corp', Website: '' };
+    expect(generateCompanyKey(row)).toBe('acme corp|||');
+  });
+
+  it('should handle empty company name', () => {
+    const row = { CompanyName: '', Website: 'acme.com' };
+    expect(generateCompanyKey(row)).toBe('|||acme.com');
+  });
+
+  it('should normalize website URLs', () => {
+    const row1 = { CompanyName: 'Acme', Website: 'https://www.acme.com/' };
+    const row2 = { CompanyName: 'Acme', Website: 'acme.com' };
+    expect(generateCompanyKey(row1)).toBe(generateCompanyKey(row2));
+  });
+});
+
+describe('groupRowsByCompany', () => {
+  it('should group rows with same CompanyName and Website', () => {
+    const dealData = [
+      { CompanyName: 'Acme Corp', Website: 'acme.com', Description: 'AI startup' },
+      { CompanyName: 'Acme Corp', Website: 'acme.com', Description: '' },
+      { CompanyName: 'Beta Inc', Website: 'beta.io', Description: 'Fintech' },
+    ];
+    const contactData = [
+      { Name: 'John Doe', Email: 'john@acme.com' },
+      { Name: 'Jane Smith', Email: 'jane@acme.com' },
+      { Name: 'Bob Wilson', Email: 'bob@beta.io' },
+    ];
+
+    const result = groupRowsByCompany(dealData, contactData);
+
+    expect(result).toHaveLength(2);
+
+    const acme = result.find((g) => g.companyData.CompanyName === 'Acme Corp');
+    expect(acme).toBeDefined();
+    expect(acme!.contacts).toHaveLength(2);
+    expect(acme!.sourceRowIndices).toEqual([0, 1]);
+    expect(acme!.companyData.Description).toBe('AI startup'); // First row's data
+
+    const beta = result.find((g) => g.companyData.CompanyName === 'Beta Inc');
+    expect(beta).toBeDefined();
+    expect(beta!.contacts).toHaveLength(1);
+  });
+
+  it('should not add contacts without Name', () => {
+    const dealData = [
+      { CompanyName: 'Acme Corp', Website: 'acme.com' },
+      { CompanyName: 'Beta Inc', Website: 'beta.io' },
+    ];
+    const contactData = [
+      { Name: 'John Doe', Email: 'john@acme.com' },
+      { Name: '', Email: 'info@beta.io' }, // No name
+    ];
+
+    const result = groupRowsByCompany(dealData, contactData);
+
+    const acme = result.find((g) => g.companyData.CompanyName === 'Acme Corp');
+    expect(acme!.contacts).toHaveLength(1);
+
+    const beta = result.find((g) => g.companyData.CompanyName === 'Beta Inc');
+    expect(beta!.contacts).toHaveLength(0);
+  });
+
+  it('should treat different websites as different companies', () => {
+    const dealData = [
+      { CompanyName: 'Acme', Website: 'acme.com' },
+      { CompanyName: 'Acme', Website: 'acme.io' },
+    ];
+    const contactData = [{ Name: 'John' }, { Name: 'Jane' }];
+
+    const result = groupRowsByCompany(dealData, contactData);
+
+    expect(result).toHaveLength(2);
+  });
+
+  it('should group companies with same name and ALL empty websites', () => {
+    const dealData = [
+      { CompanyName: 'Apollo', Website: '' },
+      { CompanyName: 'Apollo', Website: '' },
+    ];
+    const contactData = [{ Name: 'John' }, { Name: 'Jane' }];
+
+    const result = groupRowsByCompany(dealData, contactData);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].contacts).toHaveLength(2);
+  });
+
+  it('should handle empty contact data array', () => {
+    const dealData = [{ CompanyName: 'Acme', Website: 'acme.com' }];
+    const contactData: Record<string, string>[] = [];
+
+    const result = groupRowsByCompany(dealData, contactData);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].contacts).toHaveLength(0);
+  });
+
+  it('should normalize website URLs when grouping', () => {
+    const dealData = [
+      { CompanyName: 'Acme', Website: 'https://www.acme.com/' },
+      { CompanyName: 'Acme', Website: 'acme.com' },
+      { CompanyName: 'Acme', Website: 'HTTP://ACME.COM' },
+    ];
+    const contactData = [{ Name: 'John' }, { Name: 'Jane' }, { Name: 'Bob' }];
+
+    const result = groupRowsByCompany(dealData, contactData);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].contacts).toHaveLength(3);
+  });
+
+  it('should preserve order of groups based on first occurrence', () => {
+    const dealData = [
+      { CompanyName: 'Beta', Website: 'beta.io' },
+      { CompanyName: 'Acme', Website: 'acme.com' },
+      { CompanyName: 'Beta', Website: 'beta.io' },
+    ];
+    const contactData = [{ Name: 'Bob' }, { Name: 'John' }, { Name: 'Jane' }];
+
+    const result = groupRowsByCompany(dealData, contactData);
+
+    expect(result[0].companyData.CompanyName).toBe('Beta');
+    expect(result[1].companyData.CompanyName).toBe('Acme');
   });
 });
