@@ -196,7 +196,6 @@ async function handleClearCache(): Promise<MessageResponse<boolean>> {
     cachedSchema = null;
     cachedContactSchema = null;
     await chrome.storage.local.remove(['schema', 'contactSchema']);
-    console.log('Schema caches cleared');
     return { success: true, data: true };
   } catch (error) {
     return {
@@ -207,9 +206,7 @@ async function handleClearCache(): Promise<MessageResponse<boolean>> {
 }
 
 // Clear stale cache on startup to ensure fresh schema after rebuilds
-chrome.storage.local.remove(['schema', 'contactSchema']).then(() => {
-  console.log('Schema caches cleared on startup');
-});
+chrome.storage.local.remove(['schema', 'contactSchema']);
 
 // Open side panel when extension icon is clicked
 chrome.action.onClicked.addListener((tab) => {
@@ -218,5 +215,3 @@ chrome.action.onClicked.addListener((tab) => {
   }
 });
 
-// Log when service worker starts
-console.log('Sevanta Uploader background service worker started');

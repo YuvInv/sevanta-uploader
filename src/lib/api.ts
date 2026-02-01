@@ -29,7 +29,7 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T
   return new Promise((resolve, reject) => {
     requestQueue.push(async () => {
       try {
-        const response = await fetch(`${BASE_URL}${endpoint} `, {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
           ...options,
           credentials: 'include',
           headers: {
@@ -47,7 +47,7 @@ async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T
             reject(new Error('RATE_LIMITED'));
             return;
           }
-          reject(new Error(`API Error: ${response.status} `));
+          reject(new Error(`API Error: ${response.status}`));
           return;
         }
 
@@ -94,14 +94,9 @@ interface RawSchemaResponse {
 export async function getSchema(): Promise<Schema> {
   const response = await apiRequest<RawSchemaResponse>('/schema/deals');
 
-  // Log raw response for debugging
-  console.log('Raw schema response:', response);
-
   // Sevanta returns { data: { fieldName: {...}, ... } } as an object
   const dataObj = response.data || {};
   const rawFields = Object.values(dataObj);
-
-  console.log('Raw fields count:', rawFields.length);
 
   // Transform API response to our Schema type
   const fields: SchemaField[] = rawFields.map((field: RawSchemaField) => {
@@ -125,8 +120,6 @@ export async function getSchema(): Promise<Schema> {
       optionlistFull: field.optionlist,
     };
   });
-
-  console.log('Parsed fields:', fields.length);
 
   return {
     fields,
@@ -168,12 +161,8 @@ function mapFieldType(apiType?: string): SchemaField['type'] {
 export async function getContactSchema(): Promise<ContactSchema> {
   const response = await apiRequest<RawSchemaResponse>('/schema/contacts');
 
-  console.log('Raw contact schema response:', response);
-
   const dataObj = response.data || {};
   const rawFields = Object.values(dataObj);
-
-  console.log('Raw contact fields count:', rawFields.length);
 
   const fields: SchemaField[] = rawFields.map((field: RawSchemaField) => {
     const fieldName = field.dbname || '';
@@ -192,8 +181,6 @@ export async function getContactSchema(): Promise<ContactSchema> {
       optionlistFull: field.optionlist,
     };
   });
-
-  console.log('Parsed contact fields:', fields.length);
 
   return {
     fields,
@@ -218,7 +205,7 @@ interface SearchResponse {
 
 export async function searchDeals(filter: string): Promise<Deal[]> {
   const response = await apiRequest<SearchResponse>(
-    `/ deal / list ? ${filter}& _x[]=CompanyName & _x[]=Website`
+    `/deal/list?${filter}&_x[]=CompanyName&_x[]=Website`
   );
 
   // API returns data array, not deals
@@ -238,7 +225,7 @@ export async function searchDeals(filter: string): Promise<Deal[]> {
 export async function searchDealsByText(searchText: string): Promise<Deal[]> {
   const encoded = encodeURIComponent(searchText);
   const response = await apiRequest<SearchResponse>(
-    `/ deal / list ? _text = ${encoded}& _x[]=CompanyName & _x[]=Website`
+    `/deal/list?_text=${encoded}&_x[]=CompanyName&_x[]=Website`
   );
 
   const rawData = response.data || [];
@@ -255,7 +242,7 @@ export async function searchDealsByText(searchText: string): Promise<Deal[]> {
 export async function searchDealsSemantically(searchText: string): Promise<Deal[]> {
   const encoded = encodeURIComponent(searchText);
   const response = await apiRequest<SearchResponse>(
-    `/ deal / list ? _ss = ${encoded}& _x[]=CompanyName & _x[]=Website`
+    `/deal/list?_ss=${encoded}&_x[]=CompanyName&_x[]=Website`
   );
 
   const rawData = response.data || [];
@@ -360,7 +347,7 @@ export async function createDeal(
       }
     }
 
-    const response = await fetch(`${BASE_URL} /deal/add`, {
+    const response = await fetch(`${BASE_URL}/deal/add`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -370,8 +357,6 @@ export async function createDeal(
     });
 
     const result = (await response.json()) as CreateDealResponse;
-
-    console.log('Create deal response:', result);
 
     // Check for error in response body
     if (result.error) {
@@ -428,7 +413,7 @@ export async function createContact(
       }
     }
 
-    const response = await fetch(`${BASE_URL} /contact/add`, {
+    const response = await fetch(`${BASE_URL}/contact/add`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -438,8 +423,6 @@ export async function createContact(
     });
 
     const result = (await response.json()) as CreateContactResponse;
-
-    console.log('Create contact response:', result);
 
     if (result.error) {
       return {
