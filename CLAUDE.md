@@ -40,17 +40,27 @@ This applies to ALL changes, including small fixes, documentation updates, and c
 sevanta-uploader/
 ├── src/
 │   ├── sidepanel/          # Side Panel UI entry point
-│   │   ├── index.html      # HTML entry
+│   │   ├── index.html      # HTML entry (includes Google Fonts)
 │   │   ├── main.tsx        # React entry (uses popup/App)
-│   │   └── styles.css      # Side panel styles
+│   │   └── styles.css      # Side panel styles + CSS variables
 │   ├── popup/              # Shared UI components (React)
-│   │   ├── App.tsx         # Main app component
+│   │   ├── App.tsx         # Main app with tab navigation
 │   │   ├── components/     # React components
+│   │   │   ├── ContactLookup/  # Contact lookup feature
+│   │   │   │   ├── ContactLookup.tsx
+│   │   │   │   ├── ContactInput.tsx
+│   │   │   │   ├── ContactLookupProgress.tsx
+│   │   │   │   ├── ContactLookupTable.tsx
+│   │   │   │   └── MatchBadge.tsx
+│   │   │   └── TabNav.tsx  # Tab navigation component
 │   │   └── hooks/          # Custom React hooks
+│   │       └── useContactLookup.ts
 │   ├── background/         # Service Worker
 │   │   └── index.ts        # Message handling & API calls
 │   └── lib/                # Shared utilities
 │       ├── api.ts          # Sevanta API client
+│       ├── contactLookup.ts # Contact parsing logic
+│       ├── contactExport.ts # CSV export for lookups
 │       ├── validation.ts   # Field validation
 │       ├── csv.ts          # CSV parsing & templates
 │       └── types.ts        # TypeScript types
@@ -144,8 +154,22 @@ GET /user/list         - Get all users
 - **Create/POST** expects DBNAMES (e.g., `CompanyName=Acme`)
 - **Filters** use DBNAMES (e.g., `filter[CompanyName]=Acme`)
 
+### Search Quirks (IMPORTANT)
+- **`filter[FieldName]` may not work reliably** for some fields (e.g., `filter[Email]` doesn't always find exact matches)
+- **Prefer `_text=` search** for finding records - it searches across all text fields and is more reliable
+- When searching by email, use `_text=email@example.com` then filter results client-side for exact match
+
+### CRM URL Formats
+When linking to CRM records, use these URL patterns:
+- **Contacts**: `https://run.mydealflow.com/inv/#/Contact.php?ContactID={id}`
+- **Deals**: `https://run.mydealflow.com/inv/#/Deal.php?CompanyID={id}`
+- **Tasks**: `https://run.mydealflow.com/inv/#/Task.php?TaskID={id}`
+
+Note: URLs use `#/` hash routing, NOT `/inv/contact/{id}` REST-style paths.
+
 ## Core Features
 
+### Company Upload Flow
 1. **Connection Check**: Verify user is logged into Sevanta
 2. **CSV Upload**: Drag-and-drop or file select
 3. **Column Mapping**: Map CSV columns to CRM fields
@@ -153,6 +177,15 @@ GET /user/list         - Get all users
 5. **Duplicate Detection**: Match by CompanyName/Website
 6. **Review/Edit**: Editable table with inline editing
 7. **Upload**: Sequential upload with progress tracking
+
+### Contact Lookup
+- Paste contacts (name + email) in various formats
+- Searches CRM using `_text` API for reliability
+- **Strong match**: Email matches exactly (green)
+- **Possible match**: Name matches (amber)
+- **No match**: Not found (gray)
+- Results sorted by match strength (strong first)
+- Export results to CSV
 
 ## Development Commands
 
@@ -201,6 +234,28 @@ the folder .schema_examples/ contains example JSON responses from various API en
 | `PastInvestments` | Past Investments | textarea |
 | `StageID` | Stage | dropdown |
 | `SectorID` | Sector | dropdown |
+
+## Design System
+
+The UI uses a "Warm Professional" design with accessibility focus (60+ users):
+
+### Colors (Tailwind)
+- **warm-{50-900}**: Warm neutral grays (backgrounds, text, borders)
+- **accent-{50-700}**: Teal accent (buttons, links, highlights)
+- **success-{50-700}**: Green (valid, uploaded, strong match)
+- **caution-{50-700}**: Amber (warnings, duplicates, possible match)
+- **danger-{50-700}**: Red (errors, invalid, failed)
+
+### Typography
+- **Fonts**: DM Sans (body), Fraunces (display headings)
+- **Sizes**: Larger than default (15px base) for accessibility
+- Use `font-display` class for headings
+
+### Components
+- Rounded corners: `rounded-xl` (buttons), `rounded-2xl` (cards)
+- Shadows: Subtle warm shadows (`shadow-sm`, `shadow-md`)
+- Transitions: `transition-all duration-200`
+- Focus states: `focus:ring-4 focus:ring-accent-500/10`
 
 ## Session Reflection
 

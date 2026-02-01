@@ -88,10 +88,12 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
   return (
     <div className="space-y-6">
       {/* Upload Area */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden shadow-sm">
         <div
           className={`relative p-8 transition-all ${
-            isDragging ? 'bg-blue-50 border-2 border-dashed border-blue-400' : 'hover:bg-gray-50'
+            isDragging
+              ? 'bg-accent-50 border-2 border-dashed border-accent-400'
+              : 'hover:bg-warm-50'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -107,12 +109,12 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
 
           <div className="text-center">
             <div
-              className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
-                isDragging ? 'bg-blue-100' : 'bg-gray-100'
+              className={`mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-colors ${
+                isDragging ? 'bg-accent-100' : 'bg-warm-100'
               }`}
             >
               <svg
-                className={`w-8 h-8 transition-colors ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
+                className={`w-8 h-8 transition-colors ${isDragging ? 'text-accent-600' : 'text-warm-400'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -126,13 +128,13 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
               </svg>
             </div>
 
-            <p className="text-gray-700 font-medium mb-1">
+            <p className="text-warm-700 font-medium mb-1">
               {isDragging ? 'Drop your CSV file here' : 'Drop your CSV file here'}
             </p>
-            <p className="text-gray-400 text-sm mb-4">or</p>
+            <p className="text-warm-400 text-sm mb-4">or</p>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              className="px-5 py-2.5 bg-accent-500 text-white text-base font-medium rounded-xl hover:bg-accent-600 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               Browse Files
             </button>
@@ -141,9 +143,9 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-danger-50 border border-danger-200 rounded-xl p-4 flex items-start gap-3">
           <svg
-            className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-danger-500 flex-shrink-0 mt-0.5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -155,15 +157,15 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <p className="text-red-600 text-sm">{error}</p>
+          <p className="text-danger-700 text-sm">{error}</p>
         </div>
       )}
 
       {/* Format Help */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-warm-200 p-5 shadow-sm">
+        <h3 className="font-semibold text-warm-800 mb-3 flex items-center gap-2">
           <svg
-            className="w-5 h-5 text-gray-400"
+            className="w-5 h-5 text-warm-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -177,10 +179,10 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
           </svg>
           CSV Format
         </h3>
-        <ul className="space-y-2 text-sm text-gray-600">
+        <ul className="space-y-2 text-sm text-warm-600">
           <li className="flex items-start gap-2">
             <svg
-              className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0"
+              className="w-4 h-4 text-success-500 mt-0.5 flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -196,7 +198,7 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
           </li>
           <li className="flex items-start gap-2">
             <svg
-              className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0"
+              className="w-4 h-4 text-success-500 mt-0.5 flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -214,7 +216,7 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
           </li>
           <li className="flex items-start gap-2">
             <svg
-              className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0"
+              className="w-4 h-4 text-success-500 mt-0.5 flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -233,10 +235,10 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
 
       {/* Template Download */}
       {schemaFields && schemaFields.length > 0 && (
-        <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-200 p-5">
-          <h3 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+        <div className="bg-gradient-to-r from-warm-50 to-warm-100 rounded-2xl border border-warm-200 p-5">
+          <h3 className="font-semibold text-warm-800 mb-3 flex items-center gap-2">
             <svg
-              className="w-5 h-5 text-gray-400"
+              className="w-5 h-5 text-warm-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -257,8 +259,8 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
               onClick={() => setSimpleTemplate(true)}
               className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 simpleTemplate
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? 'bg-accent-500 text-white'
+                  : 'bg-white border border-warm-300 text-warm-700 hover:bg-warm-50'
               }`}
             >
               Simple
@@ -267,37 +269,37 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
               onClick={() => setSimpleTemplate(false)}
               className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 !simpleTemplate
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? 'bg-accent-500 text-white'
+                  : 'bg-white border border-warm-300 text-warm-700 hover:bg-warm-50'
               }`}
             >
               Full
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-warm-600 mb-4">
             {simpleTemplate
               ? 'Common fields: CompanyName, Description, Website, Source, and Contact info.'
               : 'All CRM fields included in the template.'}
           </p>
 
           <div className="space-y-3 mb-4">
-            <label className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+            <label className="flex items-center gap-3 text-sm text-warm-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={includeDescriptions}
                 onChange={(e) => setIncludeDescriptions(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="w-4 h-4 rounded border-warm-300 text-accent-500 focus:ring-accent-500"
               />
               Include field descriptions row
             </label>
             {contactSchemaFields && contactSchemaFields.length > 0 && (
-              <label className="flex items-center gap-3 text-sm text-gray-700 cursor-pointer">
+              <label className="flex items-center gap-3 text-sm text-warm-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={includeContacts}
                   onChange={(e) => setIncludeContacts(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-4 h-4 rounded border-warm-300 text-accent-500 focus:ring-accent-500"
                 />
                 Include contact/founder fields
               </label>
@@ -307,7 +309,7 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
           <div className="flex gap-2">
             <button
               onClick={handleDownloadTemplate}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-warm-700 bg-white border border-warm-300 rounded-xl hover:bg-warm-50 hover:border-warm-400 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -321,7 +323,7 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
             </button>
             <button
               onClick={() => setShowInstructions(true)}
-              className="px-3 py-2.5 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+              className="px-3 py-2.5 text-sm font-medium text-warm-500 bg-white border border-warm-300 rounded-xl hover:bg-warm-50 hover:border-warm-400 transition-colors"
               title="How to use the template"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,25 +342,27 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
       {/* Instructions Modal */}
       {showInstructions && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setShowInstructions(false)}
         >
           <div
-            className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-xl"
+            className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5">
+            <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-lg text-gray-800">How to Use the CSV Template</h3>
+                <h3 className="font-display font-semibold text-lg text-warm-800">
+                  How to Use the CSV Template
+                </h3>
                 <button
                   onClick={() => setShowInstructions(false)}
-                  className="text-gray-400 hover:text-gray-600 text-xl"
+                  className="text-warm-400 hover:text-warm-600 text-xl"
                 >
                   &times;
                 </button>
               </div>
 
-              <div className="space-y-4 text-sm text-gray-600">
+              <div className="space-y-4 text-sm text-warm-600">
                 <ol className="list-decimal list-inside space-y-2">
                   <li>Download the template and fill in company details</li>
                   <li>
@@ -369,55 +373,55 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
                   <li>Subsequent rows for the same company only need contact fields</li>
                 </ol>
 
-                <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
-                  <div className="text-xs font-medium text-gray-500 mb-2">Example:</div>
+                <div className="bg-warm-50 rounded-xl p-4 overflow-x-auto">
+                  <div className="text-xs font-medium text-warm-500 mb-2">Example:</div>
                   <table className="text-xs border-collapse w-full min-w-[400px]">
                     <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border border-gray-300 px-2 py-1 text-left">CompanyName</th>
-                        <th className="border border-gray-300 px-2 py-1 text-left">Description</th>
-                        <th className="border border-gray-300 px-2 py-1 text-left">Website</th>
-                        <th className="border border-gray-300 px-2 py-1 text-left">Contact_Name</th>
-                        <th className="border border-gray-300 px-2 py-1 text-left">
+                      <tr className="bg-warm-100">
+                        <th className="border border-warm-300 px-2 py-1 text-left">CompanyName</th>
+                        <th className="border border-warm-300 px-2 py-1 text-left">Description</th>
+                        <th className="border border-warm-300 px-2 py-1 text-left">Website</th>
+                        <th className="border border-warm-300 px-2 py-1 text-left">Contact_Name</th>
+                        <th className="border border-warm-300 px-2 py-1 text-left">
                           Contact_Email
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td className="border border-gray-300 px-2 py-1">Acme Corp</td>
-                        <td className="border border-gray-300 px-2 py-1">AI startup</td>
-                        <td className="border border-gray-300 px-2 py-1">acme.com</td>
-                        <td className="border border-gray-300 px-2 py-1">John Doe</td>
-                        <td className="border border-gray-300 px-2 py-1">john@acme.com</td>
+                        <td className="border border-warm-300 px-2 py-1">Acme Corp</td>
+                        <td className="border border-warm-300 px-2 py-1">AI startup</td>
+                        <td className="border border-warm-300 px-2 py-1">acme.com</td>
+                        <td className="border border-warm-300 px-2 py-1">John Doe</td>
+                        <td className="border border-warm-300 px-2 py-1">john@acme.com</td>
                       </tr>
-                      <tr className="bg-purple-50">
-                        <td className="border border-gray-300 px-2 py-1">Acme Corp</td>
-                        <td className="border border-gray-300 px-2 py-1 text-gray-400"></td>
-                        <td className="border border-gray-300 px-2 py-1 text-gray-400"></td>
-                        <td className="border border-gray-300 px-2 py-1">Jane Smith</td>
-                        <td className="border border-gray-300 px-2 py-1">jane@acme.com</td>
+                      <tr className="bg-accent-50/50">
+                        <td className="border border-warm-300 px-2 py-1">Acme Corp</td>
+                        <td className="border border-warm-300 px-2 py-1 text-warm-400"></td>
+                        <td className="border border-warm-300 px-2 py-1 text-warm-400"></td>
+                        <td className="border border-warm-300 px-2 py-1">Jane Smith</td>
+                        <td className="border border-warm-300 px-2 py-1">jane@acme.com</td>
                       </tr>
                       <tr>
-                        <td className="border border-gray-300 px-2 py-1">Beta Inc</td>
-                        <td className="border border-gray-300 px-2 py-1">Fintech</td>
-                        <td className="border border-gray-300 px-2 py-1">beta.io</td>
-                        <td className="border border-gray-300 px-2 py-1">Bob Wilson</td>
-                        <td className="border border-gray-300 px-2 py-1">bob@beta.io</td>
+                        <td className="border border-warm-300 px-2 py-1">Beta Inc</td>
+                        <td className="border border-warm-300 px-2 py-1">Fintech</td>
+                        <td className="border border-warm-300 px-2 py-1">beta.io</td>
+                        <td className="border border-warm-300 px-2 py-1">Bob Wilson</td>
+                        <td className="border border-warm-300 px-2 py-1">bob@beta.io</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                <p className="text-gray-500">
+                <p className="text-warm-500">
                   This creates <strong>2 companies</strong>: Acme Corp (2 contacts) and Beta Inc (1
                   contact).
                 </p>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="bg-accent-50 border border-accent-200 rounded-xl p-3">
                   <div className="flex items-start gap-2">
                     <svg
-                      className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0"
+                      className="w-4 h-4 text-accent-500 mt-0.5 flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -429,7 +433,7 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    <p className="text-blue-700 text-xs">
+                    <p className="text-accent-700 text-xs">
                       Companies are grouped by <strong>CompanyName + Website</strong>. Rows with the
                       same combination become multiple contacts for one company.
                     </p>
@@ -439,7 +443,7 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
 
               <button
                 onClick={() => setShowInstructions(false)}
-                className="w-full mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full mt-4 px-4 py-2.5 text-sm font-medium text-white bg-accent-500 rounded-xl hover:bg-accent-600 transition-colors"
               >
                 Got it
               </button>
