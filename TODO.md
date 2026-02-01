@@ -7,9 +7,6 @@
 ## In Progress
 
 ### Tech Debt Remediation
-- [ ] **Phase 3: Documentation** ([#19](https://github.com/YuvInv/sevanta-uploader/issues/19)) - README, templates, cleanup
-- [ ] **Phase 4: Claude Ecosystem** ([#20](https://github.com/YuvInv/sevanta-uploader/issues/20)) - Skills, subagents, knowledge graph
-- [ ] **Phase 5: Hardening** ([#21](https://github.com/YuvInv/sevanta-uploader/issues/21)) - Constants, validation, rate limiter
 - [ ] **Phase 6: UX & Performance** ([#25](https://github.com/YuvInv/sevanta-uploader/issues/25)) - Duplicate check speed, loading UX, auto-discard
 
 ---
@@ -44,8 +41,11 @@
 
 ## Completed
 
-- [x] **Tech Debt Phase 1: Critical Fixes** ([#17](https://github.com/YuvInv/sevanta-uploader/issues/17)) - URLs, ErrorBoundary, console.logs
+- [x] **Tech Debt Phase 5: Hardening** ([#21](https://github.com/YuvInv/sevanta-uploader/issues/21)) - Constants, validation, rate limiter
+- [x] **Tech Debt Phase 4: Claude Ecosystem** ([#20](https://github.com/YuvInv/sevanta-uploader/issues/20)) - Skills, subagents, knowledge graph
+- [x] **Tech Debt Phase 3: Documentation** ([#19](https://github.com/YuvInv/sevanta-uploader/issues/19)) - README, templates, cleanup
 - [x] **Tech Debt Phase 2: Code Quality** ([#18](https://github.com/YuvInv/sevanta-uploader/issues/18)) - App refactor, API consolidation, tests
+- [x] **Tech Debt Phase 1: Critical Fixes** ([#17](https://github.com/YuvInv/sevanta-uploader/issues/17)) - URLs, ErrorBoundary, console.logs
 - [x] **CI/CD Pipeline** ([#4](https://github.com/YuvInv/sevanta-uploader/issues/4)) - GitHub Actions for build/release
 - [x] **Discard Rows** ([#9](https://github.com/YuvInv/sevanta-uploader/issues/9)) - Allow discarding duplicate rows
 - [x] **Fix Contacts Upload** ([#10](https://github.com/YuvInv/sevanta-uploader/issues/10)) - Contact creation and linking
