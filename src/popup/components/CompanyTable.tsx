@@ -15,7 +15,13 @@ export function CompanyTable({
   onSelect,
   onToggleSkip,
 }: CompanyTableProps) {
-  // Show key fields in table
+  // Show key fields in table with display names
+  const fieldConfig: Record<string, string> = {
+    CompanyName: 'Company',
+    Website: 'Site',
+    Sector: 'Sector',
+    Stage: 'Stage',
+  };
   const displayFields = ['CompanyName', 'Website', 'Sector', 'Stage'].filter((f) =>
     schema?.fields.some((sf) => sf.name === f)
   );
@@ -68,15 +74,24 @@ export function CompanyTable({
 
   return (
     <div className="border rounded-lg overflow-auto max-h-80">
-      <table className="data-table">
+      <table className="data-table table-fixed w-full">
+        <colgroup>
+          <col className="w-8" />
+          <col className="w-1/4" />
+          <col className="w-1/5" />
+          <col className="w-16" />
+          <col className="w-16" />
+          <col className="w-24" />
+          <col className="w-16" />
+        </colgroup>
         <thead>
           <tr>
-            <th className="w-8"></th>
+            <th></th>
             {displayFields.map((field) => (
-              <th key={field}>{field}</th>
+              <th key={field}>{fieldConfig[field] || field}</th>
             ))}
-            <th className="w-24">Status</th>
-            <th className="w-20">Action</th>
+            <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>

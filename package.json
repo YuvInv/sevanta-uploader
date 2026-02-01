@@ -1,6 +1,6 @@
 {
   "name": "sevanta-uploader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Bulk upload companies to Sevanta Dealflow CRM",
   "type": "module",
   "scripts": {
@@ -12,7 +12,8 @@
     "check": "npm run lint && prettier --check \"src/**/*.{ts,tsx,css,md}\"",
     "test": "vitest run",
     "bump": "node scripts/version-bump.js",
-    "release": "npm run bump && git commit -am \"chore: bump version\" && git tag v$(grep '\"version\":' package.json | cut -d\\\" -f4 | head -n 1)"
+    "bump:minor": "node scripts/version-bump.js minor",
+    "bump:major": "node scripts/version-bump.js major"
   },
   "dependencies": {
     "papaparse": "^5.4.1",

@@ -1,10 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const packagePath = path.resolve(__dirname, '../package.json');
-const manifestPath = path.resolve(__dirname, '../public/manifest.json');
+const rootDir = path.resolve(__dirname, '..');
+const packagePath = path.resolve(rootDir, 'package.json');
+const manifestPath = path.resolve(rootDir, 'public/manifest.json');
 
 const releaseType = process.argv[2] || 'patch';
 
@@ -20,14 +22,14 @@ let minor = parseInt(parts[1], 10);
 let patch = parseInt(parts[2], 10);
 
 if (releaseType === 'major') {
-    major++;
-    minor = 0;
-    patch = 0;
+  major++;
+  minor = 0;
+  patch = 0;
 } else if (releaseType === 'minor') {
-    minor++;
-    patch = 0;
+  minor++;
+  patch = 0;
 } else {
-    patch++;
+  patch++;
 }
 
 const newVersion = `${major}.${minor}.${patch}`;
@@ -38,4 +40,8 @@ manifestJson.version = newVersion;
 fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + '\n');
 fs.writeFileSync(manifestPath, JSON.stringify(manifestJson, null, 2) + '\n');
 
-console.log(`Version bumped from ${currentVersion} to ${newVersion}`);
+// Update package-lock.json by running npm install
+console.log('Updating package-lock.json...');
+execSync('npm install --package-lock-only', { cwd: rootDir, stdio: 'inherit' });
+
+console.log(`\nVersion bumped from ${currentVersion} to ${newVersion}`);

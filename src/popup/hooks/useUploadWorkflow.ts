@@ -152,33 +152,28 @@ export function useUploadWorkflow({
     setStep('review');
   }, [csvData, schema, columnMappings, contactColumnMappings, validateCompanies, checkDuplicates]);
 
-  // Handle company edit
-  const handleCompanyEdit = useCallback((id: string, field: string, value: string) => {
-    setCompanies((prev) =>
-      prev.map((company) => {
-        if (company.id !== id) return company;
-        return {
-          ...company,
-          data: { ...company.data, [field]: value },
+  // Handle bulk save from modal editor (company data + all contacts at once)
+  const handleCompanySave = useCallback(
+    (
+      companyId: string,
+      data: Record<string, string>,
+      contacts: Array<{
+        data: Record<string, string>;
+        validation: {
+          valid: boolean;
+          errors: Array<{ field: string; message: string }>;
+          warnings: Array<{ field: string; message: string }>;
         };
-      })
-    );
-  }, []);
-
-  // Handle contact edit within a company
-  const handleContactEdit = useCallback(
-    (companyId: string, contactIndex: number, field: string, value: string) => {
+      }>
+    ) => {
       setCompanies((prev) =>
         prev.map((company) => {
           if (company.id !== companyId) return company;
-          const updatedContacts = [...company.contacts];
-          if (updatedContacts[contactIndex]) {
-            updatedContacts[contactIndex] = {
-              ...updatedContacts[contactIndex],
-              data: { ...updatedContacts[contactIndex].data, [field]: value },
-            };
-          }
-          return { ...company, contacts: updatedContacts };
+          return {
+            ...company,
+            data,
+            contacts,
+          };
         })
       );
     },
@@ -383,8 +378,7 @@ export function useUploadWorkflow({
     // Handlers
     handleCsvUpload,
     handleMappingConfirm,
-    handleCompanyEdit,
-    handleContactEdit,
+    handleCompanySave,
     handleToggleSkip,
     handleConfirmedUpload,
     handleReset,
