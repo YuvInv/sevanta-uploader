@@ -160,22 +160,22 @@ export function ColumnMapper({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-white rounded-2xl border border-warm-200 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-gray-800">Map Columns</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Match your CSV columns to CRM fields</p>
+            <h2 className="text-base font-semibold text-warm-800">Map Columns</h2>
+            <p className="text-sm text-warm-500 mt-0.5">Match your CSV columns to CRM fields</p>
           </div>
           <div className="flex gap-2">
-            <span className="px-3 py-1.5 bg-blue-100 rounded-full text-sm text-blue-700">
+            <span className="px-3 py-1.5 bg-accent-100 rounded-full text-sm text-accent-700 font-medium">
               {dealMappedCount} deals
             </span>
             {hasContactFields && (
-              <span className="px-3 py-1.5 bg-purple-100 rounded-full text-sm text-purple-700">
+              <span className="px-3 py-1.5 bg-accent-100 rounded-full text-sm text-accent-700 font-medium">
                 {contactMappedCount} contacts
               </span>
             )}
-            <span className="px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600">
+            <span className="px-3 py-1.5 bg-warm-100 rounded-full text-sm text-warm-600 font-medium">
               {skippedCount} skipped
             </span>
           </div>
@@ -183,9 +183,9 @@ export function ColumnMapper({
       </div>
 
       {missingRequiredFields.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
+        <div className="bg-caution-50 border border-caution-200 rounded-xl p-4 flex items-start gap-3">
           <svg
-            className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-caution-500 flex-shrink-0 mt-0.5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -198,8 +198,8 @@ export function ColumnMapper({
             />
           </svg>
           <div>
-            <p className="font-medium text-yellow-800 text-sm">Missing required fields:</p>
-            <ul className="mt-1 text-sm text-yellow-700">
+            <p className="font-medium text-caution-800 text-sm">Missing required fields:</p>
+            <ul className="mt-1 text-sm text-caution-700">
               {missingRequiredFields.map((f) => (
                 <li key={f.name}>{f.label}</li>
               ))}
@@ -210,42 +210,42 @@ export function ColumnMapper({
 
       {/* Help text */}
       {hasContactFields && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <p className="text-sm text-blue-700">
+        <div className="bg-accent-50 border border-accent-200 rounded-xl p-4">
+          <p className="text-sm text-accent-700">
             <strong>Tip:</strong> For each column, choose whether it&apos;s a{' '}
-            <span className="font-semibold text-blue-800">Deal</span> field, a{' '}
-            <span className="font-semibold text-purple-800">Contact</span> field, or should be{' '}
-            <span className="font-semibold text-gray-600">Skipped</span>. Contact fields will be
+            <span className="font-semibold text-accent-800">Deal</span> field, a{' '}
+            <span className="font-semibold text-accent-800">Contact</span> field, or should be{' '}
+            <span className="font-semibold text-warm-600">Skipped</span>. Contact fields will be
             created as contacts linked to each deal.
           </p>
         </div>
       )}
 
       {/* Unified mapping table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-warm-50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 text-left font-semibold text-warm-600 text-xs uppercase tracking-wider">
                 CSV Column
               </th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider w-32">
+              <th className="px-4 py-3 text-left font-semibold text-warm-600 text-xs uppercase tracking-wider w-32">
                 Type
               </th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 text-left font-semibold text-warm-600 text-xs uppercase tracking-wider">
                 CRM Field
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-warm-100">
             {unifiedMappings.map((mapping) => {
               const currentDealField = schemaFields.find((f) => f.name === mapping.field);
               const isRequired = mapping.type === 'deal' && currentDealField?.required;
 
               return (
-                <tr key={mapping.csvColumn} className="hover:bg-gray-50 transition-colors">
+                <tr key={mapping.csvColumn} className="hover:bg-warm-50 transition-colors">
                   <td className="px-4 py-3">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-700">
+                    <code className="bg-warm-100 px-2 py-1 rounded-lg text-sm font-mono text-warm-700">
                       {mapping.csvColumn}
                     </code>
                   </td>
@@ -255,12 +255,12 @@ export function ColumnMapper({
                       onChange={(e) =>
                         handleTypeChange(mapping.csvColumn, e.target.value as MappingType)
                       }
-                      className={`w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      className={`w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
                         mapping.type === 'deal'
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          ? 'bg-accent-50 text-accent-700 border-accent-200'
                           : mapping.type === 'contact'
-                            ? 'bg-purple-50 text-purple-700 border-purple-200'
-                            : 'bg-gray-50 text-gray-600 border-gray-200'
+                            ? 'bg-accent-50 text-accent-700 border-accent-200'
+                            : 'bg-warm-50 text-warm-600 border-warm-200'
                       }`}
                     >
                       <option value="deal">Deal</option>
@@ -270,7 +270,7 @@ export function ColumnMapper({
                   </td>
                   <td className="px-4 py-3">
                     {mapping.type === 'skip' ? (
-                      <span className="text-gray-400 italic">Column will be ignored</span>
+                      <span className="text-warm-400 italic">Column will be ignored</span>
                     ) : mapping.type === 'deal' ? (
                       <div className="flex items-center gap-2">
                         <select
@@ -278,7 +278,7 @@ export function ColumnMapper({
                           onChange={(e) =>
                             handleFieldChange(mapping.csvColumn, 'deal', e.target.value || null)
                           }
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                         >
                           <option value="">-- Select field --</option>
                           {schemaFields.map((field) => {
@@ -299,7 +299,7 @@ export function ColumnMapper({
                           })}
                         </select>
                         {isRequired && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full whitespace-nowrap">
+                          <span className="px-2 py-1 bg-success-100 text-success-700 text-xs rounded-full whitespace-nowrap font-medium">
                             Required
                           </span>
                         )}
@@ -311,7 +311,7 @@ export function ColumnMapper({
                           onChange={(e) =>
                             handleFieldChange(mapping.csvColumn, 'contact', e.target.value || null)
                           }
-                          className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-purple-50"
+                          className="w-full border border-accent-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-accent-50"
                         >
                           <option value="">-- Select contact field --</option>
                           {contactSchemaFields?.map((field) => {
@@ -345,14 +345,14 @@ export function ColumnMapper({
       <div className="flex justify-between items-center pt-2">
         <button
           onClick={onBack}
-          className="px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+          className="px-4 py-2.5 text-warm-600 hover:text-warm-800 hover:bg-warm-100 rounded-xl transition-colors text-sm font-medium"
         >
           Back
         </button>
         <button
           onClick={onConfirm}
           disabled={!canConfirm}
-          className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium shadow-sm"
+          className="px-5 py-2.5 bg-accent-500 text-white rounded-xl hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium shadow-sm"
         >
           Continue to Review
         </button>

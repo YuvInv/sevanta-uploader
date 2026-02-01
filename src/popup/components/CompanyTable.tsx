@@ -27,10 +27,10 @@ export function CompanyTable({
   );
 
   const getRowClass = (company: Company) => {
-    if (company.skipped) return 'bg-gray-100 opacity-60';
-    if (company.uploadStatus === 'success') return 'bg-green-50';
-    if (company.uploadStatus === 'partial') return 'bg-yellow-50';
-    if (company.uploadStatus === 'error') return 'bg-red-50';
+    if (company.skipped) return 'bg-warm-100 opacity-60';
+    if (company.uploadStatus === 'success') return 'bg-success-50';
+    if (company.uploadStatus === 'partial') return 'bg-caution-50';
+    if (company.uploadStatus === 'error') return 'bg-danger-50';
     if (company.duplicate?.isDuplicate) return 'status-duplicate';
     if (!company.validation.valid) return 'status-error';
     if (company.validation.warnings.length > 0) return 'status-warning';
@@ -58,7 +58,7 @@ export function CompanyTable({
       const total = company.contactUploadStatuses.length;
       if (successful < total) {
         return (
-          <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">
+          <span className="px-1.5 py-0.5 bg-caution-100 text-caution-700 text-xs rounded-lg font-medium">
             {successful}/{total} contacts
           </span>
         );
@@ -66,14 +66,14 @@ export function CompanyTable({
     }
 
     return (
-      <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+      <span className="px-1.5 py-0.5 bg-accent-100 text-accent-700 text-xs rounded-lg font-medium">
         {count} {count === 1 ? 'contact' : 'contacts'}
       </span>
     );
   };
 
   return (
-    <div className="border rounded-lg overflow-auto max-h-80">
+    <div className="border border-warm-200 rounded-2xl overflow-auto max-h-80 bg-white shadow-sm">
       <table className="data-table table-fixed w-full">
         <colgroup>
           <col className="w-8" />
@@ -99,7 +99,7 @@ export function CompanyTable({
             <tr
               key={company.id}
               className={`cursor-pointer ${getRowClass(company)} ${
-                selectedId === company.id ? 'ring-2 ring-blue-500 ring-inset' : ''
+                selectedId === company.id ? 'ring-2 ring-accent-500 ring-inset' : ''
               }`}
               onClick={() => onSelect(selectedId === company.id ? null : company.id)}
             >
@@ -119,10 +119,10 @@ export function CompanyTable({
                     e.stopPropagation();
                     onToggleSkip(company.id);
                   }}
-                  className={`text-xs px-2 py-1 rounded border ${
+                  className={`text-xs px-2 py-1 rounded-lg border transition-colors ${
                     company.skipped
-                      ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      ? 'bg-accent-50 text-accent-600 border-accent-200 hover:bg-accent-100'
+                      : 'bg-white text-warm-600 border-warm-300 hover:bg-warm-50'
                   }`}
                 >
                   {company.skipped ? 'Restore' : 'Discard'}
@@ -139,7 +139,7 @@ export function CompanyTable({
 function StatusBadge({ company }: { company: Company }) {
   if (company.skipped) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-warm-100 text-warm-600 border border-warm-300">
         Skipped
       </span>
     );
@@ -147,7 +147,7 @@ function StatusBadge({ company }: { company: Company }) {
 
   if (company.uploadStatus === 'success') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-success-100 text-success-700">
         Uploaded
       </span>
     );
@@ -155,7 +155,7 @@ function StatusBadge({ company }: { company: Company }) {
 
   if (company.uploadStatus === 'partial') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-caution-100 text-caution-700">
         Partial
       </span>
     );
@@ -163,7 +163,7 @@ function StatusBadge({ company }: { company: Company }) {
 
   if (company.uploadStatus === 'error') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-danger-100 text-danger-700">
         Failed
       </span>
     );
@@ -171,7 +171,7 @@ function StatusBadge({ company }: { company: Company }) {
 
   if (company.uploadStatus === 'uploading') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-accent-100 text-accent-700">
         Uploading...
       </span>
     );
@@ -179,7 +179,7 @@ function StatusBadge({ company }: { company: Company }) {
 
   if (company.duplicate?.isDuplicate) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-caution-100 text-caution-700">
         Duplicate
       </span>
     );
@@ -187,7 +187,7 @@ function StatusBadge({ company }: { company: Company }) {
 
   if (!company.validation.valid) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-danger-100 text-danger-700">
         Invalid
       </span>
     );
@@ -195,14 +195,14 @@ function StatusBadge({ company }: { company: Company }) {
 
   if (company.validation.warnings.length > 0) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-caution-100 text-caution-700">
         Warning
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-warm-100 text-warm-700">
       Ready
     </span>
   );
