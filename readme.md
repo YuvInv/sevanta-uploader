@@ -7,6 +7,10 @@
 A powerful Chrome Extension for bulk uploading companies to the Sevanta Dealflow CRM directly from your browser.
 
 <p align="center">
+  <img src="docs/assets/logo.png" alt="Sevanta Uploader Logo" width="128" />
+</p>
+
+<p align="center">
   <img src="docs/assets/demo_placeholder.png" alt="Sevanta Uploader Demo" width="600" />
 </p>
 
