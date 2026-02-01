@@ -4,18 +4,19 @@
 
 ---
 
-## In Progress
-
-### Tech Debt Remediation
-- [ ] **Phase 6: UX & Performance** ([#25](https://github.com/YuvInv/sevanta-uploader/issues/25)) - Duplicate check speed, loading UX, auto-discard
-
----
-
 ## High Priority
+
+### Bugs
+- [ ] **Duplicate Check Too Slow** ([#35](https://github.com/YuvInv/sevanta-uploader/issues/35)) - Debug why checking duplicates takes so long
+- [ ] **Progress Doesn't Update** ([#36](https://github.com/YuvInv/sevanta-uploader/issues/36)) - Always shows first company and 0%
+
+### UX Issues
+- [ ] **Table Layout Issues** ([#37](https://github.com/YuvInv/sevanta-uploader/issues/37)) - Status wrapped, CompanyName column too wide
+- [ ] **Redesign Editor** ([#38](https://github.com/YuvInv/sevanta-uploader/issues/38)) - Company/contact editor looks awful, needs complete redesign
 
 ### Contact Features
 - [ ] **Allow Optional Contacts** ([#11](https://github.com/YuvInv/sevanta-uploader/issues/11)) - Don't require contact data if not provided
-- [ ] **Multiple Contacts per Company** ([#12](https://github.com/YuvInv/sevanta-uploader/issues/12)) - Support multiple rows for same company
+- [x] **Multiple Contacts per Company** ([#12](https://github.com/YuvInv/sevanta-uploader/issues/12)) - Support multiple rows for same company (PR #34)
 
 ---
 
@@ -41,6 +42,7 @@
 
 ## Completed
 
+- [x] **Phase 6: UX & Performance** ([#25](https://github.com/YuvInv/sevanta-uploader/issues/25)) - Duplicate check speed, loading UX, auto-discard
 - [x] **Fix Failing Lint Test in GitHub Actions** ([#30](https://github.com/YuvInv/sevanta-uploader/issues/30)) - CI lint check is failing
 - [x] **Tech Debt Phase 5: Hardening** ([#21](https://github.com/YuvInv/sevanta-uploader/issues/21)) - Constants, validation, rate limiter
 - [x] **Tech Debt Phase 4: Claude Ecosystem** ([#20](https://github.com/YuvInv/sevanta-uploader/issues/20)) - Skills, subagents, knowledge graph
