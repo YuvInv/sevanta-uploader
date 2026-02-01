@@ -1,4 +1,4 @@
-name: Tag on Merge
+name: Tag and Release
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  create-tag:
+  tag-and-release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
@@ -41,3 +41,34 @@ jobs:
           git tag ${{ steps.get_version.outputs.VERSION }}
           git push origin ${{ steps.get_version.outputs.VERSION }}
           echo "Created and pushed tag ${{ steps.get_version.outputs.VERSION }}"
+
+      - name: Setup Node.js
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        run: npm ci
+
+      - name: Build extension
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        run: npm run build
+
+      - name: Zip extension
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        run: |
+          cd dist
+          zip -r ../sevanta-uploader-${{ steps.get_version.outputs.VERSION }}.zip .
+          cd ..
+
+      - name: Create Release
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          files: sevanta-uploader-${{ steps.get_version.outputs.VERSION }}.zip
+          generate_release_notes: true
+          draft: false
