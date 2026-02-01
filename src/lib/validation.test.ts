@@ -20,9 +20,7 @@ function createSchema(fields: Partial<SchemaField>[]): Schema {
 describe('validateCompany', () => {
   describe('required fields', () => {
     it('should fail validation when required field is missing', () => {
-      const schema = createSchema([
-        { name: 'CompanyName', label: 'Company Name', required: true },
-      ]);
+      const schema = createSchema([{ name: 'CompanyName', label: 'Company Name', required: true }]);
       const data = {};
 
       const result = validateCompany(data, schema);
@@ -34,9 +32,7 @@ describe('validateCompany', () => {
     });
 
     it('should fail validation when required field is empty string', () => {
-      const schema = createSchema([
-        { name: 'CompanyName', label: 'Company Name', required: true },
-      ]);
+      const schema = createSchema([{ name: 'CompanyName', label: 'Company Name', required: true }]);
       const data = { CompanyName: '   ' };
 
       const result = validateCompany(data, schema);
@@ -46,9 +42,7 @@ describe('validateCompany', () => {
     });
 
     it('should pass validation when required field is present', () => {
-      const schema = createSchema([
-        { name: 'CompanyName', label: 'Company Name', required: true },
-      ]);
+      const schema = createSchema([{ name: 'CompanyName', label: 'Company Name', required: true }]);
       const data = { CompanyName: 'Acme Corp' };
 
       const result = validateCompany(data, schema);
