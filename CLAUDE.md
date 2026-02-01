@@ -177,3 +177,14 @@ the folder .schema_examples/ contains example JSON responses from various API en
 | `PastInvestments` | Past Investments | textarea |
 | `StageID` | Stage | dropdown |
 | `SectorID` | Sector | dropdown |
+
+## Session Reflection
+
+After significant work on this project, reflect on:
+
+1. **Project-Specific Learnings**: Update this CLAUDE.md with new patterns, gotchas, or conventions discovered
+2. **API Quirks**: Document any new API behavior or edge cases encountered
+3. **Component Patterns**: Note reusable patterns in the React/Chrome Extension architecture
+4. **TODO Sync**: Ensure TODO.md reflects current state after changes
+
+Keep this file current - it's the primary context for future sessions.

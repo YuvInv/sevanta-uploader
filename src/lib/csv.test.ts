@@ -231,7 +231,7 @@ describe('autoMapContactColumns', () => {
 
 describe('applyMapping', () => {
   it('should apply column mappings to rows', () => {
-    const rows = [{ 'Company': 'Acme', 'URL': 'https://acme.com' }];
+    const rows = [{ Company: 'Acme', URL: 'https://acme.com' }];
     const mappings = [
       { csvColumn: 'Company', crmField: 'CompanyName' },
       { csvColumn: 'URL', crmField: 'Website' },
@@ -246,7 +246,7 @@ describe('applyMapping', () => {
   });
 
   it('should skip unmapped columns', () => {
-    const rows = [{ 'Company': 'Acme', 'Notes': 'Some notes' }];
+    const rows = [{ Company: 'Acme', Notes: 'Some notes' }];
     const mappings = [
       { csvColumn: 'Company', crmField: 'CompanyName' },
       { csvColumn: 'Notes', crmField: null },
@@ -259,7 +259,7 @@ describe('applyMapping', () => {
   });
 
   it('should handle empty values', () => {
-    const rows = [{ 'Company': '' }];
+    const rows = [{ Company: '' }];
     const mappings = [{ csvColumn: 'Company', crmField: 'CompanyName' }];
 
     const result = applyMapping(rows, mappings);
@@ -270,7 +270,7 @@ describe('applyMapping', () => {
 
 describe('applyContactMapping', () => {
   it('should apply contact mappings to rows', () => {
-    const rows = [{ 'Contact_Name': 'John Doe', 'Contact_Email': 'john@example.com' }];
+    const rows = [{ Contact_Name: 'John Doe', Contact_Email: 'john@example.com' }];
     const mappings = [
       { csvColumn: 'Contact_Name', contactField: 'Name' },
       { csvColumn: 'Contact_Email', contactField: 'Email' },
@@ -285,7 +285,7 @@ describe('applyContactMapping', () => {
   });
 
   it('should skip null mappings', () => {
-    const rows = [{ 'Contact_Name': 'John Doe', 'Random': 'value' }];
+    const rows = [{ Contact_Name: 'John Doe', Random: 'value' }];
     const mappings = [
       { csvColumn: 'Contact_Name', contactField: 'Name' },
       { csvColumn: 'Random', contactField: null },
@@ -297,7 +297,7 @@ describe('applyContactMapping', () => {
   });
 
   it('should skip empty values', () => {
-    const rows = [{ 'Contact_Name': '', 'Contact_Email': 'john@example.com' }];
+    const rows = [{ Contact_Name: '', Contact_Email: 'john@example.com' }];
     const mappings = [
       { csvColumn: 'Contact_Name', contactField: 'Name' },
       { csvColumn: 'Contact_Email', contactField: 'Email' },
