@@ -142,6 +142,43 @@ This document tracks the progress of the comprehensive tech debt remediation for
 
 ---
 
+## Phase 6: UX & Performance Improvements
+
+**GitHub Issue:** [#25](https://github.com/YuvInv/sevanta-uploader/issues/25)
+**Branch:** `fix/ux-performance-improvements`
+**Priority:** High (user-reported issues)
+
+### Task 6.1: Debug Duplicate Check Performance (CRITICAL)
+**Problem:** "Continue to Review" button takes extremely long (45+ second timeout)
+**Evidence:** Console error: `cURL Error#: Operation timed out after 45001 milliseconds with 0 bytes received`
+**Location:** `useDuplicateCheck.ts`, `api.ts` (checkDuplicate function)
+
+- [ ] Debug the duplicate checking API calls - identify bottleneck
+- [ ] Profile which API calls are slow (text search vs semantic search)
+- [ ] Consider batching or parallelizing duplicate checks
+- [ ] Add timeout handling with graceful degradation
+- [ ] Consider caching previous duplicate check results
+
+### Task 6.2: Add Loading UX During Duplicate Check
+**Problem:** No visual feedback while system checks for existing companies in CRM
+**Impact:** Users think the app is frozen
+
+- [ ] Add loading screen/spinner when "Continue to Review" is clicked
+- [ ] Display explanatory text: "Checking for existing companies in CRM..."
+- [ ] Show progress indicator (e.g., "Checking 5 of 20 companies...")
+- [ ] Consider a progress bar or animated state
+
+### Task 6.3: Auto-Discard Duplicates
+**Problem:** When duplicate is found, user must manually click "discard" - tedious
+**Expected behavior:** System should auto-discard duplicates and explain to user
+
+- [ ] Auto-set `skipped: true` for companies with `duplicate.isDuplicate === true`
+- [ ] Show notification/summary: "X companies were auto-discarded (already exist in CRM)"
+- [ ] Add option to "Review discarded" if user wants to override
+- [ ] Update UI to clearly show which companies were auto-discarded vs manually discarded
+
+---
+
 ## Completed Items
 
 <!-- Move completed items here with date stamps -->
