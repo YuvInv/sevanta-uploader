@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sevanta Uploader",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Bulk upload companies to Sevanta Dealflow CRM",
   "permissions": [
     "storage",
