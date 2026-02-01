@@ -142,6 +142,9 @@ GET /user/list         - Get all users
 npm install          # Install dependencies
 npm run dev          # Start dev server with hot reload
 npm run build        # Build for production
+npm run check        # Run lint + prettier check (use before pushing!)
+npm run format       # Auto-fix prettier formatting issues
+npm run test         # Run tests
 ```
 
 ## Loading the Extension
