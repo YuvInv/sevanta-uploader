@@ -6,6 +6,7 @@ import {
   autoMapContactColumns,
   applyContactMapping,
   isContactColumn,
+  groupRowsByCompany,
 } from '../../lib/csv';
 import { applyDealDefaults, applyContactDefaults } from '../../lib/defaults';
 import type {
@@ -15,6 +16,7 @@ import type {
   UploadProgress,
   Schema,
   ContactSchema,
+  ContactUploadStatus,
 } from '../../lib/types';
 import type { DuplicateCheckProgress } from './useDuplicateCheck';
 
@@ -91,6 +93,7 @@ export function useUploadWorkflow({
   const handleMappingConfirm = useCallback(async () => {
     if (!csvData || !schema) return;
 
+    // Apply column mappings to get deal and contact data
     const mappedData = applyMapping(csvData.rows, columnMappings);
     const enrichedData = mappedData.map((row) => applyDealDefaults(row, 'csv'));
 
@@ -103,16 +106,18 @@ export function useUploadWorkflow({
       Object.keys(contact).length > 0 ? applyContactDefaults(contact) : contact
     );
 
-    const newCompanies: Company[] = enrichedData.map((data, index) => {
-      const contact = enrichedContactData[index] as Record<string, string>;
-      const hasContactName = contact && contact.Name;
+    // Group rows by company (CompanyName + Website)
+    const groupedData = groupRowsByCompany(enrichedData, enrichedContactData);
 
+    // Create Company objects from grouped data
+    const newCompanies: Company[] = groupedData.map((group, index) => {
       return {
         id: `company-${index}-${Date.now()}`,
-        data,
+        data: group.companyData,
         validation: { valid: true, errors: [], warnings: [] },
         uploadStatus: 'pending' as const,
-        contactData: hasContactName ? contact : undefined,
+        contacts: group.contacts,
+        sourceRowCount: group.sourceRowIndices.length,
       };
     });
 
@@ -159,6 +164,26 @@ export function useUploadWorkflow({
       })
     );
   }, []);
+
+  // Handle contact edit within a company
+  const handleContactEdit = useCallback(
+    (companyId: string, contactIndex: number, field: string, value: string) => {
+      setCompanies((prev) =>
+        prev.map((company) => {
+          if (company.id !== companyId) return company;
+          const updatedContacts = [...company.contacts];
+          if (updatedContacts[contactIndex]) {
+            updatedContacts[contactIndex] = {
+              ...updatedContacts[contactIndex],
+              data: { ...updatedContacts[contactIndex].data, [field]: value },
+            };
+          }
+          return { ...company, contacts: updatedContacts };
+        })
+      );
+    },
+    []
+  );
 
   // Re-validate after edit
   const companiesHash = companies.map((c) => JSON.stringify(c.data)).join(',');
@@ -224,20 +249,49 @@ export function useUploadWorkflow({
 
         if (response.success) {
           const dealId = response.data?.dealId;
-          let createdContactId: string | undefined;
+          const contactStatuses: ContactUploadStatus[] = [];
 
-          if (dealId && company.contactData && company.contactData.Name) {
-            try {
-              const contactResponse = await chrome.runtime.sendMessage({
-                type: 'CREATE_CONTACT',
-                data: company.contactData,
-                companyId: dealId,
-              });
-              if (contactResponse.success) {
-                createdContactId = contactResponse.data?.contactId;
+          // Upload ALL contacts for this company
+          if (dealId && company.contacts.length > 0) {
+            for (let i = 0; i < company.contacts.length; i++) {
+              const contact = company.contacts[i];
+              if (!contact.data.Name) continue;
+
+              try {
+                const contactResponse = await chrome.runtime.sendMessage({
+                  type: 'CREATE_CONTACT',
+                  data: contact.data,
+                  companyId: dealId,
+                });
+
+                contactStatuses.push({
+                  index: i,
+                  status: contactResponse.success ? 'success' : 'error',
+                  error: contactResponse.success ? undefined : contactResponse.error,
+                  createdContactId: contactResponse.data?.contactId,
+                });
+              } catch {
+                contactStatuses.push({
+                  index: i,
+                  status: 'error',
+                  error: 'Network error',
+                });
               }
-            } catch {
-              // Contact creation failed silently - deal was created successfully
+            }
+          }
+
+          // Determine final upload status based on contact results
+          const failedContacts = contactStatuses.filter((s) => s.status === 'error').length;
+          const totalContacts = contactStatuses.length;
+          let finalStatus: 'success' | 'partial' | 'error' = 'success';
+
+          if (totalContacts > 0) {
+            if (failedContacts === totalContacts) {
+              // All contacts failed - still success for deal, but partial overall
+              finalStatus = 'partial';
+            } else if (failedContacts > 0) {
+              // Some contacts failed
+              finalStatus = 'partial';
             }
           }
 
@@ -246,9 +300,9 @@ export function useUploadWorkflow({
               c.id === company.id
                 ? {
                     ...c,
-                    uploadStatus: 'success' as const,
+                    uploadStatus: finalStatus,
                     createdDealId: dealId,
-                    createdContactId,
+                    contactUploadStatuses: contactStatuses,
                   }
                 : c
             )
@@ -330,6 +384,7 @@ export function useUploadWorkflow({
     handleCsvUpload,
     handleMappingConfirm,
     handleCompanyEdit,
+    handleContactEdit,
     handleToggleSkip,
     handleConfirmedUpload,
     handleReset,

@@ -43,18 +43,36 @@ export interface Deal {
   [key: string]: string | number | boolean | undefined;
 }
 
+// Contact data with validation for multi-contact support
+export interface ContactData {
+  data: Record<string, string>;
+  validation: ValidationResult;
+}
+
+// Upload status for individual contacts
+export interface ContactUploadStatus {
+  index: number;
+  status: 'pending' | 'success' | 'error';
+  error?: string;
+  createdContactId?: string;
+}
+
 export interface Company {
   id: string; // Local ID for tracking
   data: Record<string, string>;
   validation: ValidationResult;
   duplicate?: DuplicateInfo;
-  uploadStatus: 'pending' | 'uploading' | 'success' | 'error';
+  uploadStatus: 'pending' | 'uploading' | 'success' | 'error' | 'partial';
   uploadError?: string;
   createdDealId?: string;
-  // Contact/Founder data
-  contactData?: Record<string, string>;
-  contactValidation?: ValidationResult;
-  createdContactId?: string;
+
+  // Multi-contact support (array of contacts per company)
+  contacts: ContactData[];
+  contactUploadStatuses?: ContactUploadStatus[];
+
+  // Grouping metadata
+  sourceRowCount?: number;
+
   skipped?: boolean;
 }
 

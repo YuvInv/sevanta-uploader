@@ -23,6 +23,7 @@ export function CompanyTable({
   const getRowClass = (company: Company) => {
     if (company.skipped) return 'bg-gray-100 opacity-60';
     if (company.uploadStatus === 'success') return 'bg-green-50';
+    if (company.uploadStatus === 'partial') return 'bg-yellow-50';
     if (company.uploadStatus === 'error') return 'bg-red-50';
     if (company.duplicate?.isDuplicate) return 'status-duplicate';
     if (!company.validation.valid) return 'status-error';
@@ -33,11 +34,36 @@ export function CompanyTable({
   const getStatusIcon = (company: Company) => {
     if (company.skipped) return '⊘';
     if (company.uploadStatus === 'success') return '✓';
+    if (company.uploadStatus === 'partial') return '⚡';
     if (company.uploadStatus === 'error') return '✗';
     if (company.uploadStatus === 'uploading') return '...';
     if (company.duplicate?.isDuplicate) return '⚠';
     if (!company.validation.valid) return '!';
     return '';
+  };
+
+  const getContactCountBadge = (company: Company) => {
+    const count = company.contacts?.length || 0;
+    if (count === 0) return null;
+
+    // Check upload statuses if available
+    if (company.contactUploadStatuses && company.contactUploadStatuses.length > 0) {
+      const successful = company.contactUploadStatuses.filter((s) => s.status === 'success').length;
+      const total = company.contactUploadStatuses.length;
+      if (successful < total) {
+        return (
+          <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">
+            {successful}/{total} contacts
+          </span>
+        );
+      }
+    }
+
+    return (
+      <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+        {count} {count === 1 ? 'contact' : 'contacts'}
+      </span>
+    );
   };
 
   return (
@@ -68,8 +94,9 @@ export function CompanyTable({
                   {company.data[field] || '-'}
                 </td>
               ))}
-              <td>
+              <td className="space-x-1">
                 <StatusBadge company={company} />
+                {getContactCountBadge(company)}
               </td>
               <td>
                 <button
@@ -107,6 +134,14 @@ function StatusBadge({ company }: { company: Company }) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
         Uploaded
+      </span>
+    );
+  }
+
+  if (company.uploadStatus === 'partial') {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+        Partial
       </span>
     );
   }
