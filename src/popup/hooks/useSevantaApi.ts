@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Schema, ContactSchema } from '../../lib/types';
 
+// Check if Chrome extension APIs are available
+function isChromeExtension(): boolean {
+  return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.sendMessage;
+}
+
 export function useSevantaApi() {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -11,6 +16,14 @@ export function useSevantaApi() {
   const checkConnection = useCallback(async () => {
     setLoading(true);
     setError(undefined);
+
+    // Guard: If not running as Chrome extension, show error
+    if (!isChromeExtension()) {
+      setConnected(false);
+      setError('Chrome extension APIs not available');
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await chrome.runtime.sendMessage({ type: 'CHECK_CONNECTION' });

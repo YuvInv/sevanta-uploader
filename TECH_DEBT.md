@@ -42,8 +42,8 @@ This document tracks the progress of the comprehensive tech debt remediation for
 
 ## Phase 4: Claude Ecosystem - COMPLETED
 
-**GitHub Issue:** [#20](https://github.com/YuvInv/sevanta-uploader/issues/20)
-**Branch:** `chore/tech-debt-phase-4`
+**GitHub Issue:** [#20](https://github.com/YuvInv/sevanta-uploader/issues/20) (Closed)
+**PR:** [#27](https://github.com/YuvInv/sevanta-uploader/pull/27)
 
 - [x] Created `/sync-todos` skill (`~/.claude/skills/sync-todos.md`)
 - [x] Created `/build-extension` skill (`~/.claude/skills/build-extension.md`)
@@ -52,32 +52,16 @@ This document tracks the progress of the comprehensive tech debt remediation for
 
 ---
 
-## Phase 5: Hardening
+## Phase 5: Hardening - COMPLETED
 
 **GitHub Issue:** [#21](https://github.com/YuvInv/sevanta-uploader/issues/21)
 **Branch:** `fix/tech-debt-phase-5`
 
-### Task 5.1: Create Constants File
-- [ ] Create `src/lib/constants.ts`
-- [ ] Extract `600ms` delay value
-- [ ] Extract `0.8` similarity threshold
-- [ ] Extract `3600000ms` cache TTL
-- [ ] Extract other hardcoded values
-
-### Task 5.2: Add Input Validation
-- [ ] Add null checks in `useDuplicateCheck.ts`
-- [ ] Add null checks in `useSevantaApi.ts`
-- [ ] Add chrome API availability guards
-- [ ] Add file size limits to CSV upload (10MB max)
-
-### Task 5.3: Fix Rate Limiter
-- [ ] Add promise rejection handling (api.ts:6-26)
-- [ ] Add timeout mechanism
-- [ ] Add queue overflow protection
-
-### Task 5.4: Fix Email Validation
-- [ ] Improve regex at `validation.ts:104`
-- [ ] Reject invalid emails like `a@b.c`
+- [x] Created `src/lib/constants.ts` with all centralized values
+- [x] Added Chrome API guards in hooks
+- [x] Added 10MB file size limit for CSV uploads
+- [x] Improved rate limiter with timeout, queue overflow protection
+- [x] Fixed email regex to reject invalid emails like `a@b.c`
 
 ---
 
@@ -126,15 +110,19 @@ This document tracks the progress of the comprehensive tech debt remediation for
 - Phase 1: Fixed URLs, added ErrorBoundary, removed console.logs (PR #23 merged)
 - Phase 2: Refactored App.tsx, consolidated API, added 56 tests (PR #24)
 
-### 2026-02-01: Phase 3 Completed
-- Created GitHub issue/PR templates
+### 2026-02-01: Phase 3 & 4 Completed
+- Created GitHub issue/PR templates (PR #26 merged)
 - Synced TODO.md with GitHub Issues
 - Closed stale Issue #4 (CI/CD complete)
 - Deleted Myideas.md (migrated to issues)
 - Added Phase 6 for UX/performance issues (#25)
+- Created /sync-todos and /build-extension skills
+- Created extension-dev subagent
+- Populated KNOWLEDGE_GRAPH.md
 
-### 2026-02-01: Phase 4 Completed
-- Created `/sync-todos` skill for TODO.md ↔ GitHub Issues sync
-- Created `/build-extension` skill for Chrome extension builds
-- Created `extension-dev` subagent for extension development
-- Populated KNOWLEDGE_GRAPH.md with 15+ entries (API quirks, patterns, preferences)
+### 2026-02-01: Phase 5 Completed
+- Created src/lib/constants.ts for centralized configuration
+- Added Chrome API availability guards in hooks
+- Added 10MB file size limit for CSV uploads
+- Improved rate limiter with timeout and queue overflow protection
+- Fixed email validation to require proper TLD (2+ chars)
