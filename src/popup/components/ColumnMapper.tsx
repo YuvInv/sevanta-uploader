@@ -36,9 +36,9 @@ export function ColumnMapper({
   const hasContactFields = contactSchemaFields && contactSchemaFields.length > 0;
 
   // Build unified mapping view from deal mappings and contact mappings
-  const unifiedMappings: UnifiedMapping[] = csvHeaders.map(csvColumn => {
+  const unifiedMappings: UnifiedMapping[] = csvHeaders.map((csvColumn) => {
     // Check if it's in contact mappings (even with null field - indicates user selected contact type)
-    const contactMapping = contactMappings?.find(m => m.csvColumn === csvColumn);
+    const contactMapping = contactMappings?.find((m) => m.csvColumn === csvColumn);
     if (contactMapping) {
       return {
         csvColumn,
@@ -48,7 +48,7 @@ export function ColumnMapper({
     }
 
     // Check deal mapping
-    const dealMapping = mappings.find(m => m.csvColumn === csvColumn);
+    const dealMapping = mappings.find((m) => m.csvColumn === csvColumn);
     if (dealMapping?.crmField) {
       // Has a deal field mapped
       return {
@@ -90,32 +90,32 @@ export function ColumnMapper({
     if (newType === 'contact') {
       // Add to contact mappings (this tracks that user selected contact type)
       if (onContactMappingChange && contactMappings) {
-        const existing = contactMappings.find(m => m.csvColumn === csvColumn);
+        const existing = contactMappings.find((m) => m.csvColumn === csvColumn);
         if (!existing) {
           onContactMappingChange([...contactMappings, { csvColumn, contactField: null }]);
         }
       }
       // Clear deal field mapping
       onMappingChange(
-        mappings.map(m => m.csvColumn === csvColumn ? { ...m, crmField: null } : m)
+        mappings.map((m) => (m.csvColumn === csvColumn ? { ...m, crmField: null } : m))
       );
     } else if (newType === 'deal') {
       // Remove from contact mappings
       if (onContactMappingChange && contactMappings) {
-        onContactMappingChange(contactMappings.filter(m => m.csvColumn !== csvColumn));
+        onContactMappingChange(contactMappings.filter((m) => m.csvColumn !== csvColumn));
       }
       // Keep in deal mappings with null field (user will select the field)
       // No change needed to mappings - just ensure it exists
-      if (!mappings.find(m => m.csvColumn === csvColumn)) {
+      if (!mappings.find((m) => m.csvColumn === csvColumn)) {
         onMappingChange([...mappings, { csvColumn, crmField: null }]);
       }
     } else {
       // Skip - remove from contact mappings, clear deal field
       if (onContactMappingChange && contactMappings) {
-        onContactMappingChange(contactMappings.filter(m => m.csvColumn !== csvColumn));
+        onContactMappingChange(contactMappings.filter((m) => m.csvColumn !== csvColumn));
       }
       onMappingChange(
-        mappings.map(m => m.csvColumn === csvColumn ? { ...m, crmField: null } : m)
+        mappings.map((m) => (m.csvColumn === csvColumn ? { ...m, crmField: null } : m))
       );
     }
   };
@@ -123,39 +123,39 @@ export function ColumnMapper({
   const handleFieldChange = (csvColumn: string, type: MappingType, field: string | null) => {
     if (type === 'deal') {
       onMappingChange(
-        mappings.map(m => m.csvColumn === csvColumn ? { ...m, crmField: field } : m)
+        mappings.map((m) => (m.csvColumn === csvColumn ? { ...m, crmField: field } : m))
       );
       // Clear from contact mappings
       if (onContactMappingChange && contactMappings) {
-        onContactMappingChange(contactMappings.filter(m => m.csvColumn !== csvColumn));
+        onContactMappingChange(contactMappings.filter((m) => m.csvColumn !== csvColumn));
       }
     } else if (type === 'contact' && onContactMappingChange && contactMappings) {
       // Update or add contact mapping
-      const existingIndex = contactMappings.findIndex(m => m.csvColumn === csvColumn);
+      const existingIndex = contactMappings.findIndex((m) => m.csvColumn === csvColumn);
       if (existingIndex >= 0) {
         onContactMappingChange(
-          contactMappings.map((m, i) => i === existingIndex ? { ...m, contactField: field } : m)
+          contactMappings.map((m, i) => (i === existingIndex ? { ...m, contactField: field } : m))
         );
       } else if (field) {
         onContactMappingChange([...contactMappings, { csvColumn, contactField: field }]);
       }
       // Clear deal mapping
       onMappingChange(
-        mappings.map(m => m.csvColumn === csvColumn ? { ...m, crmField: null } : m)
+        mappings.map((m) => (m.csvColumn === csvColumn ? { ...m, crmField: null } : m))
       );
     }
   };
 
   const missingRequiredFields = schemaFields
-    .filter(f => f.required)
-    .filter(f => !mappings.some(m => m.crmField === f.name));
+    .filter((f) => f.required)
+    .filter((f) => !mappings.some((m) => m.crmField === f.name));
 
   const canConfirm = missingRequiredFields.length === 0;
 
   // Count mappings by type
-  const dealMappedCount = unifiedMappings.filter(m => m.type === 'deal' && m.field).length;
-  const contactMappedCount = unifiedMappings.filter(m => m.type === 'contact' && m.field).length;
-  const skippedCount = unifiedMappings.filter(m => m.type === 'skip' || !m.field).length;
+  const dealMappedCount = unifiedMappings.filter((m) => m.type === 'deal' && m.field).length;
+  const contactMappedCount = unifiedMappings.filter((m) => m.type === 'contact' && m.field).length;
+  const skippedCount = unifiedMappings.filter((m) => m.type === 'skip' || !m.field).length;
 
   return (
     <div className="space-y-4">
@@ -184,13 +184,23 @@ export function ColumnMapper({
 
       {missingRequiredFields.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <svg className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <svg
+            className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
           </svg>
           <div>
             <p className="font-medium text-yellow-800 text-sm">Missing required fields:</p>
             <ul className="mt-1 text-sm text-yellow-700">
-              {missingRequiredFields.map(f => (
+              {missingRequiredFields.map((f) => (
                 <li key={f.name}>{f.label}</li>
               ))}
             </ul>
@@ -202,7 +212,11 @@ export function ColumnMapper({
       {hasContactFields && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p className="text-sm text-blue-700">
-            <strong>Tip:</strong> For each column, choose whether it&apos;s a <span className="font-semibold text-blue-800">Deal</span> field, a <span className="font-semibold text-purple-800">Contact</span> field, or should be <span className="font-semibold text-gray-600">Skipped</span>. Contact fields will be created as contacts linked to each deal.
+            <strong>Tip:</strong> For each column, choose whether it&apos;s a{' '}
+            <span className="font-semibold text-blue-800">Deal</span> field, a{' '}
+            <span className="font-semibold text-purple-800">Contact</span> field, or should be{' '}
+            <span className="font-semibold text-gray-600">Skipped</span>. Contact fields will be
+            created as contacts linked to each deal.
           </p>
         </div>
       )}
@@ -212,31 +226,42 @@ export function ColumnMapper({
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider">CSV Column</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider w-32">Type</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider">CRM Field</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider">
+                CSV Column
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider w-32">
+                Type
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600 text-xs uppercase tracking-wider">
+                CRM Field
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {unifiedMappings.map(mapping => {
-              const currentDealField = schemaFields.find(f => f.name === mapping.field);
+            {unifiedMappings.map((mapping) => {
+              const currentDealField = schemaFields.find((f) => f.name === mapping.field);
               const isRequired = mapping.type === 'deal' && currentDealField?.required;
 
               return (
                 <tr key={mapping.csvColumn} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-700">{mapping.csvColumn}</code>
+                    <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-700">
+                      {mapping.csvColumn}
+                    </code>
                   </td>
                   <td className="px-4 py-3">
                     <select
                       value={mapping.type}
-                      onChange={e => handleTypeChange(mapping.csvColumn, e.target.value as MappingType)}
-                      className={`w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${mapping.type === 'deal'
+                      onChange={(e) =>
+                        handleTypeChange(mapping.csvColumn, e.target.value as MappingType)
+                      }
+                      className={`w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        mapping.type === 'deal'
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : mapping.type === 'contact'
                             ? 'bg-purple-50 text-purple-700 border-purple-200'
                             : 'bg-gray-50 text-gray-600 border-gray-200'
-                        }`}
+                      }`}
                     >
                       <option value="deal">Deal</option>
                       {hasContactFields && <option value="contact">Contact</option>}
@@ -250,13 +275,15 @@ export function ColumnMapper({
                       <div className="flex items-center gap-2">
                         <select
                           value={mapping.field || ''}
-                          onChange={e => handleFieldChange(mapping.csvColumn, 'deal', e.target.value || null)}
+                          onChange={(e) =>
+                            handleFieldChange(mapping.csvColumn, 'deal', e.target.value || null)
+                          }
                           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                           <option value="">-- Select field --</option>
-                          {schemaFields.map(field => {
+                          {schemaFields.map((field) => {
                             const isAlreadyMapped = mappings.some(
-                              m => m.crmField === field.name && m.csvColumn !== mapping.csvColumn
+                              (m) => m.crmField === field.name && m.csvColumn !== mapping.csvColumn
                             );
                             return (
                               <option
@@ -272,20 +299,25 @@ export function ColumnMapper({
                           })}
                         </select>
                         {isRequired && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full whitespace-nowrap">Required</span>
+                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full whitespace-nowrap">
+                            Required
+                          </span>
                         )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <select
                           value={mapping.field || ''}
-                          onChange={e => handleFieldChange(mapping.csvColumn, 'contact', e.target.value || null)}
+                          onChange={(e) =>
+                            handleFieldChange(mapping.csvColumn, 'contact', e.target.value || null)
+                          }
                           className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-purple-50"
                         >
                           <option value="">-- Select contact field --</option>
-                          {contactSchemaFields?.map(field => {
+                          {contactSchemaFields?.map((field) => {
                             const isAlreadyMapped = contactMappings?.some(
-                              m => m.contactField === field.name && m.csvColumn !== mapping.csvColumn
+                              (m) =>
+                                m.contactField === field.name && m.csvColumn !== mapping.csvColumn
                             );
                             return (
                               <option

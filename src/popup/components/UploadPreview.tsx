@@ -12,21 +12,17 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const validCompanies = companies.filter(
-    c => c.validation.valid && !c.duplicate?.isDuplicate && c.uploadStatus === 'pending' && !c.skipped
+    (c) =>
+      c.validation.valid && !c.duplicate?.isDuplicate && c.uploadStatus === 'pending' && !c.skipped
   );
 
-  const companiesWithContacts = validCompanies.filter(
-    c => c.contactData && c.contactData.Name
-  );
+  const companiesWithContacts = validCompanies.filter((c) => c.contactData && c.contactData.Name);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-medium">Upload Preview (Dry-Run Mode)</h2>
-        <button
-          onClick={onCancel}
-          className="text-gray-500 hover:text-gray-700 text-sm"
-        >
+        <button onClick={onCancel} className="text-gray-500 hover:text-gray-700 text-sm">
           Cancel
         </button>
       </div>
@@ -38,12 +34,15 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
           <div>
             <h3 className="font-medium text-yellow-800">Review Before Upload</h3>
             <p className="text-sm text-yellow-700 mt-1">
-              This will create <strong>{validCompanies.length}</strong> new deal{validCompanies.length !== 1 ? 's' : ''} in your CRM.
+              This will create <strong>{validCompanies.length}</strong> new deal
+              {validCompanies.length !== 1 ? 's' : ''} in your CRM.
               {companiesWithContacts.length > 0 && (
                 <>
                   <br />
                   <span className="text-purple-700">
-                    <strong>{companiesWithContacts.length}</strong> contact{companiesWithContacts.length !== 1 ? 's' : ''} will be created and linked to deal{companiesWithContacts.length !== 1 ? 's' : ''}.
+                    <strong>{companiesWithContacts.length}</strong> contact
+                    {companiesWithContacts.length !== 1 ? 's' : ''} will be created and linked to
+                    deal{companiesWithContacts.length !== 1 ? 's' : ''}.
                   </span>
                 </>
               )}
@@ -65,9 +64,7 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
 
       {/* Companies to Upload */}
       <div>
-        <h3 className="font-medium text-sm mb-2">
-          Payloads to Send ({validCompanies.length})
-        </h3>
+        <h3 className="font-medium text-sm mb-2">Payloads to Send ({validCompanies.length})</h3>
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {validCompanies.map((company, index) => (
             <div key={company.id} className="border rounded">
@@ -95,8 +92,12 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
                   </div>
                   {company.contactData && Object.keys(company.contactData).length > 0 ? (
                     <div>
-                      <div className="text-gray-400 mb-1">Contact Data (will be linked to deal):</div>
-                      <pre className="text-purple-400">{JSON.stringify(company.contactData, null, 2)}</pre>
+                      <div className="text-gray-400 mb-1">
+                        Contact Data (will be linked to deal):
+                      </div>
+                      <pre className="text-purple-400">
+                        {JSON.stringify(company.contactData, null, 2)}
+                      </pre>
                     </div>
                   ) : (
                     <div className="text-gray-500 italic">No contact data mapped</div>

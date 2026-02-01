@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener(
   ) => {
     handleMessage(message)
       .then(sendResponse)
-      .catch(error => {
+      .catch((error) => {
         sendResponse({
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',

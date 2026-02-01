@@ -7,7 +7,7 @@ export function useValidation(schema: Schema | null) {
     (companies: Company[]): Company[] => {
       if (!schema) return companies;
 
-      return companies.map(company => ({
+      return companies.map((company) => ({
         ...company,
         validation: validateCompany(company.data, schema),
       }));

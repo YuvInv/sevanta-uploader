@@ -17,7 +17,7 @@ async function processQueue() {
     if (request) {
       await request();
       if (requestQueue.length > 0) {
-        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
+        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY));
       }
     }
   }
@@ -81,13 +81,13 @@ interface RawSchemaField {
   type?: string;
   optiongroup?: string;
   helptext?: string;
-  optionlist?: Record<string, string>;  // Sevanta uses object {key: label} not array
+  optionlist?: Record<string, string>; // Sevanta uses object {key: label} not array
 }
 
 // Sevanta returns { status: "ok", data: { fieldName: {...}, ... } }
 interface RawSchemaResponse {
   status?: string;
-  data?: Record<string, RawSchemaField>;  // Object keyed by field name, not array
+  data?: Record<string, RawSchemaField>; // Object keyed by field name, not array
   [key: string]: unknown;
 }
 
@@ -225,7 +225,7 @@ export async function searchDeals(filter: string): Promise<Deal[]> {
   const rawData = response.data || [];
 
   // Transform to our Deal format (API returns "Deal Name" not "CompanyName")
-  return rawData.map(item => ({
+  return rawData.map((item) => ({
     id: item.CompanyID?.toString(),
     CompanyName: item['Deal Name'] || '',
     Website: item.Website || undefined,
@@ -243,7 +243,7 @@ export async function searchDealsByText(searchText: string): Promise<Deal[]> {
 
   const rawData = response.data || [];
 
-  return rawData.map(item => ({
+  return rawData.map((item) => ({
     id: item.CompanyID?.toString(),
     CompanyName: item['Deal Name'] || '',
     Website: item.Website || undefined,
@@ -260,7 +260,7 @@ export async function searchDealsSemantically(searchText: string): Promise<Deal[
 
   const rawData = response.data || [];
 
-  return rawData.map(item => ({
+  return rawData.map((item) => ({
     id: item.CompanyID?.toString(),
     CompanyName: item['Deal Name'] || '',
     Website: item.Website || undefined,
@@ -281,7 +281,7 @@ export async function checkDuplicate(
 
     // Filter client-side for exact match (case-insensitive)
     const exactMatches = nameResults.filter(
-      deal => deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
+      (deal) => deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
     );
 
     // If no exact matches, try semantic search for close matches
@@ -289,7 +289,9 @@ export async function checkDuplicate(
       const semanticResults = await searchDealsSemantically(companyName);
       // Only include semantic matches with high confidence (score > 0.8)
       const highConfidenceMatches = semanticResults.filter(
-        deal => deal.semanticScore && deal.semanticScore > 0.8 &&
+        (deal) =>
+          deal.semanticScore &&
+          deal.semanticScore > 0.8 &&
           deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
       );
       matches.push(...highConfidenceMatches);
@@ -305,14 +307,14 @@ export async function checkDuplicate(
 
     // Filter client-side for exact match
     const normalizedWebsite = normalizeWebsite(website);
-    const exactMatches = websiteResults.filter(deal => {
+    const exactMatches = websiteResults.filter((deal) => {
       const dealWebsite = normalizeWebsite(deal.Website || '');
       return dealWebsite === normalizedWebsite;
     });
 
     // Add unique matches
     for (const match of exactMatches) {
-      if (!matches.some(m => m.id === match.id)) {
+      if (!matches.some((m) => m.id === match.id)) {
         matches.push(match);
       }
     }
@@ -367,7 +369,7 @@ export async function createDeal(
       body: formData.toString(),
     });
 
-    const result = await response.json() as CreateDealResponse;
+    const result = (await response.json()) as CreateDealResponse;
 
     console.log('Create deal response:', result);
 
@@ -435,7 +437,7 @@ export async function createContact(
       body: formData.toString(),
     });
 
-    const result = await response.json() as CreateContactResponse;
+    const result = (await response.json()) as CreateContactResponse;
 
     console.log('Create contact response:', result);
 

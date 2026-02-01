@@ -14,11 +14,7 @@ export function UploadProgress({ progress }: UploadProgressProps) {
         <h2 className="text-lg font-medium mb-2">
           {isComplete ? 'Upload Complete' : 'Uploading...'}
         </h2>
-        {progress.current && (
-          <p className="text-gray-600 text-sm">
-            Uploading: {progress.current}
-          </p>
-        )}
+        {progress.current && <p className="text-gray-600 text-sm">Uploading: {progress.current}</p>}
       </div>
 
       <div className="bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -48,9 +44,7 @@ export function UploadProgress({ progress }: UploadProgressProps) {
       {isComplete && (
         <div className="text-center">
           {progress.failed === 0 ? (
-            <p className="text-green-600">
-              All companies uploaded successfully!
-            </p>
+            <p className="text-green-600">All companies uploaded successfully!</p>
           ) : (
             <p className="text-yellow-600">
               Upload complete with {progress.failed} failures. Check the table for details.

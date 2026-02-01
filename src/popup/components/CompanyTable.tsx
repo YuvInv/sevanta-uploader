@@ -8,10 +8,16 @@ interface CompanyTableProps {
   onToggleSkip: (id: string) => void;
 }
 
-export function CompanyTable({ companies, schema, selectedId, onSelect, onToggleSkip }: CompanyTableProps) {
+export function CompanyTable({
+  companies,
+  schema,
+  selectedId,
+  onSelect,
+  onToggleSkip,
+}: CompanyTableProps) {
   // Show key fields in table
-  const displayFields = ['CompanyName', 'Website', 'Sector', 'Stage'].filter(
-    f => schema?.fields.some(sf => sf.name === f)
+  const displayFields = ['CompanyName', 'Website', 'Sector', 'Stage'].filter((f) =>
+    schema?.fields.some((sf) => sf.name === f)
   );
 
   const getRowClass = (company: Company) => {
@@ -40,7 +46,7 @@ export function CompanyTable({ companies, schema, selectedId, onSelect, onToggle
         <thead>
           <tr>
             <th className="w-8"></th>
-            {displayFields.map(field => (
+            {displayFields.map((field) => (
               <th key={field}>{field}</th>
             ))}
             <th className="w-24">Status</th>
@@ -48,17 +54,16 @@ export function CompanyTable({ companies, schema, selectedId, onSelect, onToggle
           </tr>
         </thead>
         <tbody>
-          {companies.map(company => (
+          {companies.map((company) => (
             <tr
               key={company.id}
-              className={`cursor-pointer ${getRowClass(company)} ${selectedId === company.id ? 'ring-2 ring-blue-500 ring-inset' : ''
-                }`}
+              className={`cursor-pointer ${getRowClass(company)} ${
+                selectedId === company.id ? 'ring-2 ring-blue-500 ring-inset' : ''
+              }`}
               onClick={() => onSelect(selectedId === company.id ? null : company.id)}
             >
-              <td className="text-center font-bold">
-                {getStatusIcon(company)}
-              </td>
-              {displayFields.map(field => (
+              <td className="text-center font-bold">{getStatusIcon(company)}</td>
+              {displayFields.map((field) => (
                 <td key={field} className="truncate max-w-32">
                   {company.data[field] || '-'}
                 </td>
@@ -72,10 +77,11 @@ export function CompanyTable({ companies, schema, selectedId, onSelect, onToggle
                     e.stopPropagation();
                     onToggleSkip(company.id);
                   }}
-                  className={`text-xs px-2 py-1 rounded border ${company.skipped
-                    ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                    }`}
+                  className={`text-xs px-2 py-1 rounded border ${
+                    company.skipped
+                      ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}
                 >
                   {company.skipped ? 'Restore' : 'Discard'}
                 </button>

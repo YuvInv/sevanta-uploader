@@ -26,7 +26,14 @@ const DEAL_ALIASES: Record<string, string[]> = {
   CompanyName: ['companyname', 'dealname', 'company', 'name', 'deal'],
   Description: ['description', 'desc', 'summary', 'about'],
   Website: ['website', 'url', 'site', 'web', 'homepage'],
-  Num01: ['pastinvestments', 'investments', 'priorinvestments', 'previousinvestments', 'fundinground', 'funding'],
+  Num01: [
+    'pastinvestments',
+    'investments',
+    'priorinvestments',
+    'previousinvestments',
+    'fundinground',
+    'funding',
+  ],
 };
 
 export interface ParsedCsv {
@@ -58,26 +65,26 @@ export function parseCsv(content: string): ParsedCsv {
   };
 }
 
-export function autoMapColumns(
-  csvHeaders: string[],
-  schemaFields: SchemaField[]
-): ColumnMapping[] {
-  return csvHeaders.map(csvColumn => {
+export function autoMapColumns(csvHeaders: string[], schemaFields: SchemaField[]): ColumnMapping[] {
+  return csvHeaders.map((csvColumn) => {
     const normalizedCsvColumn = normalizeFieldName(csvColumn);
 
     // Try exact match first
     let matchedField = schemaFields.find(
-      f => normalizeFieldName(f.name) === normalizedCsvColumn ||
+      (f) =>
+        normalizeFieldName(f.name) === normalizedCsvColumn ||
         normalizeFieldName(f.label) === normalizedCsvColumn
     );
 
     // Try deal aliases for common field name mismatches
     if (!matchedField) {
       for (const [fieldName, aliases] of Object.entries(DEAL_ALIASES)) {
-        if (aliases.some(alias => normalizedCsvColumn === alias || alias === normalizedCsvColumn)) {
+        if (
+          aliases.some((alias) => normalizedCsvColumn === alias || alias === normalizedCsvColumn)
+        ) {
           // Look up the aliased field name in schema (using normalized check to be safe)
           matchedField = schemaFields.find(
-            f => normalizeFieldName(f.name) === normalizeFieldName(fieldName)
+            (f) => normalizeFieldName(f.name) === normalizeFieldName(fieldName)
           );
           if (matchedField) break;
         }
@@ -86,13 +93,15 @@ export function autoMapColumns(
 
     // Try partial match
     if (!matchedField) {
-      matchedField = schemaFields.find(f => {
+      matchedField = schemaFields.find((f) => {
         const normalizedName = normalizeFieldName(f.name);
         const normalizedLabel = normalizeFieldName(f.label);
-        return normalizedName.includes(normalizedCsvColumn) ||
+        return (
+          normalizedName.includes(normalizedCsvColumn) ||
           normalizedCsvColumn.includes(normalizedName) ||
           normalizedLabel.includes(normalizedCsvColumn) ||
-          normalizedCsvColumn.includes(normalizedLabel);
+          normalizedCsvColumn.includes(normalizedLabel)
+        );
       });
     }
 
@@ -114,17 +123,46 @@ function normalizeFieldName(name: string): string {
 // Note: Using MobilePhone as the phone field - Sevanta API accepts HomePhone, MobilePhone, WorkPhone
 // Note: LinkedIn field is not available in Sevanta contact schema
 const CONTACT_ALIASES: Record<string, string[]> = {
-  Name: ['name', 'founder', 'foundername', 'contactname', 'ceoname', 'ceo', 'contact', 'person', 'foundercontact'],
+  Name: [
+    'name',
+    'founder',
+    'foundername',
+    'contactname',
+    'ceoname',
+    'ceo',
+    'contact',
+    'person',
+    'foundercontact',
+  ],
   Email: ['email', 'founderemail', 'contactemail', 'ceoemail', 'emailaddress'],
-  MobilePhone: ['phone', 'founderphone', 'contactphone', 'ceophone', 'phonenumber', 'mobile', 'cell', 'mobilephone'],
+  MobilePhone: [
+    'phone',
+    'founderphone',
+    'contactphone',
+    'ceophone',
+    'phonenumber',
+    'mobile',
+    'cell',
+    'mobilephone',
+  ],
   Title: ['title', 'foundertitle', 'contacttitle', 'jobtitle', 'position', 'role'],
 };
 
 // Exclusive contact keywords that clearly indicate a contact column (not generic fields)
 const EXCLUSIVE_CONTACT_KEYWORDS = [
-  'founder', 'foundername', 'founderphone', 'founderemail', 'foundertitle',
-  'contactname', 'contactphone', 'contactemail', 'contacttitle', 'contactmobilephone',
-  'ceoname', 'ceophone', 'ceoemail',
+  'founder',
+  'foundername',
+  'founderphone',
+  'founderemail',
+  'foundertitle',
+  'contactname',
+  'contactphone',
+  'contactemail',
+  'contacttitle',
+  'contactmobilephone',
+  'ceoname',
+  'ceophone',
+  'ceoemail',
 ];
 
 // Check if a CSV column is a contact column (has Contact_ prefix or matches exclusive contact patterns)
@@ -138,7 +176,7 @@ export function isContactColumn(csvColumn: string): boolean {
     // Only match if what follows is a known contact field pattern
     const afterContact = normalized.slice(7); // Remove "contact"
     const contactFieldNames = ['name', 'email', 'phone', 'title', 'linkedin', 'mobile', 'cell'];
-    if (contactFieldNames.some(f => afterContact === f || afterContact.startsWith(f))) {
+    if (contactFieldNames.some((f) => afterContact === f || afterContact.startsWith(f))) {
       return true;
     }
   }
@@ -171,17 +209,21 @@ export function autoMapContactColumns(
 
     // Check aliases first (using stripped column name)
     for (const [fieldName, aliases] of Object.entries(CONTACT_ALIASES)) {
-      if (aliases.some(alias =>
-        strippedColumn === alias ||
-        alias === strippedColumn ||
-        normalizedCsvColumn === alias ||
-        alias === normalizedCsvColumn
-      )) {
+      if (
+        aliases.some(
+          (alias) =>
+            strippedColumn === alias ||
+            alias === strippedColumn ||
+            normalizedCsvColumn === alias ||
+            alias === normalizedCsvColumn
+        )
+      ) {
         // Try to find this field in the schema by name or label
-        matchedField = contactSchemaFields.find(f =>
-          f.name === fieldName ||
-          normalizeFieldName(f.name) === normalizeFieldName(fieldName) ||
-          normalizeFieldName(f.label) === normalizeFieldName(fieldName)
+        matchedField = contactSchemaFields.find(
+          (f) =>
+            f.name === fieldName ||
+            normalizeFieldName(f.name) === normalizeFieldName(fieldName) ||
+            normalizeFieldName(f.label) === normalizeFieldName(fieldName)
         );
         if (matchedField) break;
       }
@@ -190,7 +232,8 @@ export function autoMapContactColumns(
     // Try direct match with schema fields (using both original and stripped column)
     if (!matchedField) {
       matchedField = contactSchemaFields.find(
-        f => normalizeFieldName(f.name) === normalizedCsvColumn ||
+        (f) =>
+          normalizeFieldName(f.name) === normalizedCsvColumn ||
           normalizeFieldName(f.label) === normalizedCsvColumn ||
           normalizeFieldName(f.name) === strippedColumn ||
           normalizeFieldName(f.label) === strippedColumn
@@ -213,7 +256,7 @@ export function applyContactMapping(
   rows: Record<string, string>[],
   mappings: ContactColumnMapping[]
 ): Record<string, string>[] {
-  return rows.map(row => {
+  return rows.map((row) => {
     const mapped: Record<string, string> = {};
 
     for (const mapping of mappings) {
@@ -233,7 +276,7 @@ export function applyMapping(
   rows: Record<string, string>[],
   mappings: ColumnMapping[]
 ): Record<string, string>[] {
-  return rows.map(row => {
+  return rows.map((row) => {
     const mapped: Record<string, string> = {};
 
     for (const mapping of mappings) {
@@ -257,31 +300,36 @@ export function generateCsvTemplate(
   schemaFields: SchemaField[],
   options: TemplateOptions = {}
 ): string {
-  const { includeDescriptionRow = false, includeContactFields = false, contactSchemaFields = [], simple = false } = options;
+  const {
+    includeDescriptionRow = false,
+    includeContactFields = false,
+    contactSchemaFields = [],
+    simple = false,
+  } = options;
 
   if (simple) {
     // Use hardcoded simple template fields
-    const dealHeaders = SIMPLE_TEMPLATE_FIELDS.map(f => f.name);
+    const dealHeaders = SIMPLE_TEMPLATE_FIELDS.map((f) => f.name);
     const contactHeaders = includeContactFields
-      ? SIMPLE_CONTACT_FIELDS.map(f => `Contact_${f.name}`)
+      ? SIMPLE_CONTACT_FIELDS.map((f) => `Contact_${f.name}`)
       : [];
     const headers = [...dealHeaders, ...contactHeaders];
 
     const data: string[][] = [];
     if (includeDescriptionRow) {
-      const dealDescriptions = SIMPLE_TEMPLATE_FIELDS.map(f => {
+      const dealDescriptions = SIMPLE_TEMPLATE_FIELDS.map((f) => {
         const parts: string[] = [];
         if (f.label) parts.push(f.label);
         if (f.required) parts.push('REQUIRED');
         return parts.join(' | ') || '';
       });
       const contactDescriptions = includeContactFields
-        ? SIMPLE_CONTACT_FIELDS.map(f => {
-          const parts: string[] = [];
-          if (f.label) parts.push(f.label);
-          if (f.required) parts.push('REQUIRED');
-          return parts.join(' | ') || '';
-        })
+        ? SIMPLE_CONTACT_FIELDS.map((f) => {
+            const parts: string[] = [];
+            if (f.label) parts.push(f.label);
+            if (f.required) parts.push('REQUIRED');
+            return parts.join(' | ') || '';
+          })
         : [];
       data.push([...dealDescriptions, ...contactDescriptions]);
     }
@@ -290,15 +338,16 @@ export function generateCsvTemplate(
   }
 
   // Full template: use schema fields
-  const dealHeaders = schemaFields.map(f => f.name);
-  const contactHeaders = includeContactFields && contactSchemaFields.length > 0
-    ? contactSchemaFields.map(f => `Contact_${f.name}`)
-    : [];
+  const dealHeaders = schemaFields.map((f) => f.name);
+  const contactHeaders =
+    includeContactFields && contactSchemaFields.length > 0
+      ? contactSchemaFields.map((f) => `Contact_${f.name}`)
+      : [];
   const headers = [...dealHeaders, ...contactHeaders];
 
   const data: string[][] = [];
   if (includeDescriptionRow) {
-    const dealDescriptions = schemaFields.map(f => {
+    const dealDescriptions = schemaFields.map((f) => {
       const parts: string[] = [];
       if (f.label !== f.name) parts.push(f.label);
       if (f.required) parts.push('REQUIRED');
@@ -310,14 +359,15 @@ export function generateCsvTemplate(
       return parts.join(' | ') || '';
     });
 
-    const contactDescriptions = includeContactFields && contactSchemaFields.length > 0
-      ? contactSchemaFields.map(f => {
-        const parts: string[] = [];
-        if (f.label !== f.name) parts.push(f.label);
-        if (f.required) parts.push('REQUIRED');
-        return parts.join(' | ') || '';
-      })
-      : [];
+    const contactDescriptions =
+      includeContactFields && contactSchemaFields.length > 0
+        ? contactSchemaFields.map((f) => {
+            const parts: string[] = [];
+            if (f.label !== f.name) parts.push(f.label);
+            if (f.required) parts.push('REQUIRED');
+            return parts.join(' | ') || '';
+          })
+        : [];
 
     data.push([...dealDescriptions, ...contactDescriptions]);
   }

@@ -1,9 +1,12 @@
-import type { Schema, SchemaField, ValidationResult, ValidationError, ValidationWarning } from './types';
+import type {
+  Schema,
+  SchemaField,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+} from './types';
 
-export function validateCompany(
-  data: Record<string, string>,
-  schema: Schema
-): ValidationResult {
+export function validateCompany(data: Record<string, string>, schema: Schema): ValidationResult {
   const errors: ValidationError[] = [];
   const warnings: ValidationWarning[] = [];
 
@@ -24,7 +27,7 @@ export function validateCompany(
   for (const [fieldName, value] of Object.entries(data)) {
     if (!value || value.trim() === '') continue;
 
-    const field = schema.fields.find(f => f.name === fieldName);
+    const field = schema.fields.find((f) => f.name === fieldName);
     if (!field) {
       warnings.push({
         field: fieldName,
@@ -73,9 +76,7 @@ function validateDropdown(value: string, field: SchemaField): string | null {
 
   // Case-insensitive comparison
   const normalizedValue = value.toLowerCase().trim();
-  const validOption = field.options.find(
-    opt => opt.toLowerCase().trim() === normalizedValue
-  );
+  const validOption = field.options.find((opt) => opt.toLowerCase().trim() === normalizedValue);
 
   if (!validOption) {
     return `Invalid value for ${field.label}. Valid options: ${field.options.join(', ')}`;
@@ -122,19 +123,14 @@ function validateDate(value: string): string | null {
   return null;
 }
 
-export function normalizeDropdownValue(
-  value: string,
-  field: SchemaField
-): string {
+export function normalizeDropdownValue(value: string, field: SchemaField): string {
   if (field.type !== 'dropdown' || !field.options) {
     return value;
   }
 
   // Find the matching option with correct casing
   const normalizedValue = value.toLowerCase().trim();
-  const matchingOption = field.options.find(
-    opt => opt.toLowerCase().trim() === normalizedValue
-  );
+  const matchingOption = field.options.find((opt) => opt.toLowerCase().trim() === normalizedValue);
 
   return matchingOption || value;
 }
@@ -146,7 +142,7 @@ export function normalizeCompanyData(
   const normalized: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(data)) {
-    const field = schema.fields.find(f => f.name === key);
+    const field = schema.fields.find((f) => f.name === key);
     if (field && field.type === 'dropdown') {
       normalized[key] = normalizeDropdownValue(value, field);
     } else {

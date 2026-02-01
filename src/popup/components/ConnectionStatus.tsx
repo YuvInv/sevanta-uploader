@@ -22,10 +22,7 @@ export function ConnectionStatus({ connected, loading, error, onRetry }: Connect
           <span className="inline-block w-2 h-2 bg-red-500 rounded-full" />
           Error
         </div>
-        <button
-          onClick={onRetry}
-          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-        >
+        <button onClick={onRetry} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
           Retry
         </button>
       </div>
@@ -47,10 +44,7 @@ export function ConnectionStatus({ connected, loading, error, onRetry }: Connect
         <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full" />
         Not connected
       </div>
-      <button
-        onClick={onRetry}
-        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-      >
+      <button onClick={onRetry} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
         Retry
       </button>
     </div>

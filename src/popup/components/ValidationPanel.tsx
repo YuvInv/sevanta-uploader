@@ -32,9 +32,7 @@ export function ValidationPanel({ company }: ValidationPanelProps) {
       {duplicate?.isDuplicate && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
           <p className="text-orange-700 text-sm font-medium">Possible Duplicate</p>
-          <p className="text-orange-600 text-xs mt-1">
-            Matched on: {duplicate.matchedOn}
-          </p>
+          <p className="text-orange-600 text-xs mt-1">Matched on: {duplicate.matchedOn}</p>
           {duplicate.existingDeal && (
             <p className="text-orange-600 text-xs">
               Existing: {duplicate.existingDeal.CompanyName}

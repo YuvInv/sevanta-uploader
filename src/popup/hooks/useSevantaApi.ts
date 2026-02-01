@@ -25,7 +25,9 @@ export function useSevantaApi() {
         }
 
         // Fetch contact schema if connected
-        const contactSchemaResponse = await chrome.runtime.sendMessage({ type: 'GET_CONTACT_SCHEMA' });
+        const contactSchemaResponse = await chrome.runtime.sendMessage({
+          type: 'GET_CONTACT_SCHEMA',
+        });
         if (contactSchemaResponse.success && contactSchemaResponse.data) {
           setContactSchema(contactSchemaResponse.data);
         }

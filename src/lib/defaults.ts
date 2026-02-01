@@ -61,9 +61,7 @@ export function applyDealDefaults(
  * Apply default values to contact data
  * Only fills missing fields - doesn't overwrite existing CSV values
  */
-export function applyContactDefaults(
-  data: Record<string, string>
-): Record<string, string> {
+export function applyContactDefaults(data: Record<string, string>): Record<string, string> {
   const result = { ...data };
 
   for (const [key, value] of Object.entries(CONTACT_DEFAULTS)) {

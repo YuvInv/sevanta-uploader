@@ -10,15 +10,16 @@ interface CompanyEditorProps {
 export function CompanyEditor({ company, schema, onEdit, onClose }: CompanyEditorProps) {
   const renderField = (field: SchemaField) => {
     const value = company.data[field.name] || '';
-    const hasError = company.validation.errors.some(e => e.field === field.name);
-    const hasWarning = company.validation.warnings.some(w => w.field === field.name);
+    const hasError = company.validation.errors.some((e) => e.field === field.name);
+    const hasWarning = company.validation.warnings.some((w) => w.field === field.name);
 
-    const inputClass = `w-full border rounded px-2 py-1 text-sm ${hasError
-      ? 'border-red-500 bg-red-50'
-      : hasWarning
-        ? 'border-yellow-500 bg-yellow-50'
-        : 'border-gray-300'
-      }`;
+    const inputClass = `w-full border rounded px-2 py-1 text-sm ${
+      hasError
+        ? 'border-red-500 bg-red-50'
+        : hasWarning
+          ? 'border-yellow-500 bg-yellow-50'
+          : 'border-gray-300'
+    }`;
 
     const disabled = company.skipped || false;
 
@@ -28,7 +29,7 @@ export function CompanyEditor({ company, schema, onEdit, onClose }: CompanyEdito
         return (
           <select
             value={value}
-            onChange={e => onEdit(field.name, e.target.value)}
+            onChange={(e) => onEdit(field.name, e.target.value)}
             className={`${inputClass} ${disabled ? 'bg-gray-100 text-gray-400' : ''}`}
             disabled={disabled}
           >
@@ -44,12 +45,12 @@ export function CompanyEditor({ company, schema, onEdit, onClose }: CompanyEdito
         return (
           <select
             value={value}
-            onChange={e => onEdit(field.name, e.target.value)}
+            onChange={(e) => onEdit(field.name, e.target.value)}
             className={`${inputClass} ${disabled ? 'bg-gray-100 text-gray-400' : ''}`}
             disabled={disabled}
           >
             <option value="">-- Select --</option>
-            {field.options.map(opt => (
+            {field.options.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
               </option>
@@ -63,7 +64,7 @@ export function CompanyEditor({ company, schema, onEdit, onClose }: CompanyEdito
       <input
         type={field.type === 'url' ? 'url' : field.type === 'email' ? 'email' : 'text'}
         value={value}
-        onChange={e => onEdit(field.name, e.target.value)}
+        onChange={(e) => onEdit(field.name, e.target.value)}
         className={`${inputClass} ${disabled ? 'bg-gray-100 text-gray-400' : ''}`}
         placeholder={field.label}
         disabled={disabled}
@@ -75,10 +76,7 @@ export function CompanyEditor({ company, schema, onEdit, onClose }: CompanyEdito
     <div className="bg-white border rounded-lg p-3 mb-3">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-medium text-sm">Edit Company</h3>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
-        >
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
           ×
         </button>
       </div>
@@ -90,7 +88,7 @@ export function CompanyEditor({ company, schema, onEdit, onClose }: CompanyEdito
       )}
 
       <div className="space-y-3 max-h-60 overflow-y-auto">
-        {schema.fields.map(field => (
+        {schema.fields.map((field) => (
           <div key={field.name}>
             <label className="block text-xs font-medium text-gray-700 mb-1">
               {field.label}
