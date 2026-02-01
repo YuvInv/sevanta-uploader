@@ -91,36 +91,40 @@ export function useDuplicateCheck() {
         const batch = companies.slice(i, i + DUPLICATE_CHECK_BATCH_SIZE);
         const batchStartIndex = i;
 
-        // Report progress for the first company in batch
-        if (onProgress && batch.length > 0) {
-          onProgress({
-            current: completedCount,
-            total: companies.length,
-            currentCompany: batch[0].data.CompanyName || 'Unknown',
-          });
-        }
+        // Process batch in parallel, reporting progress as each company completes
+        const batchPromises = batch.map(async (company, batchIndex) => {
+          // Report that we're starting this company
+          if (onProgress) {
+            onProgress({
+              current: completedCount,
+              total: companies.length,
+              currentCompany: company.data.CompanyName || 'Unknown',
+            });
+          }
 
-        // Process batch in parallel
-        const batchResults = await Promise.all(batch.map((company) => checkSingleCompany(company)));
+          const result = await checkSingleCompany(company);
 
-        // Store results at correct indices
-        batchResults.forEach((result, batchIndex) => {
+          // Store result at correct index and update progress
           results[batchStartIndex + batchIndex] = result;
           completedCount++;
+
+          // Report progress after this company completes
+          if (onProgress) {
+            // Show the next company being processed, or stay on current if last
+            const nextInBatch = batch[batchIndex + 1];
+            const nextAfterBatch = companies[i + DUPLICATE_CHECK_BATCH_SIZE];
+            const nextCompany = nextInBatch || nextAfterBatch;
+            onProgress({
+              current: completedCount,
+              total: companies.length,
+              currentCompany: nextCompany?.data.CompanyName || '',
+            });
+          }
+
+          return result;
         });
 
-        // Report progress after batch completes
-        if (onProgress) {
-          const nextCompany =
-            i + DUPLICATE_CHECK_BATCH_SIZE < companies.length
-              ? companies[i + DUPLICATE_CHECK_BATCH_SIZE].data.CompanyName || 'Unknown'
-              : '';
-          onProgress({
-            current: completedCount,
-            total: companies.length,
-            currentCompany: nextCompany,
-          });
-        }
+        await Promise.all(batchPromises);
       }
 
       return results;

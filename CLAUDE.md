@@ -14,9 +14,15 @@ Sevanta Uploader is a Chrome Extension for bulk uploading companies to Sevanta D
 
 1. Create a feature branch from main
 2. Make changes and commit
-3. Push branch and create PR
-4. Wait for CI to pass
-5. Get user approval before merging
+3. **Bump version**: Run `npm run bump` (patch), `npm run bump:minor`, or `npm run bump:major`
+4. Commit the version bump
+5. Push branch and create PR
+6. Wait for CI to pass
+7. Get user approval before merging
+
+**Version appears in**: `package.json`, `package-lock.json`, `public/manifest.json` (all updated automatically by bump script).
+
+**Git tags**: Created automatically when PR is merged to main via GitHub Action.
 
 This applies to ALL changes, including small fixes, documentation updates, and config changes.
 
@@ -157,6 +163,9 @@ npm run build        # Build for production
 npm run check        # Run lint + prettier check (use before pushing!)
 npm run format       # Auto-fix prettier formatting issues
 npm run test         # Run tests
+npm run bump         # Bump patch version (1.0.1 -> 1.0.2)
+npm run bump:minor   # Bump minor version (1.0.1 -> 1.1.0)
+npm run bump:major   # Bump major version (1.0.1 -> 2.0.0)
 ```
 
 ## Loading the Extension
