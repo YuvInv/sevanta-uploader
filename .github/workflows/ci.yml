@@ -16,7 +16,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx eslint src --ext .ts,.tsx
+      - run: npm run lint
       - run: npx prettier --check "src/**/*.{ts,tsx,css,md}"
 
   type-check:
@@ -39,7 +39,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx vitest run
+      - run: npm test
 
   build:
     runs-on: ubuntu-latest
