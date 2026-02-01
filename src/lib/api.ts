@@ -91,43 +91,6 @@ interface RawSchemaResponse {
   [key: string]: unknown;
 }
 
-export async function getSchema(): Promise<Schema> {
-  const response = await apiRequest<RawSchemaResponse>('/schema/deals');
-
-  // Sevanta returns { data: { fieldName: {...}, ... } } as an object
-  const dataObj = response.data || {};
-  const rawFields = Object.values(dataObj);
-
-  // Transform API response to our Schema type
-  const fields: SchemaField[] = rawFields.map((field: RawSchemaField) => {
-    const fieldName = field.dbname || '';
-
-    // Convert optionlist object to array of values (the display labels)
-    let options: string[] | undefined;
-    if (field.optionlist && typeof field.optionlist === 'object') {
-      // Store as "key:label" so we can map back later, or just use keys
-      // For dropdowns, we typically need to send the key, not the label
-      options = Object.entries(field.optionlist).map(([key]) => key);
-    }
-
-    return {
-      name: fieldName,
-      label: field.label || fieldName,
-      type: mapFieldType(field.type),
-      required: fieldName === 'CompanyName', // Only CompanyName is truly required
-      options,
-      // Store the full optionlist for reference
-      optionlistFull: field.optionlist,
-    };
-  });
-
-  return {
-    fields,
-    fetchedAt: Date.now(),
-    rawResponse: response,
-  };
-}
-
 function mapFieldType(apiType?: string): SchemaField['type'] {
   switch (apiType?.toLowerCase()) {
     case 'select':
@@ -158,8 +121,12 @@ function mapFieldType(apiType?: string): SchemaField['type'] {
   }
 }
 
-export async function getContactSchema(): Promise<ContactSchema> {
-  const response = await apiRequest<RawSchemaResponse>('/schema/contacts');
+// Generic schema fetcher to avoid duplication
+async function fetchSchema<T extends Schema | ContactSchema>(
+  endpoint: string,
+  requiredFieldName: string
+): Promise<T> {
+  const response = await apiRequest<RawSchemaResponse>(endpoint);
 
   const dataObj = response.data || {};
   const rawFields = Object.values(dataObj);
@@ -176,7 +143,7 @@ export async function getContactSchema(): Promise<ContactSchema> {
       name: fieldName,
       label: field.label || fieldName,
       type: mapFieldType(field.type),
-      required: fieldName === 'Name', // Only Name is required for contacts
+      required: fieldName === requiredFieldName,
       options,
       optionlistFull: field.optionlist,
     };
@@ -186,7 +153,15 @@ export async function getContactSchema(): Promise<ContactSchema> {
     fields,
     fetchedAt: Date.now(),
     rawResponse: response,
-  };
+  } as T;
+}
+
+export async function getSchema(): Promise<Schema> {
+  return fetchSchema<Schema>('/schema/deals', 'CompanyName');
+}
+
+export async function getContactSchema(): Promise<ContactSchema> {
+  return fetchSchema<ContactSchema>('/schema/contacts', 'Name');
 }
 
 interface SearchResponse {
@@ -203,15 +178,9 @@ interface SearchResponse {
   [key: string]: unknown;
 }
 
-export async function searchDeals(filter: string): Promise<Deal[]> {
-  const response = await apiRequest<SearchResponse>(
-    `/deal/list?${filter}&_x[]=CompanyName&_x[]=Website`
-  );
-
-  // API returns data array, not deals
+// Transform raw API response to Deal format
+function transformSearchResponse(response: SearchResponse): Deal[] {
   const rawData = response.data || [];
-
-  // Transform to our Deal format (API returns "Deal Name" not "CompanyName")
   return rawData.map((item) => ({
     id: item.CompanyID?.toString(),
     CompanyName: item['Deal Name'] || '',
@@ -220,39 +189,29 @@ export async function searchDeals(filter: string): Promise<Deal[]> {
   }));
 }
 
+export async function searchDeals(filter: string): Promise<Deal[]> {
+  const response = await apiRequest<SearchResponse>(
+    `/deal/list?${filter}&_x[]=CompanyName&_x[]=Website`
+  );
+  return transformSearchResponse(response);
+}
+
 // Search deals using text search (_text= parameter)
-// This searches across all text fields and returns matching results
 export async function searchDealsByText(searchText: string): Promise<Deal[]> {
   const encoded = encodeURIComponent(searchText);
   const response = await apiRequest<SearchResponse>(
     `/deal/list?_text=${encoded}&_x[]=CompanyName&_x[]=Website`
   );
-
-  const rawData = response.data || [];
-
-  return rawData.map((item) => ({
-    id: item.CompanyID?.toString(),
-    CompanyName: item['Deal Name'] || '',
-    Website: item.Website || undefined,
-  }));
+  return transformSearchResponse(response);
 }
 
 // Semantic search for fuzzy matching (_ss= parameter)
-// Returns top 20 matches with semantic_score
 export async function searchDealsSemantically(searchText: string): Promise<Deal[]> {
   const encoded = encodeURIComponent(searchText);
   const response = await apiRequest<SearchResponse>(
     `/deal/list?_ss=${encoded}&_x[]=CompanyName&_x[]=Website`
   );
-
-  const rawData = response.data || [];
-
-  return rawData.map((item) => ({
-    id: item.CompanyID?.toString(),
-    CompanyName: item['Deal Name'] || '',
-    Website: item.Website || undefined,
-    semanticScore: item.semantic_score,
-  }));
+  return transformSearchResponse(response);
 }
 
 export async function checkDuplicate(
