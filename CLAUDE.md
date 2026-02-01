@@ -8,6 +8,18 @@ Sevanta Uploader is a Chrome Extension for bulk uploading companies to Sevanta D
 
 **Key Benefit**: Uses browser session cookies for authentication - no API key needed.
 
+## Git Workflow (IMPORTANT)
+
+**NEVER push directly to main.** All changes must go through a PR:
+
+1. Create a feature branch from main
+2. Make changes and commit
+3. Push branch and create PR
+4. Wait for CI to pass
+5. Get user approval before merging
+
+This applies to ALL changes, including small fixes, documentation updates, and config changes.
+
 ## Tech Stack
 
 - Vite + CRXJS (Chrome Extension bundling)
