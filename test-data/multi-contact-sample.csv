@@ -1,0 +1,11 @@
+CompanyName,Description,Website,PastInvestments,Contact_Name,Contact_Email,Contact_MobilePhone,Contact_Title
+Acme Corp,AI-powered analytics platform,acme.com,Seed 2023,John Doe,john@acme.com,555-0100,CEO
+Acme Corp,,,Jane Smith,jane@acme.com,555-0101,CTO
+Acme Corp,,,Mike Brown,mike@acme.com,555-0102,CFO
+Beta Inc,Fintech payment solution,beta.io,,Bob Wilson,bob@beta.io,555-0200,Founder
+Gamma Ltd,SaaS productivity tools,gamma.co,,,,
+Delta Systems,Enterprise security,https://www.delta-sys.com,,Alice Chen,alice@delta-sys.com,,CEO
+Delta Systems,,,Tom Garcia,tom@delta-sys.com,,VP Engineering
+Epsilon AI,Machine learning startup,epsilon.ai,Pre-seed,Sarah Kim,sarah@epsilon.ai,555-0500,Co-founder
+Epsilon AI,,,David Lee,david@epsilon.ai,555-0501,Co-founder
+Epsilon AI,,,Emma Wilson,emma@epsilon.ai,,Advisor
