@@ -12,7 +12,7 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const validCompanies = companies.filter(
-    c => c.validation.valid && !c.duplicate?.isDuplicate && c.uploadStatus === 'pending'
+    c => c.validation.valid && !c.duplicate?.isDuplicate && c.uploadStatus === 'pending' && !c.skipped
   );
 
   const companiesWithContacts = validCompanies.filter(

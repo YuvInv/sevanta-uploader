@@ -26,7 +26,7 @@ const DEAL_ALIASES: Record<string, string[]> = {
   CompanyName: ['companyname', 'dealname', 'company', 'name', 'deal'],
   Description: ['description', 'desc', 'summary', 'about'],
   Website: ['website', 'url', 'site', 'web', 'homepage'],
-  PastInvestments: ['pastinvestments', 'investments', 'priorinvestments', 'previousinvestments', 'fundinground', 'funding'],
+  Num01: ['pastinvestments', 'investments', 'priorinvestments', 'previousinvestments', 'fundinground', 'funding'],
 };
 
 export interface ParsedCsv {
@@ -68,14 +68,17 @@ export function autoMapColumns(
     // Try exact match first
     let matchedField = schemaFields.find(
       f => normalizeFieldName(f.name) === normalizedCsvColumn ||
-           normalizeFieldName(f.label) === normalizedCsvColumn
+        normalizeFieldName(f.label) === normalizedCsvColumn
     );
 
     // Try deal aliases for common field name mismatches
     if (!matchedField) {
       for (const [fieldName, aliases] of Object.entries(DEAL_ALIASES)) {
         if (aliases.some(alias => normalizedCsvColumn === alias || alias === normalizedCsvColumn)) {
-          matchedField = schemaFields.find(f => f.name === fieldName);
+          // Look up the aliased field name in schema (using normalized check to be safe)
+          matchedField = schemaFields.find(
+            f => normalizeFieldName(f.name) === normalizeFieldName(fieldName)
+          );
           if (matchedField) break;
         }
       }
@@ -87,9 +90,9 @@ export function autoMapColumns(
         const normalizedName = normalizeFieldName(f.name);
         const normalizedLabel = normalizeFieldName(f.label);
         return normalizedName.includes(normalizedCsvColumn) ||
-               normalizedCsvColumn.includes(normalizedName) ||
-               normalizedLabel.includes(normalizedCsvColumn) ||
-               normalizedCsvColumn.includes(normalizedLabel);
+          normalizedCsvColumn.includes(normalizedName) ||
+          normalizedLabel.includes(normalizedCsvColumn) ||
+          normalizedCsvColumn.includes(normalizedLabel);
       });
     }
 
@@ -188,9 +191,9 @@ export function autoMapContactColumns(
     if (!matchedField) {
       matchedField = contactSchemaFields.find(
         f => normalizeFieldName(f.name) === normalizedCsvColumn ||
-             normalizeFieldName(f.label) === normalizedCsvColumn ||
-             normalizeFieldName(f.name) === strippedColumn ||
-             normalizeFieldName(f.label) === strippedColumn
+          normalizeFieldName(f.label) === normalizedCsvColumn ||
+          normalizeFieldName(f.name) === strippedColumn ||
+          normalizeFieldName(f.label) === strippedColumn
       );
     }
 
@@ -274,11 +277,11 @@ export function generateCsvTemplate(
       });
       const contactDescriptions = includeContactFields
         ? SIMPLE_CONTACT_FIELDS.map(f => {
-            const parts: string[] = [];
-            if (f.label) parts.push(f.label);
-            if (f.required) parts.push('REQUIRED');
-            return parts.join(' | ') || '';
-          })
+          const parts: string[] = [];
+          if (f.label) parts.push(f.label);
+          if (f.required) parts.push('REQUIRED');
+          return parts.join(' | ') || '';
+        })
         : [];
       data.push([...dealDescriptions, ...contactDescriptions]);
     }
@@ -309,11 +312,11 @@ export function generateCsvTemplate(
 
     const contactDescriptions = includeContactFields && contactSchemaFields.length > 0
       ? contactSchemaFields.map(f => {
-          const parts: string[] = [];
-          if (f.label !== f.name) parts.push(f.label);
-          if (f.required) parts.push('REQUIRED');
-          return parts.join(' | ') || '';
-        })
+        const parts: string[] = [];
+        if (f.label !== f.name) parts.push(f.label);
+        if (f.required) parts.push('REQUIRED');
+        return parts.join(' | ') || '';
+      })
       : [];
 
     data.push([...dealDescriptions, ...contactDescriptions]);

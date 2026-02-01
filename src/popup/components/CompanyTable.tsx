@@ -5,15 +5,17 @@ interface CompanyTableProps {
   schema: Schema | null;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  onToggleSkip: (id: string) => void;
 }
 
-export function CompanyTable({ companies, schema, selectedId, onSelect }: CompanyTableProps) {
+export function CompanyTable({ companies, schema, selectedId, onSelect, onToggleSkip }: CompanyTableProps) {
   // Show key fields in table
   const displayFields = ['CompanyName', 'Website', 'Sector', 'Stage'].filter(
     f => schema?.fields.some(sf => sf.name === f)
   );
 
   const getRowClass = (company: Company) => {
+    if (company.skipped) return 'bg-gray-100 opacity-60';
     if (company.uploadStatus === 'success') return 'bg-green-50';
     if (company.uploadStatus === 'error') return 'bg-red-50';
     if (company.duplicate?.isDuplicate) return 'status-duplicate';
@@ -23,6 +25,7 @@ export function CompanyTable({ companies, schema, selectedId, onSelect }: Compan
   };
 
   const getStatusIcon = (company: Company) => {
+    if (company.skipped) return '⊘';
     if (company.uploadStatus === 'success') return '✓';
     if (company.uploadStatus === 'error') return '✗';
     if (company.uploadStatus === 'uploading') return '...';
@@ -41,15 +44,15 @@ export function CompanyTable({ companies, schema, selectedId, onSelect }: Compan
               <th key={field}>{field}</th>
             ))}
             <th className="w-24">Status</th>
+            <th className="w-20">Action</th>
           </tr>
         </thead>
         <tbody>
           {companies.map(company => (
             <tr
               key={company.id}
-              className={`cursor-pointer ${getRowClass(company)} ${
-                selectedId === company.id ? 'ring-2 ring-blue-500 ring-inset' : ''
-              }`}
+              className={`cursor-pointer ${getRowClass(company)} ${selectedId === company.id ? 'ring-2 ring-blue-500 ring-inset' : ''
+                }`}
               onClick={() => onSelect(selectedId === company.id ? null : company.id)}
             >
               <td className="text-center font-bold">
@@ -63,6 +66,20 @@ export function CompanyTable({ companies, schema, selectedId, onSelect }: Compan
               <td>
                 <StatusBadge company={company} />
               </td>
+              <td>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleSkip(company.id);
+                  }}
+                  className={`text-xs px-2 py-1 rounded border ${company.skipped
+                    ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                >
+                  {company.skipped ? 'Restore' : 'Discard'}
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -72,6 +89,14 @@ export function CompanyTable({ companies, schema, selectedId, onSelect }: Compan
 }
 
 function StatusBadge({ company }: { company: Company }) {
+  if (company.skipped) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300">
+        Skipped
+      </span>
+    );
+  }
+
   if (company.uploadStatus === 'success') {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">

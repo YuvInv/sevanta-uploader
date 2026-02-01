@@ -55,6 +55,7 @@ export interface Company {
   contactData?: Record<string, string>;
   contactValidation?: ValidationResult;
   createdContactId?: string;
+  skipped?: boolean;
 }
 
 export interface ContactColumnMapping {

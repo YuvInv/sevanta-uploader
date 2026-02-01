@@ -15,14 +15,22 @@
 
 ---
 
+---
+
 ## Next Up
 
-### 1. Add Discard Row Option for Duplicates ([#9](https://github.com/YuvInv/sevanta-uploader/issues/9)) - Priority: High
-When uploading CSV with companies that already exist:
+### 2. Allow Optional Contacts ([#11](https://github.com/YuvInv/sevanta-uploader/issues/11)) - Priority: High
+- Currently, if contact columns are mapped, we might be enforcing valid contact data.
+- **Requirement:** If contact fields are empty in the CSV for a row, simpler allow the company upload without creating a contact.
+- Don't fail validation just because contact name is missing if the user didn't intend to add one.
 
-- Allow users to "discard" individual rows
-- Do NOT allow editing of existing companies through the extension
-- Clear UI indication of which rows will be skipped
+### 3. Support Multiple Contacts per Company ([#12](https://github.com/YuvInv/sevanta-uploader/issues/12)) - Priority: High
+- **Problem:** Current row-based CSV structure implies 1 contact per row/company.
+- **Requirement:** Allow uploading multiple contacts for the same company.
+- **Proposed Solution:** 
+  - Allow multiple rows with the same `CompanyName`. 
+  - The first row creates/updates the company.
+  - Subsequent rows with the same `CompanyName` add additional contacts to that existing deal.
 
 ---
 
@@ -72,24 +80,28 @@ Set up GitHub Actions to automatically build and publish the extension.
 
 ---
 
-### 5. Additional Enhancements - Priority: Low
+### 5. Additional Enhancements ([#13](https://github.com/YuvInv/sevanta-uploader/issues/13)) - Priority: Low
 - Progress bar during CSV upload
 - Error handling improvements
 - Changing extension icon to VC logo
 
 ---
 
-## AI Features (Future)
+### 6. New capabilities: Bulk info on contacts lists ([#14](https://github.com/YuvInv/sevanta-uploader/issues/14))
+- New feature will exist in a new tab in the side panel
+- user can paste a list of contact names (from stealth founders list)
+- for each name, we query Sevanta to get email/phone/company
+- show results in a table, allow export to CSV
 
-### 6. Auto-Updates from News ([#5](https://github.com/YuvInv/sevanta-uploader/issues/5)) - Priority: Low
-Automatically crawl news sites (Ctech, Geektime) to:
-- Update existing companies with new funding rounds
-- Add new companies with AI-generated summaries
-- Match screening meeting summary format
+### 7. Discard Rows ([#9](https://github.com/YuvInv/sevanta-uploader/issues/9))
+- Allow users to "discard" individual rows when uploading multiple rows
+- Visual distinction for discarded rows
+- Summary count of discarded vs uploaded
 
----
 
-### 7. AI Features: Company Enrichment ([#6](https://github.com/YuvInv/sevanta-uploader/issues/6)) - Priority: Low
+
+
+### 6. AI Features: Company Enrichment ([#6](https://github.com/YuvInv/sevanta-uploader/issues/6)) - Priority: Low
 Integrate with Perplexity (or similar) for:
 - Auto-enrichment of company profiles (funding, founders, history)
 - AI-driven CRM updates for outdated/missing data
@@ -97,15 +109,13 @@ Integrate with Perplexity (or similar) for:
 
 ---
 
-## Field Reference (Commonly Used)
+## AI Features (Future)
+### 7. Auto-Updates from News ([#5](https://github.com/YuvInv/sevanta-uploader/issues/5)) - Priority: Low
+Automatically crawl news sites (Ctech, Geektime) to:
+- Update existing companies with new funding rounds
+- Add new companies with AI-generated summaries
+- Match screening meeting summary format
 
-| DB Name | Label | Type |
-|---------|-------|------|
-| `CompanyName` | Deal Name | string (required) |
-| `Description` | Description | textarea |
-| `Website` | Website | url |
-| `SourceTypeID` | Source Type | dropdown |
-| `SourceNotes` | Source Notes | textarea |
-| `PastInvestments` | Past Investments | textarea |
-| `StageID` | Stage | dropdown |
-| `SectorID` | Sector | dropdown |
+
+
+
