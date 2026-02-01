@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import type { ColumnMapping, ContactColumnMapping, SchemaField } from './types';
+import type { ColumnMapping, ContactColumnMapping, SchemaField, ContactData } from './types';
 
 // Simple template field definitions (hardcoded for consistency)
 // Note: SourceTypeID, Source (Source Notes), StageID, StatusID, FundID are auto-populated
@@ -392,4 +392,94 @@ export function downloadCsvTemplate(
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// ========================================
+// Multi-Contact Grouping Functions
+// ========================================
+
+/**
+ * Normalize website URL for comparison
+ * Removes protocol (http/https), www prefix, and trailing slashes
+ */
+export function normalizeWebsite(url: string): string {
+  if (!url) return '';
+  return url
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/+$/, '')
+    .trim();
+}
+
+/**
+ * Generate a unique key for grouping rows by company
+ * Uses CompanyName + Website combination
+ */
+export function generateCompanyKey(row: Record<string, string>): string {
+  const name = (row.CompanyName || '').toLowerCase().trim();
+  const website = normalizeWebsite(row.Website || '');
+  return `${name}|||${website}`;
+}
+
+export interface GroupedCompanyData {
+  companyData: Record<string, string>;
+  contacts: ContactData[];
+  sourceRowIndices: number[];
+}
+
+/**
+ * Group CSV rows by company (CompanyName + Website)
+ * Multiple rows with the same company key become multiple contacts
+ *
+ * Edge cases:
+ * - Empty CompanyName: treated as separate row (validation fails anyway)
+ * - Same name, ALL rows have empty website: grouped as single company
+ * - Same name, different websites: different companies
+ * - Subsequent rows with empty company fields: ignored, first row's data used
+ */
+export function groupRowsByCompany(
+  dealData: Record<string, string>[],
+  contactData: Record<string, string>[]
+): GroupedCompanyData[] {
+  const grouped = new Map<string, GroupedCompanyData>();
+
+  for (let i = 0; i < dealData.length; i++) {
+    const deal = dealData[i];
+    const contact = contactData[i] || {};
+    const key = generateCompanyKey(deal);
+
+    if (grouped.has(key)) {
+      // Add to existing group
+      const existing = grouped.get(key)!;
+      existing.sourceRowIndices.push(i);
+
+      // Only add contact if it has a Name
+      if (contact.Name && contact.Name.trim()) {
+        existing.contacts.push({
+          data: contact,
+          validation: { valid: true, errors: [], warnings: [] },
+        });
+      }
+    } else {
+      // Create new group
+      const contacts: ContactData[] = [];
+
+      // Only add contact if it has a Name
+      if (contact.Name && contact.Name.trim()) {
+        contacts.push({
+          data: contact,
+          validation: { valid: true, errors: [], warnings: [] },
+        });
+      }
+
+      grouped.set(key, {
+        companyData: deal,
+        contacts,
+        sourceRowIndices: [i],
+      });
+    }
+  }
+
+  return Array.from(grouped.values());
 }

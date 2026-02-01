@@ -15,6 +15,7 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
   const [includeDescriptions, setIncludeDescriptions] = useState(true);
   const [includeContacts, setIncludeContacts] = useState(true);
   const [simpleTemplate, setSimpleTemplate] = useState(true);
+  const [showInstructions, setShowInstructions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: DragEvent) => {
@@ -303,20 +304,147 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
             )}
           </div>
 
-          <button
-            onClick={handleDownloadTemplate}
-            className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadTemplate}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download {simpleTemplate ? 'Simple' : 'Full'} Template
+            </button>
+            <button
+              onClick={() => setShowInstructions(true)}
+              className="px-3 py-2.5 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+              title="How to use the template"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Instructions Modal */}
+      {showInstructions && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowInstructions(false)}
+        >
+          <div
+            className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            Download {simpleTemplate ? 'Simple' : 'Full'} Template
-          </button>
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-lg text-gray-800">How to Use the CSV Template</h3>
+                <button
+                  onClick={() => setShowInstructions(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div className="space-y-4 text-sm text-gray-600">
+                <ol className="list-decimal list-inside space-y-2">
+                  <li>Download the template and fill in company details</li>
+                  <li>
+                    <strong>One row per contact</strong> - repeat the company name for multiple
+                    contacts
+                  </li>
+                  <li>Only the first row needs company details (Description, Website, etc.)</li>
+                  <li>Subsequent rows for the same company only need contact fields</li>
+                </ol>
+
+                <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
+                  <div className="text-xs font-medium text-gray-500 mb-2">Example:</div>
+                  <table className="text-xs border-collapse w-full min-w-[400px]">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-300 px-2 py-1 text-left">CompanyName</th>
+                        <th className="border border-gray-300 px-2 py-1 text-left">Description</th>
+                        <th className="border border-gray-300 px-2 py-1 text-left">Website</th>
+                        <th className="border border-gray-300 px-2 py-1 text-left">Contact_Name</th>
+                        <th className="border border-gray-300 px-2 py-1 text-left">
+                          Contact_Email
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gray-300 px-2 py-1">Acme Corp</td>
+                        <td className="border border-gray-300 px-2 py-1">AI startup</td>
+                        <td className="border border-gray-300 px-2 py-1">acme.com</td>
+                        <td className="border border-gray-300 px-2 py-1">John Doe</td>
+                        <td className="border border-gray-300 px-2 py-1">john@acme.com</td>
+                      </tr>
+                      <tr className="bg-purple-50">
+                        <td className="border border-gray-300 px-2 py-1">Acme Corp</td>
+                        <td className="border border-gray-300 px-2 py-1 text-gray-400"></td>
+                        <td className="border border-gray-300 px-2 py-1 text-gray-400"></td>
+                        <td className="border border-gray-300 px-2 py-1">Jane Smith</td>
+                        <td className="border border-gray-300 px-2 py-1">jane@acme.com</td>
+                      </tr>
+                      <tr>
+                        <td className="border border-gray-300 px-2 py-1">Beta Inc</td>
+                        <td className="border border-gray-300 px-2 py-1">Fintech</td>
+                        <td className="border border-gray-300 px-2 py-1">beta.io</td>
+                        <td className="border border-gray-300 px-2 py-1">Bob Wilson</td>
+                        <td className="border border-gray-300 px-2 py-1">bob@beta.io</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="text-gray-500">
+                  This creates <strong>2 companies</strong>: Acme Corp (2 contacts) and Beta Inc (1
+                  contact).
+                </p>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <p className="text-blue-700 text-xs">
+                      Companies are grouped by <strong>CompanyName + Website</strong>. Rows with the
+                      same combination become multiple contacts for one company.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowInstructions(false)}
+                className="w-full mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -16,7 +16,9 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
       c.validation.valid && !c.duplicate?.isDuplicate && c.uploadStatus === 'pending' && !c.skipped
   );
 
-  const companiesWithContacts = validCompanies.filter((c) => c.contactData && c.contactData.Name);
+  // Count total contacts across all companies
+  const totalContacts = validCompanies.reduce((sum, c) => sum + (c.contacts?.length || 0), 0);
+  const companiesWithContacts = validCompanies.filter((c) => c.contacts && c.contacts.length > 0);
 
   return (
     <div className="space-y-4">
@@ -36,13 +38,14 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
             <p className="text-sm text-yellow-700 mt-1">
               This will create <strong>{validCompanies.length}</strong> new deal
               {validCompanies.length !== 1 ? 's' : ''} in your CRM.
-              {companiesWithContacts.length > 0 && (
+              {totalContacts > 0 && (
                 <>
                   <br />
                   <span className="text-purple-700">
-                    <strong>{companiesWithContacts.length}</strong> contact
-                    {companiesWithContacts.length !== 1 ? 's' : ''} will be created and linked to
-                    deal{companiesWithContacts.length !== 1 ? 's' : ''}.
+                    <strong>{totalContacts}</strong> contact
+                    {totalContacts !== 1 ? 's' : ''} will be created across{' '}
+                    <strong>{companiesWithContacts.length}</strong> compan
+                    {companiesWithContacts.length !== 1 ? 'ies' : 'y'}.
                   </span>
                 </>
               )}
@@ -57,8 +60,10 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
       <div className="bg-gray-50 border rounded p-3 text-xs font-mono">
         <div className="text-gray-500 mb-1">Endpoints:</div>
         <div>POST https://run.mydealflow.com/inv/api/deal/add</div>
-        {companiesWithContacts.length > 0 && (
-          <div className="text-purple-600">POST https://run.mydealflow.com/inv/api/contact/add</div>
+        {totalContacts > 0 && (
+          <div className="text-purple-600">
+            POST https://run.mydealflow.com/inv/api/contact/add ({totalContacts}x)
+          </div>
         )}
       </div>
 
@@ -75,9 +80,10 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
                 <span className="text-sm flex items-center gap-2">
                   <span className="text-gray-500">#{index + 1}</span>
                   <strong>{company.data.CompanyName || '(no name)'}</strong>
-                  {company.contactData && company.contactData.Name && (
+                  {company.contacts && company.contacts.length > 0 && (
                     <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                      +contact
+                      {company.contacts.length}{' '}
+                      {company.contacts.length === 1 ? 'contact' : 'contacts'}
                     </span>
                   )}
                 </span>
@@ -90,17 +96,24 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
                     <div className="text-gray-400 mb-1">Deal Data:</div>
                     <pre className="text-green-400">{JSON.stringify(company.data, null, 2)}</pre>
                   </div>
-                  {company.contactData && Object.keys(company.contactData).length > 0 ? (
+                  {company.contacts && company.contacts.length > 0 ? (
                     <div>
                       <div className="text-gray-400 mb-1">
-                        Contact Data (will be linked to deal):
+                        Contacts ({company.contacts.length}) - will be linked to deal:
                       </div>
-                      <pre className="text-purple-400">
-                        {JSON.stringify(company.contactData, null, 2)}
-                      </pre>
+                      {company.contacts.map((contact, contactIndex) => (
+                        <div key={contactIndex} className="mb-2">
+                          <div className="text-purple-300 text-xs mb-1">
+                            Contact {contactIndex + 1}:
+                          </div>
+                          <pre className="text-purple-400 ml-2">
+                            {JSON.stringify(contact.data, null, 2)}
+                          </pre>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <div className="text-gray-500 italic">No contact data mapped</div>
+                    <div className="text-gray-500 italic">No contacts</div>
                   )}
                 </div>
               )}
