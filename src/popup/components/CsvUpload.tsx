@@ -1,6 +1,7 @@
 import { useState, useRef, DragEvent } from 'react';
 import type { SchemaField } from '../../lib/types';
 import { downloadCsvTemplate } from '../../lib/csv';
+import { MAX_CSV_FILE_SIZE_BYTES, MAX_CSV_FILE_SIZE_DISPLAY } from '../../lib/constants';
 
 interface CsvUploadProps {
   onUpload: (content: string) => void;
@@ -48,6 +49,11 @@ export function CsvUpload({ onUpload, schemaFields, contactSchemaFields }: CsvUp
 
     if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
       setError('Please upload a CSV file');
+      return;
+    }
+
+    if (file.size > MAX_CSV_FILE_SIZE_BYTES) {
+      setError(`File too large. Maximum size is ${MAX_CSV_FILE_SIZE_DISPLAY}`);
       return;
     }
 

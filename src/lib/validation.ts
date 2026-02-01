@@ -5,6 +5,7 @@ import type {
   ValidationError,
   ValidationWarning,
 } from './types';
+import { EMAIL_REGEX } from './constants';
 
 export function validateCompany(data: Record<string, string>, schema: Schema): ValidationResult {
   const errors: ValidationError[] = [];
@@ -101,8 +102,8 @@ function validateUrl(value: string): string | null {
 }
 
 function validateEmail(value: string): string | null {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(value)) {
+  // Requires proper TLD (at least 2 chars), rejects invalid emails like 'a@b.c'
+  if (!EMAIL_REGEX.test(value)) {
     return 'Invalid email format';
   }
   return null;

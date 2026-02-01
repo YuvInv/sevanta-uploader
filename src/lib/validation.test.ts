@@ -130,6 +130,25 @@ describe('validateCompany', () => {
 
       expect(result.valid).toBe(false);
     });
+
+    it('should reject emails with single-char TLD', () => {
+      const schema = createSchema([{ name: 'Email', type: 'email' }]);
+      const data = { Email: 'a@b.c' };
+
+      const result = validateCompany(data, schema);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors[0].message).toContain('Invalid email');
+    });
+
+    it('should accept emails with valid TLD', () => {
+      const schema = createSchema([{ name: 'Email', type: 'email' }]);
+      const data = { Email: 'user@company.co' };
+
+      const result = validateCompany(data, schema);
+
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('number validation', () => {
