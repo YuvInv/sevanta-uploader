@@ -263,10 +263,16 @@ export async function checkDuplicate(
       (deal) => deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
     );
 
-    // If no exact matches, try semantic search for close matches
-    if (exactMatches.length === 0) {
+    if (exactMatches.length > 0) {
+      // Found exact match - skip semantic search (optimization)
+      matches.push(...exactMatches);
+    } else if (nameResults.length === 0) {
+      // Text search returned no results - skip semantic search as it's unlikely to help
+      // This optimization significantly reduces API calls
+    } else {
+      // Text search returned results but no exact match - try semantic search
       const semanticResults = await searchDealsSemantically(companyName);
-      // Only include semantic matches with high confidence
+      // Only include semantic matches with high confidence AND exact name match
       const highConfidenceMatches = semanticResults.filter(
         (deal) =>
           deal.semanticScore &&
@@ -274,9 +280,15 @@ export async function checkDuplicate(
           deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
       );
       matches.push(...highConfidenceMatches);
-    } else {
-      matches.push(...exactMatches);
     }
+  }
+
+  // Early return if we already found matches - skip website search (optimization)
+  if (matches.length > 0) {
+    return {
+      isDuplicate: true,
+      matches,
+    };
   }
 
   // Search by website if provided

@@ -2,8 +2,7 @@ import { ConnectionStatus } from './components/ConnectionStatus';
 import { CsvUpload } from './components/CsvUpload';
 import { ColumnMapper } from './components/ColumnMapper';
 import { CompanyTable } from './components/CompanyTable';
-import { CompanyEditor } from './components/CompanyEditor';
-import { ValidationPanel } from './components/ValidationPanel';
+import { CompanyEditorModal } from './components/CompanyEditorModal';
 import { UploadProgress } from './components/UploadProgress';
 import { UploadPreview } from './components/UploadPreview';
 import { DuplicateCheckProgress } from './components/DuplicateCheckProgress';
@@ -42,8 +41,7 @@ export default function App() {
     autoDiscardedCount,
     handleCsvUpload,
     handleMappingConfirm,
-    handleCompanyEdit,
-    handleContactEdit,
+    handleCompanySave,
     handleToggleSkip,
     handleConfirmedUpload,
     handleReset,
@@ -221,32 +219,23 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex-1 min-w-0">
-                <CompanyTable
-                  companies={companies}
-                  schema={schema}
-                  selectedId={selectedCompanyId}
-                  onSelect={setSelectedCompanyId}
-                  onToggleSkip={handleToggleSkip}
-                />
-              </div>
+            <CompanyTable
+              companies={companies}
+              schema={schema}
+              selectedId={selectedCompanyId}
+              onSelect={setSelectedCompanyId}
+              onToggleSkip={handleToggleSkip}
+            />
 
-              {selectedCompany && schema && (
-                <div className="w-64 flex-shrink-0">
-                  <CompanyEditor
-                    company={selectedCompany}
-                    schema={schema}
-                    onEdit={(field, value) => handleCompanyEdit(selectedCompany.id, field, value)}
-                    onContactEdit={(contactIndex, field, value) =>
-                      handleContactEdit(selectedCompany.id, contactIndex, field, value)
-                    }
-                    onClose={() => setSelectedCompanyId(null)}
-                  />
-                  <ValidationPanel company={selectedCompany} />
-                </div>
-              )}
-            </div>
+            {/* Editor Modal */}
+            {selectedCompany && schema && (
+              <CompanyEditorModal
+                company={selectedCompany}
+                schema={schema}
+                onSave={handleCompanySave}
+                onClose={() => setSelectedCompanyId(null)}
+              />
+            )}
           </>
         )}
 
