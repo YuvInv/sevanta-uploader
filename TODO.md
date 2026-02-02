@@ -5,6 +5,7 @@
 ---
 
 ## High Priority
+
 - [ ] **IVC Integration** ([#3](https://github.com/YuvInv/sevanta-uploader/issues/3)) - Extract companies from IVC database
 
 ---
@@ -13,14 +14,23 @@
 
 The Dealigence Quick Upload feature is implemented but has the following known bugs and improvements needed:
 
-### Bugs
+### Bugs (High Priority)
+- [ ] **Duplicate Check Before Upload** ([#52](https://github.com/YuvInv/sevanta-uploader/issues/52)) - Check CRM for duplicates and alert user (MOST important!)
+- [ ] **Stage/Employees Extraction Broken** ([#57](https://github.com/YuvInv/sevanta-uploader/issues/57)) - Extraction logic isn't right
+- [ ] **Website Not Extracted** ([#58](https://github.com/YuvInv/sevanta-uploader/issues/58)) - Website URL extraction fails
+- [ ] **Inconsistent Data on Reload vs Back** ([#61](https://github.com/YuvInv/sevanta-uploader/issues/61)) - Different data depending on navigation method
 - [ ] **SPA Navigation Data Stale** ([#44](https://github.com/YuvInv/sevanta-uploader/issues/44)) - 2nd+ company shows stale data (partial fix in PR #43)
 
+### Bugs (Medium Priority)
+- [ ] **Company Name Uses URL Not Page** ([#56](https://github.com/YuvInv/sevanta-uploader/issues/56)) - Should use page source code
+- [ ] **Total Funding Logic Wrong** ([#59](https://github.com/YuvInv/sevanta-uploader/issues/59)) - Value extraction wrong in some cases
+- [ ] **Hide Quick Upload When Not on Company** ([#60](https://github.com/YuvInv/sevanta-uploader/issues/60)) - Only show basic 2 tabs when not on company page
+
 ### Missing Features
-- [ ] **Funding → PastInvestments** ([#46](https://github.com/YuvInv/sevanta-uploader/issues/46)) - Map funding to CRM field
+- [ ] **Add More Fields to Upload** ([#53](https://github.com/YuvInv/sevanta-uploader/issues/53)) - Additional fields through Dealigence
+- [ ] **Auto-Set CRM Fields** ([#54](https://github.com/YuvInv/sevanta-uploader/issues/54)) - Set some fields automatically on every upload
+- [ ] **Preview All Uploaded Data** ([#55](https://github.com/YuvInv/sevanta-uploader/issues/55)) - Increase preview with all added fields
 - [ ] **UX Consistency** ([#47](https://github.com/YuvInv/sevanta-uploader/issues/47)) - Align edit fields across modes
-
-
 
 ---
 
@@ -32,6 +42,7 @@ The Dealigence Quick Upload feature is implemented but has the following known b
 
 ## Completed
 
+- [x] **Funding → PastInvestments** ([#46](https://github.com/YuvInv/sevanta-uploader/issues/46)) - Map funding to CRM field
 - [x] **Website URL Extraction** ([#45](https://github.com/YuvInv/sevanta-uploader/issues/45)) - DOM fallback for URL extraction (PR #43)
 - [x] **Preview Shows Mapped Data** ([#48](https://github.com/YuvInv/sevanta-uploader/issues/48)) - Redesigned preview UX (PR #43)
 - [x] **Unmapped Data to Comments** ([#49](https://github.com/YuvInv/sevanta-uploader/issues/49)) - Extra data added as comments (PR #43)
