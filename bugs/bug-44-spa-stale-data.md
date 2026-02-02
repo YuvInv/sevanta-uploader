@@ -325,3 +325,67 @@ setTimeout(() => checkForDealigence(true), 200);
    [Sevanta] Extraction attempt 1/5, waiting 200ms...
    [Sevanta] Extraction succeeded on attempt 2
    ```
+
+---
+
+## Attempted Fixes
+
+### Attempt 1: Previous Name Comparison (2026-02-02) - FAILED
+
+**Branch**: `fix/spa-navigation-stale-data`
+
+**Approach**: Track previous company name in the component, pass it to background script, retry if extracted name matches previous name.
+
+```typescript
+// WRONG approach - validated against delta, not ground truth
+if (data.companyName === previousCompanyName) {
+  // Retry - data appears stale
+}
+```
+
+**Why it failed**:
+
+1. **Wrong validation source**: Compared against previous value (delta) instead of URL slug (ground truth)
+   - Previous name tells you "something changed" but NOT "what's correct"
+   - Navigation A → B → A would break this logic
+   - URL slug is the source of truth - it's what the user actually navigated to
+
+2. **Returned stale data after max retries**: After 5 attempts, returned whatever data was extracted
+   - User sees confident-looking WRONG data
+   - Should have returned error: "Page still loading. Please try again."
+
+3. **No loading UX during retries**: Retries happened silently in background
+   - User saw instant data (which was stale)
+   - Should show "Extracting..." spinner during retry attempts
+
+4. **Didn't read this document**: The correct solution (URL slug validation) was already documented above
+   - Skipped to implementation based on independent analysis
+   - Should have followed the documented approach
+
+**Lesson**: Follow the documented solution above (URL slug validation). The correct approach validates against ground truth (URL), not deltas (previous state).
+
+**Related**: See `tasks/lessons.md` for detailed post-mortem
+
+---
+
+## Feature Removed (2026-02-02)
+
+**The entire Dealigence Quick Upload feature was removed from the codebase.**
+
+### Files Deleted
+- `src/popup/components/DealigenceQuickUpload.tsx`
+- `src/popup/components/DealigencePreview.tsx`
+- `src/popup/hooks/useDealigenceUpload.ts`
+- `src/content/dealigence/` (entire directory)
+- `src/lib/dealigence/` (entire directory)
+
+### Files Modified
+- `src/popup/App.tsx` - Removed all Dealigence state, listeners, imports, UI
+- `src/popup/components/TabNav.tsx` - Removed 'dealigence' mode and showDealigence prop
+- `src/background/index.ts` - Removed EXTRACT_DEALIGENCE_DATA and GET_ACTIVE_TAB_INFO handlers
+- `src/lib/types.ts` - Removed Dealigence-related types
+- `public/manifest.json` - Removed content_scripts, dealigence host_permission, webNavigation permission
+- `vite.config.ts` - Removed content script entry point
+
+### Reason
+The SPA navigation bug made the feature unreliable. A correct fix exists (documented above) but was not implemented. The feature was completely removed rather than shipping with known critical bugs.
