@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { CsvUpload } from './components/CsvUpload';
 import { ColumnMapper } from './components/ColumnMapper';
@@ -9,6 +9,7 @@ import { UploadPreview } from './components/UploadPreview';
 import { DuplicateCheckProgress } from './components/DuplicateCheckProgress';
 import { TabNav, type AppMode } from './components/TabNav';
 import { ContactLookup } from './components/ContactLookup';
+import { DealigenceQuickUpload } from './components/DealigenceQuickUpload';
 import { useSevantaApi } from './hooks/useSevantaApi';
 import { useValidation } from './hooks/useValidation';
 import { useDuplicateCheck } from './hooks/useDuplicateCheck';
@@ -17,6 +18,9 @@ import logo from '../assets/icons/inv-logo.png';
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('upload');
+  const [isDealigencePage, setIsDealigencePage] = useState(false);
+  const [dealigenceTabId, setDealigenceTabId] = useState<number | null>(null);
+  const [dealigenceUrl, setDealigenceUrl] = useState<string | null>(null);
 
   const {
     connected,
@@ -26,6 +30,82 @@ export default function App() {
     error: connectionError,
     refreshConnection,
   } = useSevantaApi();
+
+  // Check if the active tab is a Dealigence company page
+  const checkForDealigence = useCallback(async (autoSwitch = false) => {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: 'GET_ACTIVE_TAB_INFO' });
+      if (response.success && response.data) {
+        const { isDealigencePage: isDeali, tabId, url } = response.data;
+        setIsDealigencePage(isDeali);
+        setDealigenceTabId(isDeali ? tabId : null);
+        setDealigenceUrl(isDeali ? url : null);
+
+        if (isDeali) {
+          // Auto-switch to dealigence mode when on Dealigence page
+          if (autoSwitch) {
+            setMode('dealigence');
+          }
+        } else {
+          // NOT on Dealigence page - reset to upload if currently in dealigence mode
+          setMode((currentMode) => (currentMode === 'dealigence' ? 'upload' : currentMode));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check for Dealigence page:', error);
+    }
+  }, []);
+
+  // Check on mount and listen for tab updates
+  useEffect(() => {
+    let mounted = true;
+
+    // Initial check with auto-switch enabled
+    const initialCheck = async () => {
+      if (mounted) {
+        await checkForDealigence(true);
+      }
+    };
+    initialCheck();
+
+    // Listen for tab updates (traditional navigation)
+    const handleTabUpdate = (
+      _tabId: number,
+      changeInfo: chrome.tabs.TabChangeInfo,
+      _tab: chrome.tabs.Tab
+    ) => {
+      // Only check when URL changes or page finishes loading
+      if (changeInfo.url || changeInfo.status === 'complete') {
+        checkForDealigence(true);
+      }
+    };
+
+    const handleTabActivated = () => {
+      checkForDealigence(true);
+    };
+
+    // Listen for SPA navigation (History API) - important for Dealigence
+    const handleHistoryStateUpdated = (
+      details: chrome.webNavigation.WebNavigationTransitionCallbackDetails
+    ) => {
+      // Only care about main frame navigation on Dealigence
+      if (details.frameId === 0 && details.url.includes('dealigence.vc')) {
+        // Add delay to let SPA render new content before extraction
+        setTimeout(() => checkForDealigence(true), 300);
+      }
+    };
+
+    chrome.tabs.onUpdated.addListener(handleTabUpdate);
+    chrome.tabs.onActivated.addListener(handleTabActivated);
+    chrome.webNavigation.onHistoryStateUpdated.addListener(handleHistoryStateUpdated);
+
+    return () => {
+      mounted = false;
+      chrome.tabs.onUpdated.removeListener(handleTabUpdate);
+      chrome.tabs.onActivated.removeListener(handleTabActivated);
+      chrome.webNavigation.onHistoryStateUpdated.removeListener(handleHistoryStateUpdated);
+    };
+  }, [checkForDealigence]);
 
   const { validateCompanies } = useValidation(schema);
   const { checkDuplicates } = useDuplicateCheck();
@@ -87,7 +167,7 @@ export default function App() {
 
       {/* Tab Navigation */}
       <div className="px-4 py-3">
-        <TabNav mode={mode} onModeChange={setMode} />
+        <TabNav mode={mode} onModeChange={setMode} showDealigence={isDealigencePage} />
       </div>
 
       {/* Duplicate Check Progress Modal */}
@@ -97,6 +177,56 @@ export default function App() {
 
       {/* Main Content */}
       <main className="p-4">
+        {/* Dealigence Quick Upload Mode */}
+        {mode === 'dealigence' && (
+          <>
+            {!connected && !connectionLoading && (
+              <div className="bg-gradient-to-r from-caution-50 to-warm-100 border border-caution-200 rounded-xl p-5 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-caution-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg
+                      className="w-5 h-5 text-caution-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-caution-800 mb-1">Not Connected</h3>
+                    <p className="text-caution-700 text-sm">
+                      Please log into{' '}
+                      <a
+                        href="https://run.mydealflow.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium underline hover:text-caution-900"
+                      >
+                        Sevanta Dealflow
+                      </a>{' '}
+                      first, then click retry.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {connected && (
+              <DealigenceQuickUpload
+                key={dealigenceUrl}
+                schema={schema}
+                tabId={dealigenceTabId}
+                onReset={() => checkForDealigence()}
+              />
+            )}
+          </>
+        )}
+
         {/* Contact Lookup Mode */}
         {mode === 'lookup' && <ContactLookup connected={connected} />}
 

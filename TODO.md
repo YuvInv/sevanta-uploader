@@ -5,25 +5,27 @@
 ---
 
 ## High Priority
-
-### Contact Features
-- [ ] **Allow Optional Contacts** ([#11](https://github.com/YuvInv/sevanta-uploader/issues/11)) - Don't require contact data if not provided
-- [x] **Multiple Contacts per Company** ([#12](https://github.com/YuvInv/sevanta-uploader/issues/12)) - Support multiple rows for same company (PR #34)
-
----
-
-## Medium Priority
-
-### Integrations
-- [ ] **Dealigence Integration** ([#2](https://github.com/YuvInv/sevanta-uploader/issues/2)) - Extract companies from Dealigence pages
 - [ ] **IVC Integration** ([#3](https://github.com/YuvInv/sevanta-uploader/issues/3)) - Extract companies from IVC database
 
 ---
 
-## Low Priority / Future
+## Dealigence Quick Upload - Known Issues
 
-### Enhancements
-- [ ] **Additional Enhancements** ([#13](https://github.com/YuvInv/sevanta-uploader/issues/13)) - Progress bar, error handling, icons
+The Dealigence Quick Upload feature is now implemented but has the following known bugs and improvements needed:
+
+### Bugs
+1. **SPA Navigation Data Stale** - When navigating to 2nd+ company page, the first company's data still shows (extraction doesn't re-trigger properly after first company)
+2. **Website URL Extraction Fails** - Company URL/website fails to extract most of the time
+
+### Missing Features
+3. **Funding → PastInvestments Mapping** - Funding amount isn't being filled into the PastInvestments CRM field
+4. **UX Inconsistency** - No alignment between Quick Upload, CSV Upload, and Lookup modes - edit fields functionality looks different across modes
+5. **Preview Shows Unused Data** - Quick Upload preview shows data not sent to CRM (e.g., Categories) - should only show data that will be uploaded
+6. **Unmapped Data to Comments** - Data that can't be mapped to a CRM field should be summarized and added to company comments section
+
+
+
+---
 
 ### AI Features
 - [ ] **Company Enrichment** ([#6](https://github.com/YuvInv/sevanta-uploader/issues/6)) - Perplexity integration for auto-enrichment

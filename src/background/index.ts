@@ -1,6 +1,23 @@
 import { sevantaApi, type SearchedContact } from '../lib/api';
-import type { MessageType, MessageResponse, Schema, ContactSchema, Deal } from '../lib/types';
+import type {
+  MessageType,
+  MessageResponse,
+  Schema,
+  ContactSchema,
+  Deal,
+  ActiveTabInfo,
+  DealigenceCompanyData,
+} from '../lib/types';
 import { SCHEMA_CACHE_TTL_MS } from '../lib/constants';
+
+// Extend Window interface for content script extractor
+declare global {
+  interface Window {
+    __dealigenceExtractor?: {
+      extract: () => DealigenceCompanyData;
+    };
+  }
+}
 
 // Cache schemas in memory
 let cachedSchema: Schema | null = null;
@@ -55,6 +72,12 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
 
     case 'CLEAR_CACHE':
       return handleClearCache();
+
+    case 'GET_ACTIVE_TAB_INFO':
+      return handleGetActiveTabInfo();
+
+    case 'EXTRACT_DEALIGENCE_DATA':
+      return handleExtractDealigenceData(message.tabId);
 
     default:
       return { success: false, error: 'Unknown message type' };
@@ -221,6 +244,92 @@ async function handleClearCache(): Promise<MessageResponse<boolean>> {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to clear cache',
     };
+  }
+}
+
+/**
+ * Get information about the currently active tab
+ */
+async function handleGetActiveTabInfo(): Promise<MessageResponse<ActiveTabInfo>> {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab || !tab.id || !tab.url) {
+      return {
+        success: false,
+        error: 'No active tab found',
+      };
+    }
+
+    const isDealigencePage = tab.url.includes('dealigence.vc/company/');
+
+    return {
+      success: true,
+      data: {
+        url: tab.url,
+        tabId: tab.id,
+        isDealigencePage,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get active tab info',
+    };
+  }
+}
+
+/**
+ * Extract Dealigence company data from a tab using the content script.
+ * Includes retry logic to handle race condition where sidepanel opens
+ * before content script is fully initialized.
+ */
+async function handleExtractDealigenceData(
+  tabId: number
+): Promise<MessageResponse<DealigenceCompanyData>> {
+  // Helper to attempt extraction
+  const tryExtract = async (): Promise<MessageResponse<DealigenceCompanyData>> => {
+    const response = await chrome.tabs.sendMessage(tabId, { type: 'EXTRACT_DEALIGENCE_DATA' });
+    if (response && response.success && response.data) {
+      return { success: true, data: response.data as DealigenceCompanyData };
+    }
+    return { success: false, error: response?.error || 'Content script extraction failed' };
+  };
+
+  try {
+    return await tryExtract();
+  } catch {
+    // First attempt failed - content script may still be loading
+    // Wait briefly and retry once
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    try {
+      return await tryExtract();
+    } catch {
+      // Still failing - try programmatic injection as last resort
+      const contentScriptPath = chrome.runtime
+        .getManifest()
+        .content_scripts?.find((cs) => cs.matches?.some((m) => m.includes('dealigence.vc')))
+        ?.js?.[0];
+
+      if (contentScriptPath) {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId },
+            files: [contentScriptPath],
+          });
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return await tryExtract();
+        } catch {
+          // Injection failed - fall through to error
+        }
+      }
+
+      return {
+        success: false,
+        error: 'Content script not loaded. Please reload the Dealigence page and try again.',
+      };
+    }
   }
 }
 
