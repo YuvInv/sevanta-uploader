@@ -37,6 +37,19 @@ This applies to ALL changes, including small fixes, documentation updates, and c
 ### Plan Mode Default
 Enter plan mode for any task with 3+ steps. If things go sideways during implementation, stop and re-plan rather than continuing down a broken path.
 
+### Pre-Implementation Requirements
+
+**Before Writing Code for Bug Fixes:**
+1. Check for existing analysis: `bugs/bug-*.md`, `docs/`, or issue comments
+2. Read linked documentation fully - don't re-derive existing research
+3. Validate proposed solution addresses root cause, not symptoms
+
+**For Timing-Sensitive Features (SPA, async, race conditions):**
+1. Validate against ground truth (URL, API response) - never previous/cached state
+2. Never return unvalidated data - error state > wrong data
+3. Show loading states during async operations
+4. Test edge cases: A→B, A→B→A, rapid navigation, back button
+
 ### Subagent Strategy
 Use subagents liberally for parallel work. One focused task per subagent - don't overload them with multiple concerns.
 
