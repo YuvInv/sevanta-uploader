@@ -37,6 +37,19 @@ This applies to ALL changes, including small fixes, documentation updates, and c
 ### Plan Mode Default
 Enter plan mode for any task with 3+ steps. If things go sideways during implementation, stop and re-plan rather than continuing down a broken path.
 
+### Pre-Implementation Requirements
+
+**Before Writing Code for Bug Fixes:**
+1. Check for existing analysis: `bugs/bug-*.md`, `docs/`, or issue comments
+2. Read linked documentation fully - don't re-derive existing research
+3. Validate proposed solution addresses root cause, not symptoms
+
+**For Timing-Sensitive Features (SPA, async, race conditions):**
+1. Validate against ground truth (URL, API response) - never previous/cached state
+2. Never return unvalidated data - error state > wrong data
+3. Show loading states during async operations
+4. Test edge cases: A→B, A→B→A, rapid navigation, back button
+
 ### Subagent Strategy
 Use subagents liberally for parallel work. One focused task per subagent - don't overload them with multiple concerns.
 
@@ -51,6 +64,14 @@ Ask "is there a more elegant way?" for significant implementations. Skip this fo
 
 ### Autonomous Bug Fixing
 When you encounter bugs, just fix them. Don't ask for permission or hand-hold through obvious fixes. Fix failing CI tests proactively.
+
+### Destructive Actions Require Confirmation
+Before deleting files, closing issues, removing documentation, or any irreversible action:
+1. **Ask what specifically** - vague requests ("clean up") need clarification
+2. **List what will be affected** - show the user exactly what will change
+3. **Wait for explicit approval** - especially for docs, issues, or anything with history
+
+Documentation for removed features is valuable - it exists for when the feature returns.
 
 ## Tech Stack
 
@@ -255,16 +276,16 @@ npm run bump:major   # Bump major version (1.0.1 -> 2.0.0)
 ## Task Management
 
 ### Tracking Locations
-- `tasks/todo.md` - Local task list with checkable items
+- `TODO.md` - Task list linking to GitHub Issues
 - `tasks/lessons.md` - Learnings and rules from past mistakes
 - [GitHub Issues](https://github.com/YuvInv/sevanta-uploader/issues) - For tracking and collaboration
 
 ### Workflow Checklist
-1. **Plan First**: Write plan to `tasks/todo.md` with checkable items before starting
+1. **Plan First**: Enter plan mode or outline steps before starting
 2. **Verify Plan**: Check in with user before starting implementation
 3. **Track Progress**: Mark items complete as you go
 4. **Explain Changes**: Provide high-level summary at each step
-5. **Document Results**: Add review section to `tasks/todo.md` when done
+5. **Document Results**: Summarize what was done when complete
 6. **Capture Lessons**: Update `tasks/lessons.md` after corrections or discoveries
 
 ## api examples

@@ -131,7 +131,9 @@ export type MessageType =
   | { type: 'CREATE_CONTACT'; data: Record<string, string>; companyId: string }
   | { type: 'CHECK_DUPLICATE'; companyName: string; website?: string }
   | { type: 'SEARCH_CONTACTS'; name?: string; email?: string }
-  | { type: 'ADD_DEAL_COMMENT'; dealId: string; comment: string };
+  | { type: 'ADD_DEAL_COMMENT'; dealId: string; comment: string }
+  | { type: 'EXTRACT_DEALIGENCE_DATA'; tabId: number }
+  | { type: 'GET_ACTIVE_TAB_INFO' };
 
 export interface MessageResponse<T = unknown> {
   success: boolean;

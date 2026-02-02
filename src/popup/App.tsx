@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { CsvUpload } from './components/CsvUpload';
 import { ColumnMapper } from './components/ColumnMapper';
@@ -9,14 +9,59 @@ import { UploadPreview } from './components/UploadPreview';
 import { DuplicateCheckProgress } from './components/DuplicateCheckProgress';
 import { TabNav, type AppMode } from './components/TabNav';
 import { ContactLookup } from './components/ContactLookup';
+import { DealigenceQuickUpload } from './components/DealigenceQuickUpload';
 import { useSevantaApi } from './hooks/useSevantaApi';
 import { useValidation } from './hooks/useValidation';
 import { useDuplicateCheck } from './hooks/useDuplicateCheck';
 import { useUploadWorkflow } from './hooks/useUploadWorkflow';
+import { isDealigenceCompanyPage } from '../lib/dealigence/urlUtils';
 import logo from '../assets/icons/inv-logo.png';
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('upload');
+  const [isDealigencePage, setIsDealigencePage] = useState(false);
+
+  // Initial check for Dealigence page on mount
+  useEffect(() => {
+    let mounted = true;
+
+    const checkInitialPage = async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'GET_ACTIVE_TAB_INFO' });
+        if (mounted && response?.success && response.data) {
+          const isOnDealigence = response.data.isDealigenceCompanyPage;
+          setIsDealigencePage(isOnDealigence);
+          if (isOnDealigence) {
+            setMode('dealigence');
+          }
+        }
+      } catch {
+        if (mounted) setIsDealigencePage(false);
+      }
+    };
+
+    checkInitialPage();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Listen for SPA navigation on Dealigence
+  useEffect(() => {
+    const handleMessage = (message: { type: string; url?: string }) => {
+      if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
+        const isCompanyPage = isDealigenceCompanyPage(message.url);
+        setIsDealigencePage(isCompanyPage);
+        if (isCompanyPage) {
+          setMode('dealigence');
+        }
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+    return () => chrome.runtime.onMessage.removeListener(handleMessage);
+  }, []);
 
   const {
     connected,
@@ -87,7 +132,7 @@ export default function App() {
 
       {/* Tab Navigation */}
       <div className="px-4 py-3">
-        <TabNav mode={mode} onModeChange={setMode} />
+        <TabNav mode={mode} onModeChange={setMode} showDealigence={isDealigencePage} />
       </div>
 
       {/* Duplicate Check Progress Modal */}
@@ -97,6 +142,9 @@ export default function App() {
 
       {/* Main Content */}
       <main className="p-4">
+        {/* Dealigence Quick Upload Mode */}
+        {mode === 'dealigence' && <DealigenceQuickUpload connected={connected} />}
+
         {/* Contact Lookup Mode */}
         {mode === 'lookup' && <ContactLookup connected={connected} />}
 
