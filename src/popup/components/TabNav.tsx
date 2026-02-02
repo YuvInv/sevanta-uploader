@@ -1,13 +1,40 @@
-export type AppMode = 'upload' | 'lookup';
+export type AppMode = 'upload' | 'lookup' | 'dealigence';
 
 interface TabNavProps {
   mode: AppMode;
   onModeChange: (mode: AppMode) => void;
+  showDealigence?: boolean;
 }
 
-export function TabNav({ mode, onModeChange }: TabNavProps) {
+export function TabNav({ mode, onModeChange, showDealigence }: TabNavProps) {
   return (
     <nav className="flex gap-1 p-1 bg-warm-100 rounded-xl">
+      {showDealigence && (
+        <button
+          onClick={() => onModeChange('dealigence')}
+          className={`
+            flex-1 px-4 py-2.5 rounded-lg text-base font-medium
+            transition-all duration-200
+            ${
+              mode === 'dealigence'
+                ? 'bg-white text-warm-800 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50'
+            }
+          `}
+        >
+          <span className="flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+            Quick Upload
+          </span>
+        </button>
+      )}
       <button
         onClick={() => onModeChange('upload')}
         className={`
@@ -29,7 +56,7 @@ export function TabNav({ mode, onModeChange }: TabNavProps) {
               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
             />
           </svg>
-          Upload Companies
+          Bulk Upload
         </span>
       </button>
       <button
@@ -53,7 +80,7 @@ export function TabNav({ mode, onModeChange }: TabNavProps) {
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-          Contact Lookup
+          Lookup
         </span>
       </button>
     </nav>

@@ -1,6 +1,18 @@
 import { sevantaApi, type SearchedContact } from '../lib/api';
 import type { MessageType, MessageResponse, Schema, ContactSchema, Deal } from '../lib/types';
 import { SCHEMA_CACHE_TTL_MS } from '../lib/constants';
+import type { DealigenceCompanyData, TabInfo } from '../lib/dealigence/types';
+import {
+  extractSlugFromUrl,
+  doesCompanyMatchSlug,
+  isDealigenceCompanyPage,
+} from '../lib/dealigence/urlUtils';
+import {
+  EXTRACTION_MAX_RETRIES,
+  EXTRACTION_INITIAL_DELAY_MS,
+  EXTRACTION_DELAY_MULTIPLIER,
+  EXTRACTION_MAX_DELAY_MS,
+} from '../lib/dealigence/constants';
 
 // Cache schemas in memory
 let cachedSchema: Schema | null = null;
@@ -58,6 +70,12 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
 
     case 'ADD_DEAL_COMMENT':
       return handleAddDealComment(message.dealId, message.comment);
+
+    case 'EXTRACT_DEALIGENCE_DATA':
+      return handleExtractDealigenceData(message.tabId);
+
+    case 'GET_ACTIVE_TAB_INFO':
+      return handleGetActiveTabInfo();
 
     default:
       return { success: false, error: 'Unknown message type' };
@@ -213,6 +231,112 @@ async function handleSearchContacts(
   }
 }
 
+async function handleExtractDealigenceData(
+  tabId: number
+): Promise<MessageResponse<DealigenceCompanyData>> {
+  // Get URL slug from tab - this is the ground truth
+  let urlSlug: string | null = null;
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    urlSlug = tab.url ? extractSlugFromUrl(tab.url) : null;
+  } catch {
+    return { success: false, error: 'Tab not found' };
+  }
+
+  if (!urlSlug) {
+    return { success: false, error: 'Not a Dealigence company page' };
+  }
+
+  const tryExtract = async (): Promise<{
+    data?: DealigenceCompanyData;
+    error?: string;
+    isStale?: boolean;
+  }> => {
+    try {
+      const response = await chrome.tabs.sendMessage(tabId, {
+        type: 'EXTRACT_COMPANY_DATA',
+      });
+
+      if (!response?.success || !response.data) {
+        return { error: response?.error || 'Extraction failed' };
+      }
+
+      const data = response.data as DealigenceCompanyData;
+
+      // CRITICAL: Validate company matches URL (prevents stale data bug #44)
+      if (data.companyName && urlSlug) {
+        if (!doesCompanyMatchSlug(data.companyName, urlSlug)) {
+          console.log(`[Sevanta] Stale: got "${data.companyName}" but URL is "${urlSlug}"`);
+          return { isStale: true };
+        }
+      }
+
+      return { data };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Failed' };
+    }
+  };
+
+  // Initial attempt
+  let result = await tryExtract();
+
+  // Return immediately if successful
+  if (result.data) {
+    return { success: true, data: result.data };
+  }
+
+  // Retry with exponential backoff if stale
+  let attempt = 1;
+  let delay = EXTRACTION_INITIAL_DELAY_MS;
+
+  while (result.isStale && attempt <= EXTRACTION_MAX_RETRIES) {
+    console.log(
+      `[Sevanta] Extraction attempt ${attempt}/${EXTRACTION_MAX_RETRIES}, waiting ${delay}ms...`
+    );
+    await new Promise((r) => setTimeout(r, delay));
+    result = await tryExtract();
+
+    if (result.data) {
+      console.log(`[Sevanta] Extraction succeeded on attempt ${attempt}`);
+      return { success: true, data: result.data };
+    }
+
+    delay = Math.min(delay * EXTRACTION_DELAY_MULTIPLIER, EXTRACTION_MAX_DELAY_MS);
+    attempt++;
+  }
+
+  // CRITICAL: Never return stale data - return error instead
+  if (result.isStale) {
+    return { success: false, error: 'Page still loading. Please try again.' };
+  }
+
+  return { success: false, error: result.error || 'Extraction failed' };
+}
+
+async function handleGetActiveTabInfo(): Promise<MessageResponse<TabInfo>> {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab?.id || !tab.url) {
+      return { success: false, error: 'No active tab' };
+    }
+
+    return {
+      success: true,
+      data: {
+        tabId: tab.id,
+        url: tab.url,
+        isDealigenceCompanyPage: isDealigenceCompanyPage(tab.url),
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get tab info',
+    };
+  }
+}
+
 async function handleClearCache(): Promise<MessageResponse<boolean>> {
   try {
     cachedSchema = null;
@@ -254,3 +378,23 @@ chrome.action.onClicked.addListener((tab) => {
     chrome.sidePanel.open({ tabId: tab.id });
   }
 });
+
+// Listen for SPA navigation (History API) on Dealigence
+// This catches navigation that doesn't trigger full page loads
+chrome.webNavigation.onHistoryStateUpdated.addListener(
+  (details) => {
+    if (details.frameId === 0 && isDealigenceCompanyPage(details.url)) {
+      // Broadcast URL change to any listening sidepanels
+      chrome.runtime
+        .sendMessage({
+          type: 'DEALIGENCE_URL_CHANGED',
+          url: details.url,
+          tabId: details.tabId,
+        })
+        .catch(() => {
+          // Ignore errors if no listeners (sidepanel closed)
+        });
+    }
+  },
+  { url: [{ hostEquals: 'dealigence.vc' }] }
+);
