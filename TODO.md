@@ -14,14 +14,11 @@
 The Dealigence Quick Upload feature is implemented but has the following known bugs and improvements needed:
 
 ### Bugs
-- [ ] **SPA Navigation Data Stale** ([#44](https://github.com/YuvInv/sevanta-uploader/issues/44)) - 2nd+ company shows stale data
-- [ ] **Website URL Extraction Fails** ([#45](https://github.com/YuvInv/sevanta-uploader/issues/45)) - URL extraction unreliable
+- [ ] **SPA Navigation Data Stale** ([#44](https://github.com/YuvInv/sevanta-uploader/issues/44)) - 2nd+ company shows stale data (partial fix in PR #43)
 
 ### Missing Features
 - [ ] **Funding → PastInvestments** ([#46](https://github.com/YuvInv/sevanta-uploader/issues/46)) - Map funding to CRM field
 - [ ] **UX Consistency** ([#47](https://github.com/YuvInv/sevanta-uploader/issues/47)) - Align edit fields across modes
-- [ ] **Preview Shows Unused Data** ([#48](https://github.com/YuvInv/sevanta-uploader/issues/48)) - Only show uploadable data
-- [ ] **Unmapped Data to Comments** ([#49](https://github.com/YuvInv/sevanta-uploader/issues/49)) - Add extra data to comments
 
 
 
@@ -35,6 +32,9 @@ The Dealigence Quick Upload feature is implemented but has the following known b
 
 ## Completed
 
+- [x] **Website URL Extraction** ([#45](https://github.com/YuvInv/sevanta-uploader/issues/45)) - DOM fallback for URL extraction (PR #43)
+- [x] **Preview Shows Mapped Data** ([#48](https://github.com/YuvInv/sevanta-uploader/issues/48)) - Redesigned preview UX (PR #43)
+- [x] **Unmapped Data to Comments** ([#49](https://github.com/YuvInv/sevanta-uploader/issues/49)) - Extra data added as comments (PR #43)
 - [x] **Dealigence Integration** ([#2](https://github.com/YuvInv/sevanta-uploader/issues/2)) - Quick Upload from Dealigence pages (PR #43)
 - [x] **Dealigence Auto-Detection** ([#42](https://github.com/YuvInv/sevanta-uploader/issues/42)) - Auto-detect Dealigence pages (PR #43)
 - [x] **Bulk Contact Lookup** ([#14](https://github.com/YuvInv/sevanta-uploader/issues/14)) - Contact lookup with match detection (PR #43)
