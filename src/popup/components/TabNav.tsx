@@ -1,41 +1,13 @@
-export type AppMode = 'upload' | 'lookup' | 'dealigence';
+export type AppMode = 'upload' | 'lookup';
 
 interface TabNavProps {
   mode: AppMode;
   onModeChange: (mode: AppMode) => void;
-  showDealigence?: boolean;
 }
 
-export function TabNav({ mode, onModeChange, showDealigence = false }: TabNavProps) {
+export function TabNav({ mode, onModeChange }: TabNavProps) {
   return (
     <nav className="flex gap-1 p-1 bg-warm-100 rounded-xl">
-      {/* Quick Upload tab - only shown when on Dealigence page */}
-      {showDealigence && (
-        <button
-          onClick={() => onModeChange('dealigence')}
-          className={`
-            flex-1 px-4 py-2.5 rounded-lg text-base font-medium
-            transition-all duration-200
-            ${
-              mode === 'dealigence'
-                ? 'bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-sm'
-                : 'text-accent-600 hover:text-accent-700 hover:bg-accent-50'
-            }
-          `}
-        >
-          <span className="flex items-center justify-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            Quick Upload
-          </span>
-        </button>
-      )}
       <button
         onClick={() => onModeChange('upload')}
         className={`
@@ -57,7 +29,7 @@ export function TabNav({ mode, onModeChange, showDealigence = false }: TabNavPro
               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
             />
           </svg>
-          {showDealigence ? 'CSV Upload' : 'Upload Companies'}
+          Upload Companies
         </span>
       </button>
       <button
@@ -81,7 +53,7 @@ export function TabNav({ mode, onModeChange, showDealigence = false }: TabNavPro
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-          {showDealigence ? 'Lookup' : 'Contact Lookup'}
+          Contact Lookup
         </span>
       </button>
     </nav>
