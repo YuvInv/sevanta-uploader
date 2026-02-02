@@ -131,8 +131,6 @@ export type MessageType =
   | { type: 'CREATE_CONTACT'; data: Record<string, string>; companyId: string }
   | { type: 'CHECK_DUPLICATE'; companyName: string; website?: string }
   | { type: 'SEARCH_CONTACTS'; name?: string; email?: string }
-  | { type: 'GET_ACTIVE_TAB_INFO' }
-  | { type: 'EXTRACT_DEALIGENCE_DATA'; tabId: number }
   | { type: 'ADD_DEAL_COMMENT'; dealId: string; comment: string };
 
 export interface MessageResponse<T = unknown> {
@@ -180,17 +178,3 @@ export interface ContactLookupProgress {
   strongCount: number;
   possibleCount: number;
 }
-
-// Dealigence integration types
-export interface ActiveTabInfo {
-  url: string;
-  tabId: number;
-  isDealigencePage: boolean;
-}
-
-// Re-export Dealigence types for convenience
-export type {
-  DealigenceCompanyData,
-  DealigenceFounder,
-  DealigenceStakeholder,
-} from '../content/dealigence/types';
