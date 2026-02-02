@@ -5,34 +5,27 @@
 ---
 
 ## High Priority
-
-### Bugs
-- [ ] **Duplicate Check Too Slow** ([#35](https://github.com/YuvInv/sevanta-uploader/issues/35)) - Debug why checking duplicates takes so long
-- [ ] **Progress Doesn't Update** ([#36](https://github.com/YuvInv/sevanta-uploader/issues/36)) - Always shows first company and 0%
-
-### UX Issues
-- [ ] **Table Layout Issues** ([#37](https://github.com/YuvInv/sevanta-uploader/issues/37)) - Status wrapped, CompanyName column too wide
-- [ ] **Redesign Editor** ([#38](https://github.com/YuvInv/sevanta-uploader/issues/38)) - Company/contact editor looks awful, needs complete redesign
-
-### Contact Features
-- [ ] **Allow Optional Contacts** ([#11](https://github.com/YuvInv/sevanta-uploader/issues/11)) - Don't require contact data if not provided
-- [x] **Multiple Contacts per Company** ([#12](https://github.com/YuvInv/sevanta-uploader/issues/12)) - Support multiple rows for same company (PR #34)
-
----
-
-## Medium Priority
-
-### Integrations
-- [ ] **Dealigence Integration** ([#2](https://github.com/YuvInv/sevanta-uploader/issues/2)) - Extract companies from Dealigence pages
 - [ ] **IVC Integration** ([#3](https://github.com/YuvInv/sevanta-uploader/issues/3)) - Extract companies from IVC database
 
 ---
 
-## Low Priority / Future
+## Dealigence Quick Upload - Known Issues
 
-### Enhancements
-- [ ] **Additional Enhancements** ([#13](https://github.com/YuvInv/sevanta-uploader/issues/13)) - Progress bar, error handling, icons
-- [ ] **Bulk Contact Info Lookup** ([#14](https://github.com/YuvInv/sevanta-uploader/issues/14)) - Query CRM for contact details
+The Dealigence Quick Upload feature is implemented but has the following known bugs and improvements needed:
+
+### Bugs
+- [ ] **SPA Navigation Data Stale** ([#44](https://github.com/YuvInv/sevanta-uploader/issues/44)) - 2nd+ company shows stale data
+- [ ] **Website URL Extraction Fails** ([#45](https://github.com/YuvInv/sevanta-uploader/issues/45)) - URL extraction unreliable
+
+### Missing Features
+- [ ] **Funding → PastInvestments** ([#46](https://github.com/YuvInv/sevanta-uploader/issues/46)) - Map funding to CRM field
+- [ ] **UX Consistency** ([#47](https://github.com/YuvInv/sevanta-uploader/issues/47)) - Align edit fields across modes
+- [ ] **Preview Shows Unused Data** ([#48](https://github.com/YuvInv/sevanta-uploader/issues/48)) - Only show uploadable data
+- [ ] **Unmapped Data to Comments** ([#49](https://github.com/YuvInv/sevanta-uploader/issues/49)) - Add extra data to comments
+
+
+
+---
 
 ### AI Features
 - [ ] **Company Enrichment** ([#6](https://github.com/YuvInv/sevanta-uploader/issues/6)) - Perplexity integration for auto-enrichment
@@ -42,6 +35,13 @@
 
 ## Completed
 
+- [x] **Dealigence Integration** ([#2](https://github.com/YuvInv/sevanta-uploader/issues/2)) - Quick Upload from Dealigence pages (PR #43)
+- [x] **Dealigence Auto-Detection** ([#42](https://github.com/YuvInv/sevanta-uploader/issues/42)) - Auto-detect Dealigence pages (PR #43)
+- [x] **Bulk Contact Lookup** ([#14](https://github.com/YuvInv/sevanta-uploader/issues/14)) - Contact lookup with match detection (PR #43)
+- [x] **Duplicate Check Too Slow** ([#35](https://github.com/YuvInv/sevanta-uploader/issues/35)) - Fixed with optimized API calls (PR #39)
+- [x] **Progress Doesn't Update** ([#36](https://github.com/YuvInv/sevanta-uploader/issues/36)) - Fixed progress indicator (PR #39)
+- [x] **Table Layout Issues** ([#37](https://github.com/YuvInv/sevanta-uploader/issues/37)) - Fixed column widths (PR #39)
+- [x] **Redesign Editor** ([#38](https://github.com/YuvInv/sevanta-uploader/issues/38)) - Complete redesign with Warm Professional theme (PR #41)
 - [x] **Phase 6: UX & Performance** ([#25](https://github.com/YuvInv/sevanta-uploader/issues/25)) - Duplicate check speed, loading UX, auto-discard
 - [x] **Fix Failing Lint Test in GitHub Actions** ([#30](https://github.com/YuvInv/sevanta-uploader/issues/30)) - CI lint check is failing
 - [x] **Tech Debt Phase 5: Hardening** ([#21](https://github.com/YuvInv/sevanta-uploader/issues/21)) - Constants, validation, rate limiter

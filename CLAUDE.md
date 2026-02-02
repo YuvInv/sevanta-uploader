@@ -26,6 +26,32 @@ Sevanta Uploader is a Chrome Extension for bulk uploading companies to Sevanta D
 
 This applies to ALL changes, including small fixes, documentation updates, and config changes.
 
+## Core Principles
+
+- **Simplicity First**: Make every change as simple as possible. Avoid over-engineering.
+- **No Laziness**: Find root causes, maintain senior developer standards. Don't take shortcuts.
+- **Minimal Impact**: Only touch what's necessary. Avoid introducing bugs in unrelated areas.
+
+## Workflow Orchestration
+
+### Plan Mode Default
+Enter plan mode for any task with 3+ steps. If things go sideways during implementation, stop and re-plan rather than continuing down a broken path.
+
+### Subagent Strategy
+Use subagents liberally for parallel work. One focused task per subagent - don't overload them with multiple concerns.
+
+### Self-Improvement Loop
+After receiving corrections or discovering gotchas, update `tasks/lessons.md`. Write rules to prevent the same mistakes from recurring.
+
+### Verification Before Done
+Never mark a task complete without proving it works. Run tests, check the build, verify the feature manually if needed.
+
+### Demand Elegance (Balanced)
+Ask "is there a more elegant way?" for significant implementations. Skip this for simple fixes - don't over-optimize trivial changes.
+
+### Autonomous Bug Fixing
+When you encounter bugs, just fix them. Don't ask for permission or hand-hold through obvious fixes. Fix failing CI tests proactively.
+
 ## Tech Stack
 
 - Vite + CRXJS (Chrome Extension bundling)
@@ -45,30 +71,46 @@ sevanta-uploader/
 │   │   └── styles.css      # Side panel styles + CSS variables
 │   ├── popup/              # Shared UI components (React)
 │   │   ├── App.tsx         # Main app with tab navigation
-│   │   ├── components/     # React components
+│   │   ├── components/
 │   │   │   ├── ContactLookup/  # Contact lookup feature
 │   │   │   │   ├── ContactLookup.tsx
 │   │   │   │   ├── ContactInput.tsx
 │   │   │   │   ├── ContactLookupProgress.tsx
 │   │   │   │   ├── ContactLookupTable.tsx
 │   │   │   │   └── MatchBadge.tsx
-│   │   │   └── TabNav.tsx  # Tab navigation component
-│   │   └── hooks/          # Custom React hooks
-│   │       └── useContactLookup.ts
+│   │   │   ├── ColumnMapper.tsx      # CSV column mapping
+│   │   │   ├── CompanyEditorModal.tsx # Inline company editor
+│   │   │   ├── CompanyTable.tsx      # Main company list table
+│   │   │   ├── ConnectionStatus.tsx  # Sevanta connection check
+│   │   │   ├── CsvUpload.tsx         # Drag-and-drop CSV upload
+│   │   │   ├── DuplicateCheckProgress.tsx
+│   │   │   ├── ErrorBoundary.tsx     # React error boundary
+│   │   │   ├── TabNav.tsx            # Tab navigation
+│   │   │   ├── UploadPreview.tsx     # Pre-upload review
+│   │   │   └── UploadProgress.tsx    # Upload progress indicator
+│   │   └── hooks/
+│   │       ├── useContactLookup.ts   # Contact lookup logic
+│   │       ├── useDuplicateCheck.ts  # Duplicate detection
+│   │       ├── useSevantaApi.ts      # API connection hook
+│   │       ├── useUploadWorkflow.ts  # Upload state machine
+│   │       └── useValidation.ts      # Field validation hook
 │   ├── background/         # Service Worker
 │   │   └── index.ts        # Message handling & API calls
 │   └── lib/                # Shared utilities
 │       ├── api.ts          # Sevanta API client
-│       ├── contactLookup.ts # Contact parsing logic
+│       ├── constants.ts    # App-wide constants
 │       ├── contactExport.ts # CSV export for lookups
-│       ├── validation.ts   # Field validation
+│       ├── contactLookup.ts # Contact parsing logic
 │       ├── csv.ts          # CSV parsing & templates
-│       └── types.ts        # TypeScript types
+│       ├── defaults.ts     # Default field values
+│       ├── types.ts        # TypeScript types
+│       └── validation.ts   # Field validation
 ├── public/
 │   ├── manifest.json       # Extension manifest
 │   └── icons/              # Extension icons
 └── scripts/
-    └── generate-icons.js   # Icon generation script
+    ├── generate-icons.js   # Icon generation script
+    └── version-bump.js     # Version bump automation
 ```
 
 ## Sevanta Dealflow API
@@ -162,7 +204,7 @@ GET /user/list         - Get all users
 ### CRM URL Formats
 When linking to CRM records, use these URL patterns:
 - **Contacts**: `https://run.mydealflow.com/inv/#/Contact.php?ContactID={id}`
-- **Deals**: `https://run.mydealflow.com/inv/#/Deal.php?CompanyID={id}`
+- **Companies/Deals**: `https://run.mydealflow.com/inv/#/Company.php?CompanyID={id}`
 - **Tasks**: `https://run.mydealflow.com/inv/#/Task.php?TaskID={id}`
 
 Note: URLs use `#/` hash routing, NOT `/inv/contact/{id}` REST-style paths.
@@ -212,11 +254,18 @@ npm run bump:major   # Bump major version (1.0.1 -> 2.0.0)
 
 ## Task Management
 
-All tasks, features, and roadmap items are tracked in **two places**:
-- `TODO.md` - Local reference in the repo
+### Tracking Locations
+- `tasks/todo.md` - Local task list with checkable items
+- `tasks/lessons.md` - Learnings and rules from past mistakes
 - [GitHub Issues](https://github.com/YuvInv/sevanta-uploader/issues) - For tracking and collaboration
 
-When adding new tasks, update both locations to keep them in sync.
+### Workflow Checklist
+1. **Plan First**: Write plan to `tasks/todo.md` with checkable items before starting
+2. **Verify Plan**: Check in with user before starting implementation
+3. **Track Progress**: Mark items complete as you go
+4. **Explain Changes**: Provide high-level summary at each step
+5. **Document Results**: Add review section to `tasks/todo.md` when done
+6. **Capture Lessons**: Update `tasks/lessons.md` after corrections or discoveries
 
 ## api examples
 the folder .schema_examples/ contains example JSON responses from various API endpoints for reference when working with the Sevanta Dealflow API. you can use these files to understand the structure of API responses and to test your code against real data formats.

@@ -1,14 +1,29 @@
 {
   "manifest_version": 3,
   "name": "Sevanta Uploader",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Bulk upload companies to Sevanta Dealflow CRM",
   "permissions": [
     "storage",
-    "sidePanel"
+    "sidePanel",
+    "scripting",
+    "activeTab",
+    "webNavigation"
   ],
   "host_permissions": [
-    "https://run.mydealflow.com/*"
+    "https://run.mydealflow.com/*",
+    "https://dealigence.vc/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://dealigence.vc/company/*"
+      ],
+      "js": [
+        "src/content/dealigence/index.ts"
+      ],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_icon": {

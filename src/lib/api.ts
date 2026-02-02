@@ -509,6 +509,45 @@ export async function searchContacts(name?: string, email?: string): Promise<Sea
   }));
 }
 
+/**
+ * Add a comment to an existing deal
+ */
+export async function addDealComment(
+  dealId: string,
+  comment: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const formData = new URLSearchParams();
+    formData.append('comment', comment);
+
+    const response = await fetch(`${API_BASE_URL}/deal/${dealId}/addComment`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+
+    const result = (await response.json()) as { status?: string; error?: string };
+
+    if (result.error) {
+      return { success: false, error: result.error };
+    }
+
+    if (result.status === 'ok') {
+      return { success: true };
+    }
+
+    return { success: false, error: 'Unknown response format' };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
 // Export for use in background service worker
 export const sevantaApi = {
   checkConnection,
@@ -521,4 +560,5 @@ export const sevantaApi = {
   createDeal,
   createContact,
   searchContacts,
+  addDealComment,
 };
