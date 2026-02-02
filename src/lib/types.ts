@@ -132,7 +132,8 @@ export type MessageType =
   | { type: 'CHECK_DUPLICATE'; companyName: string; website?: string }
   | { type: 'SEARCH_CONTACTS'; name?: string; email?: string }
   | { type: 'GET_ACTIVE_TAB_INFO' }
-  | { type: 'EXTRACT_DEALIGENCE_DATA'; tabId: number };
+  | { type: 'EXTRACT_DEALIGENCE_DATA'; tabId: number }
+  | { type: 'ADD_DEAL_COMMENT'; dealId: string; comment: string };
 
 export interface MessageResponse<T = unknown> {
   success: boolean;

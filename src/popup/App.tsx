@@ -91,7 +91,7 @@ export default function App() {
       // Only care about main frame navigation on Dealigence
       if (details.frameId === 0 && details.url.includes('dealigence.vc')) {
         // Add delay to let SPA render new content before extraction
-        setTimeout(() => checkForDealigence(true), 300);
+        setTimeout(() => checkForDealigence(true), 500);
       }
     };
 
@@ -221,6 +221,7 @@ export default function App() {
                 key={dealigenceUrl}
                 schema={schema}
                 tabId={dealigenceTabId}
+                url={dealigenceUrl}
                 onReset={() => checkForDealigence()}
               />
             )}

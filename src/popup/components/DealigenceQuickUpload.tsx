@@ -2,7 +2,7 @@
  * Dealigence Quick Upload - Main component for one-click company upload from Dealigence
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import type { DealigenceCompanyData, Schema, Company, ContactData } from '../../lib/types';
 import { useDealigenceUpload } from '../hooks/useDealigenceUpload';
 import { DealigencePreview } from './DealigencePreview';
@@ -11,10 +11,11 @@ import { CompanyEditorModal } from './CompanyEditorModal';
 interface DealigenceQuickUploadProps {
   schema: Schema | null;
   tabId: number | null;
+  url?: string | null;
   onReset?: () => void;
 }
 
-export function DealigenceQuickUpload({ schema, tabId, onReset }: DealigenceQuickUploadProps) {
+export function DealigenceQuickUpload({ schema, tabId, url, onReset }: DealigenceQuickUploadProps) {
   const {
     state,
     initializeFromData,
@@ -53,7 +54,35 @@ export function DealigenceQuickUpload({ schema, tabId, onReset }: DealigenceQuic
     [setLoading, initializeFromData, setExtractionError]
   );
 
-  // Extract data when component mounts or tabId changes
+  // Track the URL we last extracted from
+  const extractedUrlRef = useRef<string | null>(null);
+
+  // Detect URL changes - compare both prop URL and extracted sourceUrl
+  // This catches SPA navigation even if parent detection is delayed
+  useEffect(() => {
+    if (!url || !tabId) return;
+
+    // Check if current URL doesn't match what we extracted
+    const extractedUrl = state.rawData?.sourceUrl;
+    const urlMismatch = extractedUrl && extractedUrl !== url;
+
+    // Check if URL prop changed from what we tracked
+    const propUrlChanged = extractedUrlRef.current && extractedUrlRef.current !== url;
+
+    if (urlMismatch || propUrlChanged) {
+      // URL changed - reset and let the idle effect handle re-extraction
+      extractedUrlRef.current = url;
+      reset();
+      return;
+    }
+
+    // Track current URL
+    if (!extractedUrlRef.current) {
+      extractedUrlRef.current = url;
+    }
+  }, [url, tabId, state.rawData?.sourceUrl, reset]);
+
+  // Extract data when component mounts or enters idle state
   useEffect(() => {
     if (tabId && state.step === 'idle') {
       extractData(tabId);
@@ -211,7 +240,7 @@ export function DealigenceQuickUpload({ schema, tabId, onReset }: DealigenceQuic
                 Go Back
               </button>
               <a
-                href={`https://run.mydealflow.com/inv/#/Deal.php?CompanyID=${state.duplicateMatch.id}`}
+                href={`https://run.mydealflow.com/inv/#/Company.php?CompanyID=${state.duplicateMatch.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-center text-white bg-accent-500 rounded-xl hover:bg-accent-600 transition-colors"
@@ -337,7 +366,7 @@ export function DealigenceQuickUpload({ schema, tabId, onReset }: DealigenceQuic
           </button>
           {state.createdDealId && (
             <a
-              href={`https://run.mydealflow.com/inv/#/Deal.php?CompanyID=${state.createdDealId}`}
+              href={`https://run.mydealflow.com/inv/#/Company.php?CompanyID=${state.createdDealId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 px-4 py-2.5 text-sm font-medium text-center text-white bg-accent-500 rounded-xl hover:bg-accent-600 transition-colors"

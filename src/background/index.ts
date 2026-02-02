@@ -79,6 +79,9 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
     case 'EXTRACT_DEALIGENCE_DATA':
       return handleExtractDealigenceData(message.tabId);
 
+    case 'ADD_DEAL_COMMENT':
+      return handleAddDealComment(message.dealId, message.comment);
+
     default:
       return { success: false, error: 'Unknown message type' };
   }
@@ -330,6 +333,24 @@ async function handleExtractDealigenceData(
         error: 'Content script not loaded. Please reload the Dealigence page and try again.',
       };
     }
+  }
+}
+
+async function handleAddDealComment(
+  dealId: string,
+  comment: string
+): Promise<MessageResponse<{ success: boolean }>> {
+  try {
+    const result = await sevantaApi.addDealComment(dealId, comment);
+    if (result.success) {
+      return { success: true, data: { success: true } };
+    }
+    return { success: false, error: result.error };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Add comment failed',
+    };
   }
 }
 
