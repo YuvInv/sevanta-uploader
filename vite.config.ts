@@ -12,6 +12,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         sidepanel: 'src/sidepanel/index.html',
+        'content/dealigence': 'src/content/dealigence/index.ts',
       },
     },
   },
