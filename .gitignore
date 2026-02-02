@@ -9,3 +9,4 @@ dist/
 coverage/
 *.tmp
 *.bak
+.claude/settings.local.json

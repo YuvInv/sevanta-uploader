@@ -14,6 +14,7 @@ import {
   transformToCrmDeal,
   transformFounders,
   validateDealigenceData,
+  buildDealigenceComment,
 } from '../../lib/dealigence/transformer';
 import { applyDealDefaults } from '../../lib/defaults';
 import { validateCompany } from '../../lib/validation';
@@ -194,6 +195,25 @@ export function useDealigenceUpload(schema: Schema | null) {
         throw new Error('No deal ID returned');
       }
 
+      // Add a comment with unmapped data (non-blocking - log warning if fails)
+      if (state.rawData) {
+        const comment = buildDealigenceComment(state.rawData);
+        if (comment) {
+          try {
+            const commentResponse = await chrome.runtime.sendMessage({
+              type: 'ADD_DEAL_COMMENT',
+              dealId,
+              comment,
+            });
+            if (!commentResponse.success) {
+              console.warn('Failed to add deal comment:', commentResponse.error);
+            }
+          } catch (error) {
+            console.warn('Failed to add deal comment:', error);
+          }
+        }
+      }
+
       // Create contacts linked to the deal
       const createdContactIds: string[] = [];
       const failedContacts: { name: string; error: string }[] = [];
@@ -236,7 +256,7 @@ export function useDealigenceUpload(schema: Schema | null) {
         error: error instanceof Error ? error.message : 'Upload failed',
       }));
     }
-  }, [state.dealData, state.contacts]);
+  }, [state.dealData, state.contacts, state.rawData]);
 
   /**
    * Reset to initial state

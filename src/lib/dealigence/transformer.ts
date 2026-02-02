@@ -76,7 +76,8 @@ export function transformToCrmDeal(
 }
 
 /**
- * Build detailed source notes with all Dealigence data for reference
+ * Build source notes with import tracking and mapped data only.
+ * Unmapped data (employees, established, ARR, LinkedIn) goes to comments instead.
  */
 function buildSourceNotes(data: DealigenceCompanyData): string {
   const lines: string[] = [];
@@ -84,37 +85,20 @@ function buildSourceNotes(data: DealigenceCompanyData): string {
   lines.push('=== IMPORTED FROM DEALIGENCE ===');
   lines.push(`Source: ${data.sourceUrl}`);
   lines.push(`Import Date: ${new Date().toISOString()}`);
-  lines.push('');
 
-  // Key metrics
+  // Only include data that IS mapped to CRM fields or useful for source tracking
+  // fundingStatus -> LifeStageID, totalFunding -> Num01, categories -> IndustryID
   if (data.fundingStatus) {
     lines.push(`Funding Status: ${data.fundingStatus}`);
   }
   if (data.totalFunding) {
     lines.push(`Total Funding: ${data.totalFunding}`);
   }
-  if (data.established) {
-    const year = extractYear(data.established);
-    lines.push(`Established: ${year || data.established}`);
-  }
-  if (data.employees) {
-    lines.push(`Employees: ${data.employees}`);
-  }
-  if (data.arr) {
-    lines.push(`ARR: ${data.arr}`);
-  }
-
-  // Categories
   if (data.categories.length > 0) {
     lines.push(`Categories: ${data.categories.join(', ')}`);
   }
 
-  // LinkedIn
-  if (data.linkedinUrl) {
-    lines.push(`LinkedIn: ${cleanLinkedInUrl(data.linkedinUrl)}`);
-  }
-
-  // Founders
+  // Founders and stakeholders are imported as contacts, but list them for reference
   if (data.founders.length > 0) {
     lines.push('');
     lines.push('Founders:');
@@ -127,7 +111,6 @@ function buildSourceNotes(data: DealigenceCompanyData): string {
     }
   }
 
-  // Stakeholders
   if (data.stakeholders.length > 0) {
     lines.push('');
     lines.push('Stakeholders & Advisors:');
@@ -238,4 +221,36 @@ export function validateDealigenceData(data: DealigenceCompanyData): {
     errors,
     warnings,
   };
+}
+
+/**
+ * Build a comment with unmapped Dealigence data for CRM visibility
+ * This data is also in Source Notes but adding as a comment makes it more visible
+ */
+export function buildDealigenceComment(data: DealigenceCompanyData): string | null {
+  const lines: string[] = [];
+
+  // Only include data that isn't directly mapped to CRM fields
+  // (employees, established, ARR, LinkedIn are NOT mapped)
+  if (data.employees) {
+    lines.push(`Employees: ${data.employees}`);
+  }
+  if (data.established) {
+    const year = extractYear(data.established);
+    lines.push(`Established: ${year || data.established}`);
+  }
+  if (data.arr) {
+    lines.push(`ARR: ${data.arr}`);
+  }
+  if (data.linkedinUrl) {
+    lines.push(`LinkedIn: ${cleanLinkedInUrl(data.linkedinUrl)}`);
+  }
+
+  // If no unmapped data, don't create a comment
+  if (lines.length === 0) {
+    return null;
+  }
+
+  // Add header and source
+  return `📊 Company Details (from Dealigence)\n${lines.join('\n')}\n\nSource: ${data.sourceUrl}`;
 }

@@ -63,13 +63,19 @@ function extractFromJsonLd(result: DealigenceCompanyData): void {
       result.employees = entity.numberOfEmployees?.toString();
       result.established = entity.foundingDate;
 
+      // Extract website URL from entity.url field first
+      if (entity.url && !entity.url.includes('dealigence')) {
+        result.website = entity.url;
+      }
+
       // Extract sameAs links (website and LinkedIn)
       if (Array.isArray(entity.sameAs)) {
         for (const url of entity.sameAs) {
           if (typeof url !== 'string') continue;
           if (url.includes('linkedin.com')) {
             result.linkedinUrl = url;
-          } else if (!url.includes('dealigence')) {
+          } else if (!result.website && !url.includes('dealigence')) {
+            // Only set website from sameAs if not already set from entity.url
             result.website = url;
           }
         }
@@ -329,6 +335,93 @@ function applyFallbacks(result: DealigenceCompanyData): void {
         .trim();
     }
   }
+
+  // Fallback for website from DOM
+  if (!result.website) {
+    result.website = extractWebsiteFromDom();
+  }
+}
+
+/**
+ * Extract website URL from DOM elements as a fallback
+ * Looks for external links near the company header
+ */
+function extractWebsiteFromDom(): string | undefined {
+  // Domains to exclude (social media, internal links)
+  const excludedDomains = [
+    'linkedin.com',
+    'twitter.com',
+    'x.com',
+    'facebook.com',
+    'instagram.com',
+    'youtube.com',
+    'github.com',
+    'dealigence.vc',
+    'dealigence.com',
+  ];
+
+  // Look for external link icons or buttons in the header area
+  // Dealigence typically places these near the company name
+  const headerArea = document.querySelector('header') || document.querySelector('main');
+  if (!headerArea) return undefined;
+
+  // Strategy 1: Look for links with external link icons (target="_blank")
+  const externalLinks = headerArea.querySelectorAll('a[target="_blank"]');
+  for (const link of externalLinks) {
+    const href = (link as HTMLAnchorElement).href;
+    if (!href) continue;
+
+    try {
+      const url = new URL(href);
+      const domain = url.hostname.toLowerCase();
+
+      // Skip excluded domains
+      if (excludedDomains.some((excluded) => domain.includes(excluded))) {
+        continue;
+      }
+
+      // Skip mailto and tel links
+      if (url.protocol === 'mailto:' || url.protocol === 'tel:') {
+        continue;
+      }
+
+      // Found a valid external website link
+      return href;
+    } catch {
+      // Invalid URL, skip
+    }
+  }
+
+  // Strategy 2: Look for links with globe/website icon classes
+  const iconLinks = headerArea.querySelectorAll('a[href^="http"]');
+  for (const link of iconLinks) {
+    const href = (link as HTMLAnchorElement).href;
+    if (!href) continue;
+
+    try {
+      const url = new URL(href);
+      const domain = url.hostname.toLowerCase();
+
+      // Skip excluded domains
+      if (excludedDomains.some((excluded) => domain.includes(excluded))) {
+        continue;
+      }
+
+      // Check if this link contains a globe/website icon or is near one
+      const hasWebsiteIcon =
+        link.querySelector('svg') !== null ||
+        link.textContent?.toLowerCase().includes('website') ||
+        link.getAttribute('aria-label')?.toLowerCase().includes('website');
+
+      if (hasWebsiteIcon) {
+        return href;
+      }
+    } catch {
+      // Invalid URL, skip
+    }
+  }
+
+  return undefined;
 }
 
 // Type definitions for JSON-LD data

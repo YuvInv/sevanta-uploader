@@ -90,63 +90,170 @@ export function DealigencePreview({
           </div>
         )}
 
-        {/* Key Metrics */}
-        <div className="px-5 py-4 border-b border-warm-100">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {data.employees && (
+        {/* Will Be Uploaded Section */}
+        <div className="px-5 py-4 border-b border-warm-100 bg-success-50/30">
+          <div className="flex items-center gap-2 mb-3">
+            <svg
+              className="w-4 h-4 text-success-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <dt className="text-xs font-semibold text-success-700 uppercase tracking-wider">
+              Will Be Uploaded
+            </dt>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-warm-500">Deal Name: </span>
+              <span className="text-warm-900 font-medium">{dealData.CompanyName || '—'}</span>
+            </div>
+            <div>
+              <span className="text-warm-500">Website: </span>
+              <span className="text-warm-900 font-medium">{dealData.URL || '—'}</span>
+            </div>
+            <div>
+              <span className="text-warm-500">Industry: </span>
+              <span className="text-warm-900 font-medium">{dealData.IndustryID || '—'}</span>
+            </div>
+            <div>
+              <span className="text-warm-500">Round: </span>
+              <span className="text-warm-900 font-medium">{dealData.LifeStageID || '—'}</span>
+            </div>
+            <div>
+              <span className="text-warm-500">Past Investment: </span>
+              <span className="text-warm-900 font-medium">
+                {dealData.Num01 ? `$${dealData.Num01}M` : '—'}
+              </span>
+            </div>
+            {data.founders.length > 0 && (
               <div>
-                <dt className="text-xs font-medium text-warm-500 uppercase tracking-wider">
-                  Employees
-                </dt>
-                <dd className="mt-1 text-sm font-semibold text-warm-900">{data.employees}</dd>
-              </div>
-            )}
-            {data.fundingStatus && (
-              <div>
-                <dt className="text-xs font-medium text-warm-500 uppercase tracking-wider">
-                  Funding Status
-                </dt>
-                <dd className="mt-1 text-sm font-semibold text-warm-900">{data.fundingStatus}</dd>
-              </div>
-            )}
-            {data.established && (
-              <div>
-                <dt className="text-xs font-medium text-warm-500 uppercase tracking-wider">
-                  Established
-                </dt>
-                <dd className="mt-1 text-sm font-semibold text-warm-900">
-                  {formatEstablished(data.established)}
-                </dd>
-              </div>
-            )}
-            {data.totalFunding && (
-              <div>
-                <dt className="text-xs font-medium text-warm-500 uppercase tracking-wider">
-                  Total Funding
-                </dt>
-                <dd className="mt-1 text-sm font-semibold text-warm-900">{data.totalFunding}</dd>
+                <span className="text-warm-500">Contacts: </span>
+                <span className="text-warm-900 font-medium">
+                  {data.founders.length} founder{data.founders.length !== 1 ? 's' : ''}
+                  {data.stakeholders.length > 0 &&
+                    ` + ${data.stakeholders.length} stakeholder${data.stakeholders.length !== 1 ? 's' : ''}`}
+                </span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Categories */}
-        {data.categories.length > 0 && (
-          <div className="px-5 py-4 border-b border-warm-100">
-            <dt className="text-xs font-medium text-warm-500 uppercase tracking-wider mb-2">
-              Categories
-            </dt>
-            <div className="flex flex-wrap gap-2">
-              {data.categories.map((cat, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent-100 text-accent-800"
-                >
-                  {cat}
-                </span>
-              ))}
+        {/* Reference Info Section (Collapsible) */}
+        {(data.employees ||
+          data.established ||
+          data.arr ||
+          data.categories.length > 0 ||
+          data.linkedinUrl) && (
+          <details className="px-5 py-4 border-b border-warm-100">
+            <summary className="cursor-pointer flex items-center gap-2 text-xs font-medium text-warm-500 uppercase tracking-wider hover:text-warm-700">
+              <svg
+                className="w-4 h-4 transition-transform details-open:rotate-90"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              Reference Info
+              <span className="text-warm-400 font-normal normal-case">(saved in Source Notes)</span>
+            </summary>
+            <div className="mt-3 space-y-3">
+              {/* Metrics */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {data.employees && (
+                  <div>
+                    <dt className="text-xs font-medium text-warm-400 uppercase tracking-wider">
+                      Employees
+                    </dt>
+                    <dd className="mt-1 text-sm text-warm-700">{data.employees}</dd>
+                  </div>
+                )}
+                {data.fundingStatus && (
+                  <div>
+                    <dt className="text-xs font-medium text-warm-400 uppercase tracking-wider">
+                      Funding Status
+                    </dt>
+                    <dd className="mt-1 text-sm text-warm-700">{data.fundingStatus}</dd>
+                  </div>
+                )}
+                {data.established && (
+                  <div>
+                    <dt className="text-xs font-medium text-warm-400 uppercase tracking-wider">
+                      Established
+                    </dt>
+                    <dd className="mt-1 text-sm text-warm-700">
+                      {formatEstablished(data.established)}
+                    </dd>
+                  </div>
+                )}
+                {data.totalFunding && (
+                  <div>
+                    <dt className="text-xs font-medium text-warm-400 uppercase tracking-wider">
+                      Total Funding
+                    </dt>
+                    <dd className="mt-1 text-sm text-warm-700">{data.totalFunding}</dd>
+                  </div>
+                )}
+                {data.arr && (
+                  <div>
+                    <dt className="text-xs font-medium text-warm-400 uppercase tracking-wider">
+                      ARR
+                    </dt>
+                    <dd className="mt-1 text-sm text-warm-700">{data.arr}</dd>
+                  </div>
+                )}
+              </div>
+
+              {/* Categories */}
+              {data.categories.length > 0 && (
+                <div>
+                  <dt className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-2">
+                    Categories
+                  </dt>
+                  <div className="flex flex-wrap gap-2">
+                    {data.categories.map((cat, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warm-100 text-warm-700"
+                      >
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* LinkedIn */}
+              {data.linkedinUrl && (
+                <div>
+                  <dt className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">
+                    LinkedIn
+                  </dt>
+                  <a
+                    href={data.linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-accent-600 hover:text-accent-700 hover:underline"
+                  >
+                    {data.linkedinUrl.replace(/^https?:\/\//, '')}
+                  </a>
+                </div>
+              )}
             </div>
-          </div>
+          </details>
         )}
 
         {/* Founders */}
@@ -206,31 +313,6 @@ export function DealigencePreview({
             </div>
           </div>
         )}
-
-        {/* CRM Field Preview */}
-        <div className="px-5 py-4 bg-warm-50">
-          <dt className="text-xs font-medium text-warm-500 uppercase tracking-wider mb-2">
-            CRM Field Mapping
-          </dt>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <span className="text-warm-500">Deal Name: </span>
-              <span className="text-warm-900">{dealData.CompanyName || '—'}</span>
-            </div>
-            <div>
-              <span className="text-warm-500">Industry: </span>
-              <span className="text-warm-900">{dealData.IndustryID || '—'}</span>
-            </div>
-            <div>
-              <span className="text-warm-500">Round: </span>
-              <span className="text-warm-900">{dealData.LifeStageID || '—'}</span>
-            </div>
-            <div>
-              <span className="text-warm-500">Past Investment: </span>
-              <span className="text-warm-900">{dealData.Num01 ? `$${dealData.Num01}M` : '—'}</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Source Link */}
