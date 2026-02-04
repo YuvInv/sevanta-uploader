@@ -276,17 +276,38 @@ npm run bump:major   # Bump major version (1.0.1 -> 2.0.0)
 ## Task Management
 
 ### Tracking Locations
-- `TODO.md` - Task list linking to GitHub Issues
+- **[Notion Kanban Board](https://www.notion.so/27837e664974447c9d3a10c70ab4b58b?v=2fc98ba9241e806e994c000c4cbd9eb7)** - PRIMARY source of truth for all tasks, features, bugs, and backlog
 - `tasks/lessons.md` - Learnings and rules from past mistakes
-- [GitHub Issues](https://github.com/YuvInv/sevanta-uploader/issues) - For tracking and collaboration
+- `TODO.md` - DEPRECATED (migrated to Notion)
+- GitHub Issues - DEPRECATED (migrated to Notion)
+
+### Notion Database Structure
+The Kanban board has three status columns:
+- **📋 Backlog** - Open issues, planned features, identified bugs
+- **🚧 In Progress** - Currently being worked on
+- **✅ Done** - Completed tasks
+
+Each task includes:
+- Issue # (for historical GitHub reference)
+- Priority (High/Medium/Low)
+- Labels (bug, enhancement, feature request, tech-debt)
+- GitHub URL (for historical context)
+- Full description and acceptance criteria
 
 ### Workflow Checklist
 1. **Plan First**: Enter plan mode or outline steps before starting
-2. **Verify Plan**: Check in with user before starting implementation
-3. **Track Progress**: Mark items complete as you go
-4. **Explain Changes**: Provide high-level summary at each step
-5. **Document Results**: Summarize what was done when complete
-6. **Capture Lessons**: Update `tasks/lessons.md` after corrections or discoveries
+2. **Check Notion**: Review Kanban board for current priorities and context
+3. **Verify Plan**: Check in with user before starting implementation
+4. **Track Progress**: Update Notion task status (Backlog → In Progress → Done)
+5. **Explain Changes**: Provide high-level summary at each step
+6. **Document Results**: Update Notion task with implementation notes
+7. **Capture Lessons**: Update `tasks/lessons.md` after corrections or discoveries
+
+### Syncing with Notion
+Use the `/sync-todos` skill to:
+- Sync local TODO.md with Notion (if needed)
+- Create new Notion tasks from completed work
+- Update task statuses based on progress
 
 ## api examples
 the folder .schema_examples/ contains example JSON responses from various API endpoints for reference when working with the Sevanta Dealflow API. you can use these files to understand the structure of API responses and to test your code against real data formats.
@@ -334,6 +355,6 @@ After significant work on this project, reflect on:
 1. **Project-Specific Learnings**: Update this CLAUDE.md with new patterns, gotchas, or conventions discovered
 2. **API Quirks**: Document any new API behavior or edge cases encountered
 3. **Component Patterns**: Note reusable patterns in the React/Chrome Extension architecture
-4. **TODO Sync**: Ensure TODO.md reflects current state after changes
+4. **Notion Sync**: Update Notion Kanban board with completed tasks and new discoveries
 
 Keep this file current - it's the primary context for future sessions.
