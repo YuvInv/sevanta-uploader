@@ -39,16 +39,39 @@ Enter plan mode for any task with 3+ steps. If things go sideways during impleme
 
 ### Pre-Implementation Requirements
 
+**CRITICAL: Observation Before Hypothesis (Bug Debugging)**
+
+This rule exists because of 4+ failed attempts on Issue #54. Every failure followed the same pattern: theorize → implement → fail → repeat.
+
+**Before writing ANY hypothesis about a bug's cause:**
+1. **OBSERVE** actual behavior using browser MCP tools or DevTools
+2. **CAPTURE** console logs, network requests, message passing during reproduction
+3. **REPRODUCE** the exact failure scenario while watching
+4. **DOCUMENT** what you actually SAW, not what you think happened
+
+**Banned phrases until observation is complete:**
+- "This appears to be..."
+- "The root cause is..."
+- "This is likely..."
+- "I think the issue is..."
+
+**Required phrase before proposing fixes:**
+- "I observed [specific thing] in [console/network/DOM]"
+
+**Why:** Theoretical analysis of async/SPA/timing bugs is unreliable. The code looks like it should work. The bug exists because something unexpected happens at runtime. Only observation reveals what that is.
+
 **Before Writing Code for Bug Fixes:**
 1. Check for existing analysis: `docs/bugs/bug-*.md`, `docs/`, or issue comments
 2. Read linked documentation fully - don't re-derive existing research
-3. Validate proposed solution addresses root cause, not symptoms
+3. **OBSERVE actual behavior first** - use `systematic-debugging` skill
+4. Validate proposed solution addresses root cause, not symptoms
 
 **For Timing-Sensitive Features (SPA, async, race conditions):**
-1. Validate against ground truth (URL, API response) - never previous/cached state
-2. Never return unvalidated data - error state > wrong data
-3. Show loading states during async operations
-4. Test edge cases: A→B, A→B→A, rapid navigation, back button
+1. **OBSERVE first** - don't theorize about race conditions
+2. Validate against ground truth (URL, API response) - never previous/cached state
+3. Never return unvalidated data - error state > wrong data
+4. Show loading states during async operations
+5. Test edge cases: A→B, A→B→A, rapid navigation, back button
 
 ### Subagent Strategy
 Use subagents liberally for parallel work. One focused task per subagent - don't overload them with multiple concerns.
@@ -356,3 +379,52 @@ After significant work on this project, reflect on:
 4. **Notion Sync**: Update Notion Kanban board with completed tasks and new discoveries
 
 Keep this file current - it's the primary context for future sessions.
+
+## Known Debugging Failures (Learn From These)
+
+### Issue #54: Quick Upload Reliability - 4+ Failed Attempts
+
+**What kept failing:** Theoretical analysis of SPA race conditions without observing actual behavior.
+
+**Failed approaches (do not repeat):**
+1. Adding `chrome.tabs.onUpdated` listener
+2. Moving `sourceUrl` capture to start of extraction
+3. Adding hyphen-stripped name matching
+4. Adding delays before extraction
+
+**Why they failed:** All were based on "I think the issue is..." without ever observing:
+- What console logs appear during reproduction
+- What messages are actually sent/received
+- What the DOM state is at extraction time
+- Whether content script even receives requests
+
+**The fix:** Use browser MCP tools (`mcp__claude-in-chrome__read_console_messages`, etc.) to OBSERVE actual behavior during reproduction BEFORE proposing any fix.
+
+See: `docs/lessons.md` for full history.
+
+## Dealigence Extraction Limitations (Architectural)
+
+**Status**: Current approach deprecated - see `docs/dealigence-extraction-postmortem.md`
+
+### Data Source Architecture
+
+| Source | Availability | Contains |
+|--------|--------------|----------|
+| JSON-LD | Full page load only | Complete data (founders) |
+| `__NEXT_DATA__` | Full page load only | Basic data only |
+| `_next/data` API | SPA navigation | Basic data only |
+| DOM Stakeholders | Always | Board/advisors (NOT founders) |
+
+### The Core Problem
+
+- **Full page load**: JSON-LD has complete data including founders
+- **SPA navigation**: JSON-LD is STALE, DOM has different people (stakeholders ≠ founders)
+- **No fix possible**: The complete data simply isn't accessible during SPA navigation
+
+### Implication for Future Work
+
+Any Dealigence integration must either:
+1. Force full page loads (poor UX)
+2. Use an API (if available)
+3. Accept partial data with manual completion
+4. Abandon automated extraction

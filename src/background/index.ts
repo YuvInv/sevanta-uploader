@@ -231,6 +231,84 @@ async function handleSearchContacts(
   }
 }
 
+/**
+ * Extract founders from React fiber tree by executing in the page's MAIN world.
+ * Content scripts can't access React fiber props (isolated world), so we use
+ * chrome.scripting.executeScript with world: 'MAIN' to read them directly.
+ */
+async function extractFoundersFromPage(
+  tabId: number
+): Promise<Array<{ name: string; title?: string; linkedinUrl?: string }>> {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: () => {
+        // Find the "Founders" dataPointValue element
+        const labels = document.querySelectorAll('[class*="dataPointLabel"]');
+        let foundersValue: Element | null = null;
+        for (const label of labels) {
+          if (label.textContent?.trim() === 'Founders') {
+            foundersValue = label.nextElementSibling;
+            break;
+          }
+        }
+        if (!foundersValue) return [];
+
+        const btn = foundersValue.querySelector('button');
+        if (!btn) return [];
+
+        // Find React fiber key (only accessible in MAIN world)
+        const fiberKey = Object.keys(btn).find((k) => k.startsWith('__reactFiber'));
+        if (!fiberKey) return [];
+
+        // Walk up the fiber tree to find the component with the data array
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let current = (btn as any)[fiberKey];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let data: any[] | null = null;
+        for (let i = 0; i < 20 && current; i++) {
+          const mp = current.memoizedProps;
+          if (mp && Array.isArray(mp.data) && mp.data[0]?.tooltip) {
+            data = mp.data;
+            break;
+          }
+          current = current.return;
+        }
+        if (!data) return [];
+
+        // Extract founder props from tooltip components
+        return data
+          .map(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (item: any) => {
+              const props = item.tooltip?.props?.children?.props;
+              if (!props?.name) return null;
+              return {
+                name: props.name as string,
+                title: (props.title as string) || undefined,
+                linkedinUrl: props.linkedinUrl
+                  ? `https://linkedin.com${props.linkedinUrl}`
+                  : undefined,
+              };
+            }
+          )
+          .filter(Boolean) as Array<{ name: string; title?: string; linkedinUrl?: string }>;
+      },
+    });
+
+    const founders = results?.[0]?.result;
+    if (Array.isArray(founders) && founders.length > 0) {
+      console.log(`[Sevanta] Extracted ${founders.length} founders from React fiber`);
+      return founders;
+    }
+    return [];
+  } catch (error) {
+    console.log('[Sevanta] Founders fiber extraction failed:', error);
+    return [];
+  }
+}
+
 async function handleExtractDealigenceData(
   tabId: number
 ): Promise<MessageResponse<DealigenceCompanyData>> {
@@ -266,20 +344,13 @@ async function handleExtractDealigenceData(
 
       const data = response.data as DealigenceCompanyData;
 
-      // VALIDATION 1: Check if page is still loading (skeleton/spinner detected)
+      // VALIDATION 1: Check if page is still loading
       if (data.isLoading) {
-        console.log('[Sevanta] Stale: page still loading (skeleton/spinner detected)');
+        console.log('[Sevanta] Stale: page still loading');
         return { isStale: true, staleReason: 'loading' };
       }
 
-      // VALIDATION 2: Reject URL fallback as source (unreliable during SPA navigation)
-      // URL fallback always matches the URL, masking stale DOM/JSON-LD data
-      if (data.companyNameSource === 'url-fallback') {
-        console.log('[Sevanta] Stale: company name from URL fallback (unreliable)');
-        return { isStale: true, staleReason: 'url-fallback' };
-      }
-
-      // VALIDATION 3: Validate sourceUrl exactly matches tab URL (ground truth)
+      // VALIDATION 2: Validate sourceUrl exactly matches tab URL (ground truth)
       if (data.sourceUrl !== expectedUrl) {
         console.log(
           `[Sevanta] Stale: sourceUrl mismatch. Got "${data.sourceUrl}", expected "${expectedUrl}"`
@@ -287,7 +358,7 @@ async function handleExtractDealigenceData(
         return { isStale: true, staleReason: 'url-mismatch' };
       }
 
-      // VALIDATION 4: Company name must match URL slug (existing check)
+      // VALIDATION 3: Company name must match URL slug
       if (data.companyName && urlSlug) {
         if (!doesCompanyMatchSlug(data.companyName, urlSlug)) {
           console.log(`[Sevanta] Stale: got "${data.companyName}" but URL is "${urlSlug}"`);
@@ -295,8 +366,7 @@ async function handleExtractDealigenceData(
         }
       }
 
-      // VALIDATION 5: Require minimum content (prevents skeleton data)
-      // Must have at least description OR some funding info
+      // VALIDATION 4: Require minimum content (prevents skeleton data)
       const hasDescription = !!data.description && data.description.length > 20;
       const hasFunding = !!data.totalFunding || !!data.fundingStatus;
       if (!hasDescription && !hasFunding) {
@@ -315,6 +385,13 @@ async function handleExtractDealigenceData(
 
   // Return immediately if successful
   if (result.data) {
+    // Supplement founders from page context if content script found none
+    if (result.data.founders.length === 0) {
+      const pageFounders = await extractFoundersFromPage(tabId);
+      if (pageFounders.length > 0) {
+        result.data.founders = pageFounders;
+      }
+    }
     return { success: true, data: result.data };
   }
 
@@ -331,6 +408,13 @@ async function handleExtractDealigenceData(
 
     if (result.data) {
       console.log(`[Sevanta] Extraction succeeded on attempt ${attempt}`);
+      // Supplement founders from page context if content script found none
+      if (result.data.founders.length === 0) {
+        const pageFounders = await extractFoundersFromPage(tabId);
+        if (pageFounders.length > 0) {
+          result.data.founders = pageFounders;
+        }
+      }
       // Include retry count in the data for UI feedback
       return { success: true, data: { ...result.data, _retryCount: attempt } };
     }
