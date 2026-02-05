@@ -48,7 +48,7 @@ A v1 implementation was built and **removed** due to critical bug #44 (SPA navig
 | Compared name vs previous name | Delta comparison, not ground truth | Compare name vs URL slug |
 | Returned data after max retries | User sees confident-looking wrong data | Return error: "Page still loading" |
 | Silent retries | User didn't know extraction was happening | Show loading spinner with retry count |
-| Skipped existing docs | Bug analysis had correct solution | Always check bugs/ and docs/ first |
+| Skipped existing docs | Bug analysis had correct solution | Always check docs/bugs/ and docs/ first |
 
 ### 2.3 Rules for This Feature
 
@@ -446,14 +446,14 @@ ${data.stakeholders.map(s => `- ${s.name} (${s.role})`).join('\n')}
 After PRD approval, consolidate documentation:
 
 **Keep (as reference):**
-- `bugs/bug-44-spa-stale-data.md` - Root cause analysis
-- `tasks/lessons.md` - Lessons learned
+- `docs/bugs/bug-44-spa-stale-data.md` - Root cause analysis
+- `docs/lessons.md` - Lessons learned
 
 **Update:**
-- `tasks_design/Dealigence_integration/2.DEALIGENCE_FIELD_MAPPING.md` - Update with live DOM research findings
+- `docs/design/Dealigence_integration/2.DEALIGENCE_FIELD_MAPPING.md` - Update with live DOM research findings
 
 **Remove (replaced by this PRD):**
-- `tasks_design/Dealigence_integration/1.TECHNICAL_SPECIFICATION.md` - Old spec, doesn't include SPA fix
+- `docs/design/Dealigence_integration/1.TECHNICAL_SPECIFICATION_v1_DEPRECATED.md` - Old spec, doesn't include SPA fix
 
 **Create:**
 - This PRD becomes the single source of truth for implementation

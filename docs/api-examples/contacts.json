@@ -1,0 +1,367 @@
+{
+    "data": {
+        "Address": {
+            "dbname": "Address",
+            "helptext": "",
+            "label": "Address",
+            "optiongroup": "",
+            "type": "text"
+        },
+        "City": {
+            "dbname": "City",
+            "helptext": "",
+            "label": "City",
+            "optiongroup": "values",
+            "type": "text"
+        },
+        "Company": {
+            "dbname": "Company",
+            "helptext": "",
+            "label": "Company",
+            "optiongroup": "values",
+            "type": "text"
+        },
+        "ContactType": {
+            "dbname": "ContactType",
+            "helptext": "",
+            "label": "Relationship~",
+            "optiongroup": "ContactTypes",
+            "optionlist": {
+                "ADV": "Adviser",
+                "BRD": "Board",
+                "EML": "Email-scan",
+                "INV": "Investor - Current",
+                "LAW": "Counsel - Company",
+                "MAY": "Investor - Prospective",
+                "MGT": "Management",
+                "RCC": "Counsel - Ours",
+                "SRC": "Source"
+            },
+            "type": "text"
+        },
+        "ContactTypeID": {
+            "dbname": "ContactTypeID",
+            "helptext": "",
+            "label": "Relationship",
+            "optiongroup": "ContactTypes",
+            "optionlist": {
+                "ADV": "Adviser",
+                "BRD": "Board",
+                "EML": "Email-scan",
+                "INV": "Investor - Current",
+                "LAW": "Counsel - Company",
+                "MAY": "Investor - Prospective",
+                "MGT": "Management",
+                "RCC": "Counsel - Ours",
+                "SRC": "Source"
+            },
+            "type": "select"
+        },
+        "Country": {
+            "dbname": "Country",
+            "helptext": "",
+            "label": "Country",
+            "optiongroup": "values",
+            "type": "text"
+        },
+        "CreatedUserID": {
+            "dbname": "CreatedUserID",
+            "helptext": "",
+            "label": "Created By",
+            "optiongroup": "AllUsers",
+            "optionlist": {
+                "AB": "Alina Berin",
+                "EG": "Erez Golan",
+                "EN": "Eitan Naor",
+                "ER": "Eyal Rosner",
+                "ER2": "Elinor Rosner",
+                "GL": "Guy Levy",
+                "GP": "Gil Paz",
+                "GP2": "Gil Pali",
+                "GZ": "Guy Zurawel",
+                "MN": "Mariko Nagano",
+                "MP": "Maayan Perry",
+                "MS": "Marom Schneider",
+                "NA": "Noam Amir",
+                "NU": "Nick Uchimura",
+                "OM": "Omer Militscher",
+                "RT": "Roy Takata",
+                "SC": "Sam Chester",
+                "SOL": "Shir Oren Langer",
+                "VAZ": "Varda Achiron-Zanzuri",
+                "YM": "Yoel Mazur",
+                "YN": "Yuval Naor",
+                "YS": "Yarden Shechter"
+            },
+            "type": "select"
+        },
+        "DateCreated": {
+            "dbname": "DateCreated",
+            "helptext": "",
+            "label": "Date Created",
+            "optiongroup": "",
+            "type": "date"
+        },
+        "DateLastAction": {
+            "dbname": "DateLastAction",
+            "helptext": "",
+            "label": "Last Updated",
+            "optiongroup": "",
+            "type": "datetime"
+        },
+        "Email": {
+            "dbname": "Email",
+            "helptext": "",
+            "label": "Email",
+            "optiongroup": "",
+            "type": "email"
+        },
+        "FaxNumber": {
+            "dbname": "FaxNumber",
+            "helptext": "",
+            "label": "Website",
+            "optiongroup": "",
+            "type": "tel"
+        },
+        "HomePhone": {
+            "dbname": "HomePhone",
+            "helptext": "",
+            "label": "Home Phone",
+            "optiongroup": "",
+            "type": "tel"
+        },
+        "IsPrimary": {
+            "dbname": "IsPrimary",
+            "helptext": "",
+            "label": "IsPrimary",
+            "optiongroup": "YesNo",
+            "optionlist": {
+                "0": "No",
+                "1": "Yes"
+            },
+            "type": "radio"
+        },
+        "LastModifiedBy": {
+            "dbname": "LastModifiedBy",
+            "helptext": "",
+            "label": "Last Modified By",
+            "optiongroup": "AllUsers",
+            "optionlist": {
+                "AB": "Alina Berin",
+                "EG": "Erez Golan",
+                "EN": "Eitan Naor",
+                "ER": "Eyal Rosner",
+                "ER2": "Elinor Rosner",
+                "GL": "Guy Levy",
+                "GP": "Gil Paz",
+                "GP2": "Gil Pali",
+                "GZ": "Guy Zurawel",
+                "MN": "Mariko Nagano",
+                "MP": "Maayan Perry",
+                "MS": "Marom Schneider",
+                "NA": "Noam Amir",
+                "NU": "Nick Uchimura",
+                "OM": "Omer Militscher",
+                "RT": "Roy Takata",
+                "SC": "Sam Chester",
+                "SOL": "Shir Oren Langer",
+                "VAZ": "Varda Achiron-Zanzuri",
+                "YM": "Yoel Mazur",
+                "YN": "Yuval Naor",
+                "YS": "Yarden Shechter"
+            },
+            "type": "select"
+        },
+        "MobilePhone": {
+            "dbname": "MobilePhone",
+            "helptext": "",
+            "label": "Mobile Phone",
+            "optiongroup": "",
+            "type": "tel"
+        },
+        "Name": {
+            "dbname": "Name",
+            "helptext": "",
+            "label": "Contact Name",
+            "optiongroup": "",
+            "type": "text"
+        },
+        "Notes": {
+            "dbname": "Notes",
+            "helptext": "",
+            "label": "Notes",
+            "optiongroup": "",
+            "type": "textarea"
+        },
+        "PostalCode": {
+            "dbname": "PostalCode",
+            "helptext": "",
+            "label": "Postal Code",
+            "optiongroup": "",
+            "type": "text"
+        },
+        "StageID": {
+            "dbname": "StageID",
+            "helptext": "",
+            "label": "Deal Stage",
+            "optiongroup": "Stages",
+            "optionlist": {
+                "-1": "",
+                "0": "Screening",
+                "1": "Scheduling",
+                "2": "Waiting for 2nd meeting",
+                "3": "Assessment",
+                "4": "Validation",
+                "5": "Investment Committee",
+                "6": "Term Sheet",
+                "7": "DD & SPA",
+                "8": "Closing",
+                "9": "Portfolio"
+            },
+            "type": "select"
+        },
+        "State": {
+            "dbname": "State",
+            "helptext": "",
+            "label": "State",
+            "optiongroup": "",
+            "type": "text"
+        },
+        "StatusID": {
+            "dbname": "StatusID",
+            "helptext": "",
+            "label": "Deal Status",
+            "optiongroup": "Status",
+            "optionlist": {
+                "0": "Inactive",
+                "1": "Active"
+            },
+            "type": "select"
+        },
+        "Tag": {
+            "dbname": "Tag",
+            "helptext": "",
+            "label": "Tags",
+            "optiongroup": "values",
+            "type": "multi-tag"
+        },
+        "Text01": {
+            "dbname": "Text01",
+            "helptext": "",
+            "label": "Contact Type",
+            "optiongroup": "ContactCats",
+            "optionlist": {
+                "ACCT": "Services - Accountant",
+                "ADV": "Services - Advisory",
+                "ANGEL": "Investor - Angel",
+                "CVC": "Investor - CVC",
+                "ENTR": "Entrepreneur",
+                "GOV": "Network Manager - Government",
+                "INV": "Investor - Other",
+                "LEGAL": "Services - Legal",
+                "NETMAN": "Network Manager - Other",
+                "NGO": "Network Manager - NGO",
+                "SERVICES": "Services - Other",
+                "VC": "Investor - VC"
+            },
+            "type": "select"
+        },
+        "Text02": {
+            "dbname": "Text02",
+            "helptext": "",
+            "label": "PersonOrg",
+            "optiongroup": "PersonOrg",
+            "optionlist": {
+                "ORG": "Org",
+                "Person": "Person"
+            },
+            "type": "radio"
+        },
+        "Text03": {
+            "dbname": "Text03",
+            "helptext": "",
+            "label": "Owner",
+            "optiongroup": "AllUsers",
+            "optionlist": {
+                "AB": "Alina Berin",
+                "EG": "Erez Golan",
+                "EN": "Eitan Naor",
+                "ER": "Eyal Rosner",
+                "ER2": "Elinor Rosner",
+                "GL": "Guy Levy",
+                "GP": "Gil Paz",
+                "GP2": "Gil Pali",
+                "GZ": "Guy Zurawel",
+                "MN": "Mariko Nagano",
+                "MP": "Maayan Perry",
+                "MS": "Marom Schneider",
+                "NA": "Noam Amir",
+                "NU": "Nick Uchimura",
+                "OM": "Omer Militscher",
+                "RT": "Roy Takata",
+                "SC": "Sam Chester",
+                "SOL": "Shir Oren Langer",
+                "VAZ": "Varda Achiron-Zanzuri",
+                "YM": "Yoel Mazur",
+                "YN": "Yuval Naor",
+                "YS": "Yarden Shechter"
+            },
+            "type": "select"
+        },
+        "Text04": {
+            "dbname": "Text04",
+            "helptext": "",
+            "label": "Domain",
+            "optiongroup": "InvestorDomains",
+            "optionlist": {
+                "AG": "AgriFood",
+                "AGN": "Agnostic",
+                "EN": "Energy",
+                "HLT": "Health",
+                "IT": "IT&Cyber",
+                "MOB": "Mobility",
+                "O": "Other"
+            },
+            "type": "select"
+        },
+        "Text05": {
+            "dbname": "Text05",
+            "helptext": "",
+            "label": "Tier",
+            "optiongroup": "InvestorTiers",
+            "optionlist": {
+                "1": "Tier 1",
+                "2": "Tier 2",
+                "3": "Tier 3"
+            },
+            "type": "select"
+        },
+        "Text06": {
+            "dbname": "Text06",
+            "helptext": "",
+            "label": "Priority",
+            "optiongroup": "Priorities",
+            "optionlist": {
+                "1": "Low",
+                "3": "Medium",
+                "5": "High"
+            },
+            "type": "select"
+        },
+        "Title": {
+            "dbname": "Title",
+            "helptext": "",
+            "label": "Title",
+            "optiongroup": "",
+            "type": "text"
+        },
+        "WorkPhone": {
+            "dbname": "WorkPhone",
+            "helptext": "",
+            "label": "Work Phone",
+            "optiongroup": "",
+            "type": "tel"
+        }
+    },
+    "status": "ok"
+}
