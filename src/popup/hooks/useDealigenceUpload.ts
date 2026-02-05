@@ -9,6 +9,11 @@ import { mapToCrmDeal, mapToCrmContact } from '../../lib/dealigence/transformers
 
 export type UploadStep = 'idle' | 'checking' | 'ready' | 'uploading' | 'success' | 'error';
 
+export interface DuplicateMatch {
+  name: string;
+  id?: string;
+}
+
 export function useDealigenceUpload() {
   // Upload flow state
   const [uploadStep, setUploadStep] = useState<UploadStep>('idle');
@@ -18,37 +23,10 @@ export function useDealigenceUpload() {
   const [uploadError, setUploadError] = useState<string | undefined>();
   const [createdDealId, setCreatedDealId] = useState<string | undefined>();
 
-  // Check for duplicates in CRM
-  const checkDuplicate = useCallback(async (data: DealigenceCompanyData): Promise<boolean> => {
-    setUploadStep('checking');
-    setDuplicateWarning(undefined);
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'CHECK_DUPLICATE',
-        companyName: data.companyName,
-        website: data.website,
-      });
-
-      if (response?.success && response.data?.isDuplicate) {
-        const match = response.data.matches?.[0];
-        const warningMsg = match
-          ? `Similar company found: "${match.CompanyName}"`
-          : 'A similar company may already exist in the CRM.';
-        setDuplicateWarning(warningMsg);
-        setUploadStep('ready');
-        return true;
-      }
-
-      setUploadStep('ready');
-      return false;
-    } catch (error) {
-      console.error('[Sevanta] Duplicate check failed:', error);
-      // Continue with upload even if duplicate check fails
-      setUploadStep('ready');
-      return false;
-    }
-  }, []);
+  // Modal state for duplicate warning
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateMatch, setDuplicateMatch] = useState<DuplicateMatch | null>(null);
+  const [pendingUploadData, setPendingUploadData] = useState<DealigenceCompanyData | null>(null);
 
   // Update CRM data
   const updateCrmData = useCallback((data: Record<string, string>) => {
@@ -60,8 +38,8 @@ export function useDealigenceUpload() {
     setIncludeFounder((prev) => !prev);
   }, []);
 
-  // Upload to CRM
-  const upload = useCallback(
+  // Internal upload function (called after duplicate check passes or user confirms)
+  const performUpload = useCallback(
     async (data: DealigenceCompanyData) => {
       setUploadStep('uploading');
       setUploadError(undefined);
@@ -102,6 +80,7 @@ export function useDealigenceUpload() {
 
         setCreatedDealId(dealId);
         setUploadStep('success');
+        setPendingUploadData(null);
       } catch (error) {
         setUploadError(error instanceof Error ? error.message : 'Upload failed');
         setUploadStep('error');
@@ -109,6 +88,64 @@ export function useDealigenceUpload() {
     },
     [crmData, includeFounder]
   );
+
+  // Check for duplicates in CRM and show modal if found
+  const checkDuplicateAndUpload = useCallback(
+    async (data: DealigenceCompanyData) => {
+      setUploadStep('checking');
+      setDuplicateWarning(undefined);
+      setPendingUploadData(data);
+
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'CHECK_DUPLICATE',
+          companyName: data.companyName,
+          website: data.website,
+        });
+
+        if (response?.success && response.data?.isDuplicate) {
+          const match = response.data.matches?.[0];
+          const warningMsg = match
+            ? `Similar company found: "${match.CompanyName}"`
+            : 'A similar company may already exist in the CRM.';
+          setDuplicateWarning(warningMsg);
+
+          // Set modal state and show modal
+          setDuplicateMatch(
+            match ? { name: match.CompanyName, id: match.CompanyID?.toString() } : null
+          );
+          setShowDuplicateModal(true);
+          setUploadStep('ready');
+          return;
+        }
+
+        // No duplicate found, proceed with upload
+        setUploadStep('ready');
+        await performUpload(data);
+      } catch (error) {
+        console.error('[Sevanta] Duplicate check failed:', error);
+        // Continue with upload even if duplicate check fails
+        setUploadStep('ready');
+        await performUpload(data);
+      }
+    },
+    [performUpload]
+  );
+
+  // Confirm upload after duplicate warning
+  const confirmUpload = useCallback(async () => {
+    setShowDuplicateModal(false);
+    if (pendingUploadData) {
+      await performUpload(pendingUploadData);
+    }
+  }, [pendingUploadData, performUpload]);
+
+  // Cancel upload after duplicate warning
+  const cancelUpload = useCallback(() => {
+    setShowDuplicateModal(false);
+    setPendingUploadData(null);
+    setUploadStep('ready');
+  }, []);
 
   // Reset state for another upload
   const reset = useCallback(() => {
@@ -118,6 +155,9 @@ export function useDealigenceUpload() {
     setIncludeFounder(true);
     setUploadError(undefined);
     setCreatedDealId(undefined);
+    setShowDuplicateModal(false);
+    setDuplicateMatch(null);
+    setPendingUploadData(null);
   }, []);
 
   return {
@@ -128,15 +168,19 @@ export function useDealigenceUpload() {
     includeFounder,
     uploadError,
     createdDealId,
+    showDuplicateModal,
+    duplicateMatch,
+    pendingUploadData,
 
     // Computed
     isUploading: uploadStep === 'uploading',
 
     // Actions
-    checkDuplicate,
+    checkDuplicateAndUpload,
+    confirmUpload,
+    cancelUpload,
     updateCrmData,
     toggleFounder,
-    upload,
     reset,
   };
 }
