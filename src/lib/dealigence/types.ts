@@ -14,6 +14,7 @@ export interface DealigenceCompanyData {
   companyName: string;
   description?: string;
   website?: string;
+  linkedinUrl?: string;
   totalFunding?: string;
   fundingStatus?: string;
   categories: string[];

@@ -1,23 +1,53 @@
 /**
- * Preview card showing extracted company data
+ * Preview card showing extracted company data aligned with CRM fields
+ * Shows what will be uploaded to the CRM before upload
  */
 
+import { useState } from 'react';
 import type { DealigenceCompanyData, DealigenceStakeholder } from '../../../lib/dealigence/types';
+import {
+  parseFundingAmount,
+  mapFundingStatus,
+  mapCategory,
+} from '../../../lib/dealigence/transformers';
 
 interface DealigencePreviewProps {
   data: DealigenceCompanyData;
   onUpload: () => void;
-  onEdit: () => void;
   isUploading?: boolean;
   duplicateWarning?: string;
 }
 
+// Human-readable labels for CRM field values
+const LIFE_STAGE_LABELS: Record<string, string> = {
+  '0': 'Seed',
+  PS: 'Post-Seed',
+  A: 'Series A',
+  B: 'Series B',
+  C: 'Series C',
+  D: 'Series D',
+  O: 'Other',
+};
+
+const INDUSTRY_LABELS: Record<string, string> = {
+  Health: 'Healthcare',
+  HCD: 'Health Diagnostics',
+  Assi: 'Medical Devices',
+  IT: 'IT/Software',
+  Fintech: 'Fintech',
+  IND4: 'Industry 4.0',
+  IOT: 'IoT/Hardware',
+  Cyber: 'Cybersecurity',
+  AgFo: 'AgTech/FoodTech',
+  Clean: 'CleanTech',
+};
+
 function FounderBadge({ founder }: { founder: DealigenceStakeholder }) {
   return (
-    <div className="inline-flex items-center gap-2 bg-warm-100 rounded-lg px-3 py-2">
-      {/* Avatar placeholder */}
-      <div className="w-8 h-8 bg-accent-100 rounded-full flex items-center justify-center">
-        <span className="text-accent-700 font-medium text-sm">
+    <div className="flex items-center gap-2 bg-warm-50 rounded-lg px-3 py-2">
+      {/* Avatar */}
+      <div className="w-7 h-7 bg-accent-100 rounded-full flex items-center justify-center flex-shrink-0">
+        <span className="text-accent-700 font-medium text-xs">
           {founder.name
             .split(' ')
             .map((n) => n[0])
@@ -26,22 +56,21 @@ function FounderBadge({ founder }: { founder: DealigenceStakeholder }) {
             .toUpperCase()}
         </span>
       </div>
-      <div className="text-left">
-        <p className="font-medium text-warm-800 text-sm">{founder.name}</p>
-        {founder.title && <p className="text-xs text-warm-500">{founder.title}</p>}
+      <div className="text-left min-w-0">
+        <p className="font-medium text-warm-800 text-sm truncate">{founder.name}</p>
+        {founder.title && <p className="text-xs text-warm-500 truncate">{founder.title}</p>}
       </div>
-      {founder.linkedinUrl && (
-        <a
-          href={founder.linkedinUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent-600 hover:text-accent-700"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-          </svg>
-        </a>
-      )}
+    </div>
+  );
+}
+
+function FieldRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="flex justify-between items-baseline gap-2 py-1.5">
+      <span className="text-sm text-warm-500 flex-shrink-0">{label}</span>
+      <span className={`text-sm text-right truncate ${muted ? 'text-warm-400' : 'text-warm-800'}`}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -49,10 +78,23 @@ function FounderBadge({ founder }: { founder: DealigenceStakeholder }) {
 export function DealigencePreview({
   data,
   onUpload,
-  onEdit,
   isUploading,
   duplicateWarning,
 }: DealigencePreviewProps) {
+  const [showSourceDetails, setShowSourceDetails] = useState(false);
+
+  // Compute CRM values for display
+  const fundingAmount = parseFundingAmount(data.totalFunding);
+  const lifeStageId = mapFundingStatus(data.fundingStatus);
+  const industryId = mapCategory(data.categories);
+
+  // Format past investment for display
+  const pastInvestmentDisplay = fundingAmount !== undefined ? `$${fundingAmount}M` : undefined;
+
+  // Get human-readable labels
+  const roundLabel = lifeStageId ? LIFE_STAGE_LABELS[lifeStageId] || lifeStageId : undefined;
+  const industryLabel = industryId ? INDUSTRY_LABELS[industryId] || industryId : undefined;
+
   return (
     <div className="space-y-4">
       {/* Duplicate warning */}
@@ -95,82 +137,81 @@ export function DealigencePreview({
           )}
         </div>
 
-        {/* Content */}
+        {/* Deal Fields Section */}
         <div className="p-5 space-y-4">
           {/* Description */}
           {data.description && (
             <div>
               <p className="text-sm font-medium text-warm-500 mb-1">Description</p>
-              <p className="text-warm-700 text-base leading-relaxed line-clamp-3">
+              <p className="text-warm-700 text-sm leading-relaxed line-clamp-3">
                 {data.description}
               </p>
             </div>
           )}
 
-          {/* Meta grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Funding */}
-            {data.totalFunding && (
-              <div>
-                <p className="text-sm font-medium text-warm-500 mb-1">Total Funding</p>
-                <p className="text-warm-800 font-semibold">{data.totalFunding}</p>
-              </div>
-            )}
+          {/* CRM Fields */}
+          <div className="bg-warm-50 rounded-xl p-4">
+            <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
+              CRM Fields
+            </p>
+            <div className="divide-y divide-warm-200">
+              {pastInvestmentDisplay && (
+                <FieldRow label="Past Investment" value={pastInvestmentDisplay} />
+              )}
+              {roundLabel && <FieldRow label="Round" value={roundLabel} />}
+              {industryLabel && <FieldRow label="Industry" value={industryLabel} />}
+              <FieldRow label="Source Type" value="Research" muted />
+              <FieldRow label="Deal Type" value="INV" muted />
+              <FieldRow label="Stage" value="Screening" muted />
+              <FieldRow label="Status" value="Active" muted />
+            </div>
+          </div>
 
-            {/* Stage */}
-            {data.fundingStatus && (
-              <div>
-                <p className="text-sm font-medium text-warm-500 mb-1">Stage</p>
-                <p className="text-warm-800 font-semibold">{data.fundingStatus}</p>
-              </div>
-            )}
-
-            {/* Location */}
-            {data.headquarters && (
-              <div>
-                <p className="text-sm font-medium text-warm-500 mb-1">Location</p>
-                <p className="text-warm-800">{data.headquarters}</p>
-              </div>
-            )}
-
-            {/* Founded */}
-            {data.founded && (
-              <div>
-                <p className="text-sm font-medium text-warm-500 mb-1">Founded</p>
-                <p className="text-warm-800">{data.founded}</p>
-              </div>
-            )}
-
-            {/* Employees */}
-            {data.employees && (
-              <div>
-                <p className="text-sm font-medium text-warm-500 mb-1">Employees</p>
-                <p className="text-warm-800">{data.employees}</p>
+          {/* Source Notes (collapsible) */}
+          <div>
+            <button
+              onClick={() => setShowSourceDetails(!showSourceDetails)}
+              className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 transition-colors"
+            >
+              <svg
+                className={`w-4 h-4 transition-transform ${showSourceDetails ? 'rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+              Source Notes
+            </button>
+            {showSourceDetails && (
+              <div className="mt-2 p-3 bg-warm-50 rounded-lg text-xs text-warm-600 font-mono whitespace-pre-wrap">
+                {`Source: Dealigence
+URL: ${data.sourceUrl}
+${data.totalFunding ? `Total Funding: ${data.totalFunding}` : ''}
+${data.fundingStatus ? `Funding Status: ${data.fundingStatus}` : ''}
+${data.headquarters ? `Location: ${data.headquarters}` : ''}
+${data.founded ? `Founded: ${data.founded}` : ''}
+${data.employees ? `Employees: ${data.employees}` : ''}
+${data.categories.length > 0 ? `Categories: ${data.categories.join(', ')}` : ''}`
+                  .split('\n')
+                  .filter((line) => line.trim())
+                  .join('\n')}
               </div>
             )}
           </div>
 
-          {/* Categories */}
-          {data.categories.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-warm-500 mb-2">Categories</p>
-              <div className="flex flex-wrap gap-2">
-                {data.categories.map((cat, i) => (
-                  <span
-                    key={i}
-                    className="px-3 py-1 bg-warm-100 text-warm-700 rounded-full text-sm"
-                  >
-                    {cat}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Founders */}
+          {/* Contacts Section */}
           {data.founders.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-warm-500 mb-2">Founders</p>
+            <div className="pt-3 border-t border-warm-200">
+              <p className="text-sm font-medium text-warm-700 mb-2">
+                Will create {data.founders.length} contact{data.founders.length > 1 ? 's' : ''}{' '}
+                <span className="text-warm-400 font-normal">(Management)</span>
+              </p>
               <div className="flex flex-wrap gap-2">
                 {data.founders.map((founder, i) => (
                   <FounderBadge key={i} founder={founder} />
@@ -181,18 +222,11 @@ export function DealigencePreview({
         </div>
 
         {/* Actions */}
-        <div className="px-5 py-4 bg-warm-50 border-t border-warm-200 flex gap-3">
-          <button
-            onClick={onEdit}
-            disabled={isUploading}
-            className="flex-1 px-4 py-2.5 border border-warm-300 text-warm-700 rounded-xl font-medium hover:bg-warm-100 transition-colors disabled:opacity-50 text-base"
-          >
-            Edit Before Upload
-          </button>
+        <div className="px-5 py-4 bg-warm-50 border-t border-warm-200">
           <button
             onClick={onUpload}
             disabled={isUploading}
-            className="flex-1 px-4 py-2.5 bg-accent-500 text-white rounded-xl font-medium hover:bg-accent-600 transition-colors disabled:opacity-50 text-base"
+            className="w-full px-4 py-3 bg-accent-500 text-white rounded-xl font-medium hover:bg-accent-600 transition-colors disabled:opacity-50 text-base"
           >
             {isUploading ? 'Uploading...' : 'Upload to CRM'}
           </button>
@@ -208,7 +242,7 @@ export function DealigencePreview({
           rel="noopener noreferrer"
           className="text-accent-500 hover:underline"
         >
-          {data.sourceUrl}
+          Dealigence
         </a>
       </p>
     </div>

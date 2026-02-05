@@ -1,11 +1,117 @@
 /**
  * DOM extraction for Dealigence company pages
- * Extracts all available data from page DOM
+ * Extracts data using JSON-LD (primary) and DOM (fallback)
  * NO validation here - that happens in background script
  */
 
 import type { DealigenceCompanyData, DealigenceStakeholder } from '../../lib/dealigence/types';
 import { SELECTORS } from './selectors';
+
+/**
+ * JSON-LD structured data from Dealigence pages
+ */
+interface JsonLdData {
+  '@context'?: string;
+  '@type'?: string;
+  mainEntity?: {
+    '@type'?: string;
+    name?: string;
+    description?: string;
+    numberOfEmployees?: number;
+    foundingDate?: string;
+    sameAs?: string[];
+    founders?: Array<{
+      '@type'?: string;
+      name?: string;
+      jobTitle?: string;
+    }>;
+    address?: Array<{
+      '@type'?: string;
+      addressCountry?: string;
+      addressLocality?: string;
+    }>;
+  };
+}
+
+/**
+ * Extract JSON-LD structured data from page
+ * This is the most reliable data source on Dealigence pages
+ */
+function extractFromJsonLd(): Partial<DealigenceCompanyData> | null {
+  const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+
+  for (const script of scripts) {
+    try {
+      const data = JSON.parse(script.textContent || '') as JsonLdData;
+
+      // Check if this is the company data schema
+      if (!data.mainEntity?.name) continue;
+
+      const entity = data.mainEntity;
+      const result: Partial<DealigenceCompanyData> = {
+        companyName: entity.name,
+      };
+
+      // Extract employees from JSON-LD
+      if (entity.numberOfEmployees !== undefined) {
+        result.employees = entity.numberOfEmployees.toString();
+      }
+
+      // Extract founding date
+      if (entity.foundingDate) {
+        // Format: "2025-01-01" -> "January 2025"
+        try {
+          const date = new Date(entity.foundingDate);
+          const month = date.toLocaleString('en-US', { month: 'long' });
+          const year = date.getFullYear();
+          result.founded = `${month} ${year}`;
+        } catch {
+          result.founded = entity.foundingDate;
+        }
+      }
+
+      // Extract URLs from sameAs (website and LinkedIn)
+      if (entity.sameAs && Array.isArray(entity.sameAs)) {
+        for (const url of entity.sameAs) {
+          if (url.includes('linkedin.com')) {
+            result.linkedinUrl = url;
+          } else if (!url.includes('twitter.com') && !url.includes('facebook.com')) {
+            // First non-social URL is likely the company website
+            if (!result.website) {
+              result.website = url;
+            }
+          }
+        }
+      }
+
+      // Extract founders
+      if (entity.founders && Array.isArray(entity.founders)) {
+        result.founders = entity.founders
+          .filter((f) => f.name)
+          .map((f) => ({
+            name: f.name!,
+            title: f.jobTitle,
+          }));
+      }
+
+      // Extract location from address
+      if (entity.address && Array.isArray(entity.address) && entity.address.length > 0) {
+        const addr = entity.address[0];
+        const parts = [addr.addressLocality, addr.addressCountry].filter(Boolean);
+        if (parts.length > 0) {
+          result.headquarters = parts.join(', ');
+        }
+      }
+
+      return result;
+    } catch {
+      // Invalid JSON, try next script
+      continue;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Helper to get text content, trimmed and cleaned
@@ -58,33 +164,55 @@ function extractWebsite(): string | undefined {
 
 /**
  * Extract funding information
+ * Dealigence format: "Total Funding" followed by "$7.5m" on next line
+ * and "Funding Status" followed by status on next line
  */
 function extractFunding(): { totalFunding?: string; fundingStatus?: string } {
   const result: { totalFunding?: string; fundingStatus?: string } = {};
-
-  // Look for funding amount patterns like "$1.5M", "$10M raised"
   const allText = document.body.innerText;
-  const fundingMatch = allText.match(/\$[\d.,]+[MBK]?\s*(raised|funding)?/i);
-  if (fundingMatch) {
-    result.totalFunding = fundingMatch[0].trim();
+
+  // Dealigence-specific: "Total Funding" label followed by amount
+  const totalFundingMatch = allText.match(/Total Funding[\s\n]+(\$[\d.,]+[MBKmk]?)/i);
+  if (totalFundingMatch) {
+    result.totalFunding = totalFundingMatch[1].trim();
+  } else {
+    // Fallback: look for funding amount patterns like "$1.5M", "$10M raised"
+    const fundingMatch = allText.match(/\$[\d.,]+[MBKmk]?\s*(raised|funding)?/i);
+    if (fundingMatch) {
+      result.totalFunding = fundingMatch[0].trim();
+    }
   }
 
-  // Look for funding status/stage
-  const stagePatterns = [
-    'Seed',
-    'Series A',
-    'Series B',
-    'Series C',
-    'Pre-Seed',
-    'Fundraising',
-    'Funded',
-    'Bootstrapped',
-    'Need Funding',
-  ];
-  for (const pattern of stagePatterns) {
-    if (allText.includes(pattern)) {
-      result.fundingStatus = pattern;
-      break;
+  // Dealigence-specific: "Funding Status" label followed by status value
+  const fundingStatusMatch = allText.match(/Funding Status[\s\n]+([^\n]+)/i);
+  if (fundingStatusMatch) {
+    const status = fundingStatusMatch[1].trim();
+    // Only use if it looks like a valid status (not another label)
+    if (status && !status.includes(':') && status.length < 30) {
+      result.fundingStatus = status;
+    }
+  }
+
+  // Fallback: look for known funding status keywords
+  if (!result.fundingStatus) {
+    const stagePatterns = [
+      'Runway Secured',
+      'Self-Funded',
+      'Need Funding',
+      'Seed',
+      'Series A',
+      'Series B',
+      'Series C',
+      'Pre-Seed',
+      'Fundraising',
+      'Funded',
+      'Bootstrapped',
+    ];
+    for (const pattern of stagePatterns) {
+      if (allText.includes(pattern)) {
+        result.fundingStatus = pattern;
+        break;
+      }
     }
   }
 
@@ -239,18 +367,21 @@ function getCompanyNameFromUrl(): string {
 
 /**
  * Main extraction function
+ * Uses JSON-LD as primary source, DOM extraction as fallback
  * Returns raw extracted data - validation happens in background script
  */
 export function extractCompanyData(): DealigenceCompanyData {
-  // Company name from h2 (Dealigence uses h2, not h1)
-  let companyName = getText(document.querySelector(SELECTORS.companyName));
+  // Try JSON-LD first (most reliable source)
+  const jsonLdData = extractFromJsonLd();
 
-  // Fallback: extract from URL slug if h2 not found
+  // Company name: JSON-LD > h2 > URL slug
+  let companyName =
+    jsonLdData?.companyName || getText(document.querySelector(SELECTORS.companyName));
   if (!companyName) {
     companyName = getCompanyNameFromUrl();
   }
 
-  // Description - try multiple approaches
+  // Description - always from DOM (not in JSON-LD)
   let description: string | undefined;
   const descEl = queryFirst(SELECTORS.description);
   if (descEl) {
@@ -267,19 +398,35 @@ export function extractCompanyData(): DealigenceCompanyData {
     }
   }
 
-  // Extract other fields
-  const website = extractWebsite();
+  // Website: JSON-LD > DOM
+  const website = jsonLdData?.website || extractWebsite();
+
+  // LinkedIn URL from JSON-LD
+  const linkedinUrl = jsonLdData?.linkedinUrl;
+
+  // Funding info: always from DOM (not in JSON-LD)
   const { totalFunding, fundingStatus } = extractFunding();
+
+  // Categories: always from DOM (not in JSON-LD)
   const categories = extractCategories();
-  const headquarters = extractHeadquarters();
-  const founded = extractFounded();
-  const employees = extractEmployees();
-  const founders = extractFounders();
+
+  // Location: JSON-LD > DOM
+  const headquarters = jsonLdData?.headquarters || extractHeadquarters();
+
+  // Founded: JSON-LD > DOM
+  const founded = jsonLdData?.founded || extractFounded();
+
+  // Employees: JSON-LD > DOM
+  const employees = jsonLdData?.employees || extractEmployees();
+
+  // Founders: JSON-LD > DOM
+  const founders = jsonLdData?.founders?.length ? jsonLdData.founders : extractFounders();
 
   return {
     companyName,
     description,
     website,
+    linkedinUrl,
     totalFunding,
     fundingStatus,
     categories,
