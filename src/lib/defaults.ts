@@ -19,7 +19,7 @@ const SOURCE_LABELS: Record<UploadSource, string> = {
  */
 export const DEAL_DEFAULTS: Record<string, string> = {
   SourceTypeID: 'RES',
-  FundID: 'INV',
+  'FundID[]': 'INV', // multi-check field requires array notation
   StageID: '0',
   StatusID: '1',
 };
