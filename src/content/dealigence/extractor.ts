@@ -46,10 +46,12 @@ function extractFromJsonLd(): Partial<DealigenceCompanyData> | null {
 
   for (const script of scripts) {
     try {
-      const data = JSON.parse(script.textContent || '') as JsonLdData;
+      const parsed = JSON.parse(script.textContent || '');
+      // Handle array wrapper - Dealigence wraps JSON-LD in an array
+      const data = (Array.isArray(parsed) ? parsed[0] : parsed) as JsonLdData;
 
       // Check if this is the company data schema
-      if (!data.mainEntity?.name) continue;
+      if (!data?.mainEntity?.name) continue;
 
       const entity = data.mainEntity;
       const result: Partial<DealigenceCompanyData> = {
