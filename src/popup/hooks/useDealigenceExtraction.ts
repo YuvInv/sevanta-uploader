@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { DealigenceCompanyData, ExtractionState, TabInfo } from '../../lib/dealigence/types';
+import { isDealigenceCompanyPage } from '../../lib/dealigence/urlUtils';
 
 // Message type for URL changes from background script
 interface UrlChangedMessage {
@@ -104,19 +105,25 @@ export function useDealigenceExtraction() {
   useEffect(() => {
     const handleMessage = (message: UrlChangedMessage) => {
       if (message.type === 'DEALIGENCE_URL_CHANGED') {
-        // URL changed, refresh tab info and re-extract
+        // Check if new URL is a company page
+        const isCompanyPage = isDealigenceCompanyPage(message.url);
+
+        // Update tab info with new URL and company page status
         setTabInfo((prev) => {
           if (prev && prev.tabId === message.tabId) {
             return {
               ...prev,
               url: message.url,
-              isDealigenceCompanyPage: true,
+              isDealigenceCompanyPage: isCompanyPage,
             };
           }
           return prev;
         });
-        // Reset and re-extract
-        setState({ step: 'idle' });
+
+        // Reset state - auto-extract effect will handle re-extraction if on company page
+        if (isCompanyPage) {
+          setState({ step: 'idle' });
+        }
       }
     };
 

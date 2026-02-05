@@ -19,24 +19,19 @@ import logo from '../assets/icons/inv-logo.png';
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('upload');
-  const [isDealigencePage, setIsDealigencePage] = useState(false);
 
-  // Initial check for Dealigence page on mount
+  // Initial check for Dealigence page on mount - auto-switch to Quick Upload
   useEffect(() => {
     let mounted = true;
 
     const checkInitialPage = async () => {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_ACTIVE_TAB_INFO' });
-        if (mounted && response?.success && response.data) {
-          const isOnDealigence = response.data.isDealigenceCompanyPage;
-          setIsDealigencePage(isOnDealigence);
-          if (isOnDealigence) {
-            setMode('dealigence');
-          }
+        if (mounted && response?.success && response.data?.isDealigenceCompanyPage) {
+          setMode('dealigence');
         }
       } catch {
-        if (mounted) setIsDealigencePage(false);
+        // Ignore - stay on default tab
       }
     };
 
@@ -47,13 +42,11 @@ export default function App() {
     };
   }, []);
 
-  // Listen for SPA navigation on Dealigence
+  // Listen for SPA navigation on Dealigence - auto-switch when navigating TO a company page
   useEffect(() => {
     const handleMessage = (message: { type: string; url?: string }) => {
       if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
-        const isCompanyPage = isDealigenceCompanyPage(message.url);
-        setIsDealigencePage(isCompanyPage);
-        if (isCompanyPage) {
+        if (isDealigenceCompanyPage(message.url)) {
           setMode('dealigence');
         }
       }
@@ -132,7 +125,7 @@ export default function App() {
 
       {/* Tab Navigation */}
       <div className="px-4 py-3">
-        <TabNav mode={mode} onModeChange={setMode} showDealigence={isDealigencePage} />
+        <TabNav mode={mode} onModeChange={setMode} />
       </div>
 
       {/* Duplicate Check Progress Modal */}

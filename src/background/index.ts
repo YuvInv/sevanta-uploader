@@ -415,9 +415,11 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Listen for SPA navigation (History API) on Dealigence
 // This catches navigation that doesn't trigger full page loads
+// Broadcasts ALL URL changes on dealigence.vc (not just company pages)
+// so the sidepanel can update state when navigating away from company pages
 chrome.webNavigation.onHistoryStateUpdated.addListener(
   (details) => {
-    if (details.frameId === 0 && isDealigenceCompanyPage(details.url)) {
+    if (details.frameId === 0) {
       // Broadcast URL change to any listening sidepanels
       chrome.runtime
         .sendMessage({
