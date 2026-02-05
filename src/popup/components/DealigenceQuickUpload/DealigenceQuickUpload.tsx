@@ -1,15 +1,14 @@
 /**
  * Main container for Dealigence Quick Upload feature
- * Handles extraction, preview, editing, and upload flow
+ * Handles extraction, preview, and upload flow (no editing)
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useDealigenceExtraction } from '../../hooks/useDealigenceExtraction';
 import { useDealigenceUpload } from '../../hooks/useDealigenceUpload';
 import { ExtractionProgress } from './ExtractionProgress';
 import { ExtractionError } from './ExtractionError';
 import { DealigencePreview } from './DealigencePreview';
-import { DealigenceEditor } from './DealigenceEditor';
 import { UploadSuccess } from './UploadSuccess';
 import { DuplicateWarningModal } from './DuplicateWarningModal';
 
@@ -23,9 +22,7 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
 
   const {
     uploadStep,
-    crmData,
     duplicateWarning,
-    includeFounder,
     isUploading,
     uploadError,
     createdDealId,
@@ -35,43 +32,17 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
     checkDuplicateAndUpload,
     confirmUpload,
     cancelUpload,
-    updateCrmData,
-    toggleFounder,
     reset: resetUpload,
   } = useDealigenceUpload();
 
-  // Local UI state
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Initialize CRM data when extraction completes
+  // Handle upload click - check for duplicates and upload
   const handleUploadClick = useCallback(async () => {
     if (!data) return;
-    // Check for duplicates and upload (shows modal if duplicate found)
     await checkDuplicateAndUpload(data);
   }, [data, checkDuplicateAndUpload]);
 
-  const handleEditClick = useCallback(() => {
-    setIsEditing(true);
-  }, []);
-
-  const handleEditSave = useCallback(
-    (updatedData: Record<string, string>, shouldIncludeFounder: boolean) => {
-      updateCrmData(updatedData);
-      if (shouldIncludeFounder !== includeFounder) {
-        toggleFounder();
-      }
-      setIsEditing(false);
-    },
-    [updateCrmData, includeFounder, toggleFounder]
-  );
-
-  const handleEditCancel = useCallback(() => {
-    setIsEditing(false);
-  }, []);
-
   const handleUploadAnother = useCallback(() => {
     resetUpload();
-    setIsEditing(false);
     retry();
   }, [resetUpload, retry]);
 
@@ -167,20 +138,7 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
     return <ExtractionError error={uploadError} onRetry={handleUploadAnother} />;
   }
 
-  // Editing state
-  if (isEditing && data) {
-    return (
-      <DealigenceEditor
-        data={data}
-        crmData={crmData}
-        includeFounder={includeFounder}
-        onSave={handleEditSave}
-        onCancel={handleEditCancel}
-      />
-    );
-  }
-
-  // Extracting state
+  // Extracting state (with retry info)
   if (isExtracting) {
     return <ExtractionProgress retryCount={state.retryCount} />;
   }
@@ -190,14 +148,13 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
     return <ExtractionError error={error} onRetry={retry} />;
   }
 
-  // Preview state
+  // Preview state - direct to upload (no editing)
   if (hasData && data) {
     return (
       <>
         <DealigencePreview
           data={data}
           onUpload={handleUploadClick}
-          onEdit={handleEditClick}
           isUploading={isUploading}
           duplicateWarning={duplicateWarning}
         />
