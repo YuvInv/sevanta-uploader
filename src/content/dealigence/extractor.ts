@@ -4,7 +4,11 @@
  * NO validation here - that happens in background script
  */
 
-import type { DealigenceCompanyData, DealigenceStakeholder } from '../../lib/dealigence/types';
+import type {
+  DealigenceCompanyData,
+  DealigenceStakeholder,
+  CompanyNameSource,
+} from '../../lib/dealigence/types';
 import { SELECTORS } from './selectors';
 
 /**
@@ -166,10 +170,13 @@ function extractWebsite(): string | undefined {
  * Extract funding information
  * Dealigence format: "Total Funding" followed by "$7.5m" on next line
  * and "Funding Status" followed by status on next line
+ * Scoped to main container to avoid stale/mixed content during SPA navigation
  */
 function extractFunding(): { totalFunding?: string; fundingStatus?: string } {
   const result: { totalFunding?: string; fundingStatus?: string } = {};
-  const allText = document.body.innerText;
+  // Scope to main content container, not entire body (prevents mixed content during SPA nav)
+  const mainContent = document.querySelector('main') || document.body;
+  const allText = mainContent.innerText;
 
   // Dealigence-specific: "Total Funding" label followed by amount
   const totalFundingMatch = allText.match(/Total Funding[\s\n]+(\$[\d.,]+[MBKmk]?)/i);
@@ -295,6 +302,7 @@ function extractFounders(): DealigenceStakeholder[] {
 
 /**
  * Extract company location/headquarters
+ * Scoped to main container to avoid stale/mixed content during SPA navigation
  */
 function extractHeadquarters(): string | undefined {
   // Common location patterns
@@ -303,7 +311,9 @@ function extractHeadquarters(): string | undefined {
     /([A-Za-z\s]+,\s*(?:Israel|USA|UK|Germany|France|India))/i,
   ];
 
-  const allText = document.body.innerText;
+  // Scope to main content container, not entire body
+  const mainContent = document.querySelector('main') || document.body;
+  const allText = mainContent.innerText;
   for (const pattern of locationPatterns) {
     const match = allText.match(pattern);
     if (match) {
@@ -317,9 +327,12 @@ function extractHeadquarters(): string | undefined {
 /**
  * Extract founding year/date
  * Dealigence format: "Established" followed by "October 2025" on next line
+ * Scoped to main container to avoid stale/mixed content during SPA navigation
  */
 function extractFounded(): string | undefined {
-  const allText = document.body.innerText;
+  // Scope to main content container, not entire body
+  const mainContent = document.querySelector('main') || document.body;
+  const allText = mainContent.innerText;
 
   // Dealigence format: "Established" + newline + "Month Year"
   const dealigenceMatch = allText.match(/Established[\s\n]+([A-Za-z]+\s+\d{4})/);
@@ -342,9 +355,12 @@ function extractFounded(): string | undefined {
 /**
  * Extract employee count
  * Dealigence format: "Employees" followed by number on next line
+ * Scoped to main container to avoid stale/mixed content during SPA navigation
  */
 function extractEmployees(): string | undefined {
-  const allText = document.body.innerText;
+  // Scope to main content container, not entire body
+  const mainContent = document.querySelector('main') || document.body;
+  const allText = mainContent.innerText;
   const match = allText.match(/Employees[\s\n]+(\d+)/);
   return match?.[1];
 }
@@ -366,19 +382,74 @@ function getCompanyNameFromUrl(): string {
 }
 
 /**
+ * Check if the page is still loading (SPA navigation in progress)
+ * Detects loading indicators, skeletons, and minimal content
+ */
+function isPageLoading(): boolean {
+  // Check for common React/SPA loading patterns
+  const loadingIndicators = [
+    '[class*="loading"]',
+    '[class*="skeleton"]',
+    '[class*="spinner"]',
+    '[data-loading="true"]',
+    '[class*="Skeleton"]', // Capitalized variant
+    '[class*="Loading"]',
+  ];
+
+  for (const selector of loadingIndicators) {
+    const element = document.querySelector(selector);
+    // Only count as loading if the element is visible (not hidden)
+    if (element) {
+      const style = window.getComputedStyle(element);
+      if (style.display !== 'none' && style.visibility !== 'hidden') {
+        return true;
+      }
+    }
+  }
+
+  // Check if main content container has minimal content (likely still loading)
+  const mainContent = document.querySelector('main');
+  if (mainContent) {
+    const textContent = mainContent.textContent?.trim() || '';
+    // If main has very little text, page is probably still loading
+    if (textContent.length < 100) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Main extraction function
  * Uses JSON-LD as primary source, DOM extraction as fallback
  * Returns raw extracted data - validation happens in background script
  */
 export function extractCompanyData(): DealigenceCompanyData {
+  // Check if page is still loading (SPA navigation in progress)
+  const loading = isPageLoading();
+
   // Try JSON-LD first (most reliable source)
   const jsonLdData = extractFromJsonLd();
+  const hasJsonLd = jsonLdData !== null;
 
   // Company name: JSON-LD > h2 > URL slug
-  let companyName =
-    jsonLdData?.companyName || getText(document.querySelector(SELECTORS.companyName));
-  if (!companyName) {
-    companyName = getCompanyNameFromUrl();
+  // Track the source for validation (url-fallback is unreliable during SPA nav)
+  let companyName: string;
+  let companyNameSource: CompanyNameSource;
+
+  if (jsonLdData?.companyName) {
+    companyName = jsonLdData.companyName;
+    companyNameSource = 'json-ld';
+  } else {
+    const domName = getText(document.querySelector(SELECTORS.companyName));
+    if (domName) {
+      companyName = domName;
+      companyNameSource = 'dom';
+    } else {
+      companyName = getCompanyNameFromUrl();
+      companyNameSource = 'url-fallback';
+    }
   }
 
   // Description - always from DOM (not in JSON-LD)
@@ -435,5 +506,9 @@ export function extractCompanyData(): DealigenceCompanyData {
     employees,
     founders,
     sourceUrl: window.location.href,
+    // Extraction metadata for validation
+    companyNameSource,
+    hasJsonLd,
+    isLoading: loading,
   };
 }
