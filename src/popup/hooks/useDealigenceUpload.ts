@@ -63,18 +63,20 @@ export function useDealigenceUpload() {
           throw new Error('No deal ID returned');
         }
 
-        // Create founder contact if requested
+        // Create founder contacts if requested
         if (includeFounder && data.founders.length > 0) {
-          const founderData = mapToCrmContact(data.founders[0], dealId);
-          const contactResponse = await chrome.runtime.sendMessage({
-            type: 'CREATE_CONTACT',
-            data: founderData,
-            companyId: dealId,
-          });
+          for (const founder of data.founders) {
+            const founderData = mapToCrmContact(founder, dealId);
+            const contactResponse = await chrome.runtime.sendMessage({
+              type: 'CREATE_CONTACT',
+              data: founderData,
+              companyId: dealId,
+            });
 
-          if (!contactResponse?.success) {
-            console.warn('[Sevanta] Founder contact creation failed:', contactResponse?.error);
-            // Don't fail the whole upload if contact creation fails
+            if (!contactResponse?.success) {
+              console.warn('[Sevanta] Founder contact creation failed:', contactResponse?.error);
+              // Continue with other founders even if one fails
+            }
           }
         }
 
