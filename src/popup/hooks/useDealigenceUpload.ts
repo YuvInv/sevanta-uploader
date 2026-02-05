@@ -5,7 +5,11 @@
 
 import { useState, useCallback } from 'react';
 import type { DealigenceCompanyData } from '../../lib/dealigence/types';
-import { mapToCrmDeal, mapToCrmContact } from '../../lib/dealigence/transformers';
+import {
+  mapToCrmDeal,
+  mapToCrmContact,
+  buildMetadataComment,
+} from '../../lib/dealigence/transformers';
 
 export type UploadStep = 'idle' | 'checking' | 'ready' | 'uploading' | 'success' | 'error';
 
@@ -61,6 +65,19 @@ export function useDealigenceUpload() {
         const dealId = dealResponse.data?.dealId;
         if (!dealId) {
           throw new Error('No deal ID returned');
+        }
+
+        // Add metadata as comment
+        const metadataComment = buildMetadataComment(data);
+        const commentResponse = await chrome.runtime.sendMessage({
+          type: 'ADD_DEAL_COMMENT',
+          dealId: dealId,
+          comment: metadataComment,
+        });
+
+        if (!commentResponse?.success) {
+          console.warn('[Sevanta] Failed to add metadata comment:', commentResponse?.error);
+          // Non-blocking - deal was created successfully
         }
 
         // Create founder contacts if requested
