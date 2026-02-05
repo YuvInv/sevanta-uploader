@@ -31,7 +31,7 @@ Attempted to fix the bug with a "previous name comparison" approach, which was f
    - User saw instant (stale) data
 
 4. **Didn't read existing documentation**
-   - `bugs/bug-44-spa-stale-data.md` had complete, correct solution
+   - `docs/bugs/bug-44-spa-stale-data.md` had complete, correct solution
    - Skipped it and implemented wrong approach
 
 ### The Correct Approach (Never Implemented)
@@ -61,7 +61,7 @@ if (stillStaleAfterRetries) {
 ### Rules to Follow
 
 1. **Always check for existing docs before implementing**
-   - Look in `bugs/`, `docs/`, issue comments
+   - Look in `docs/bugs/`, `docs/`, issue comments
    - Someone may have already analyzed the problem correctly
 
 2. **Validate against ground truth, not deltas**
@@ -111,5 +111,5 @@ if (stillStaleAfterRetries) {
 
 ## Links
 
-- [Bug #44 Analysis](../bugs/bug-44-spa-stale-data.md) - Contains correct solution (never implemented)
+- [Bug #44 Analysis](./bugs/bug-44-spa-stale-data.md) - Contains correct solution (never implemented)
 - [GitHub Issue #44](https://github.com/YuvInv/sevanta-uploader/issues/44)

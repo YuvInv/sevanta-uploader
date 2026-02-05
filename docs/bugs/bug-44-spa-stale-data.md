@@ -364,7 +364,7 @@ if (data.companyName === previousCompanyName) {
 
 **Lesson**: Follow the documented solution above (URL slug validation). The correct approach validates against ground truth (URL), not deltas (previous state).
 
-**Related**: See `tasks/lessons.md` for detailed post-mortem
+**Related**: See `docs/lessons.md` for detailed post-mortem
 
 ---
 
