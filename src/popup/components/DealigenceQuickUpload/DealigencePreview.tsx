@@ -155,6 +155,12 @@ export function DealigencePreview({
               CRM Fields
             </p>
             <div className="divide-y divide-warm-200">
+              {data.website && (
+                <FieldRow
+                  label="Website"
+                  value={data.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                />
+              )}
               {pastInvestmentDisplay && (
                 <FieldRow label="Past Investment" value={pastInvestmentDisplay} />
               )}
