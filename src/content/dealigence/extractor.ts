@@ -1,123 +1,15 @@
 /**
  * DOM extraction for Dealigence company pages
- * Extracts data using JSON-LD (primary) and DOM (fallback)
- * NO validation here - that happens in background script
+ *
+ * Extracts all data from the DOM using CSS Module selectors.
+ * Dealigence loads data asynchronously, so we wait for DOM content
+ * before extracting.
+ *
+ * NO validation here - that happens in background script.
  */
 
-import type {
-  DealigenceCompanyData,
-  DealigenceStakeholder,
-  CompanyNameSource,
-} from '../../lib/dealigence/types';
+import type { DealigenceCompanyData, DealigenceStakeholder } from '../../lib/dealigence/types';
 import { SELECTORS } from './selectors';
-
-/**
- * JSON-LD structured data from Dealigence pages
- */
-interface JsonLdData {
-  '@context'?: string;
-  '@type'?: string;
-  mainEntity?: {
-    '@type'?: string;
-    name?: string;
-    description?: string;
-    numberOfEmployees?: number;
-    foundingDate?: string;
-    sameAs?: string[];
-    founders?: Array<{
-      '@type'?: string;
-      name?: string;
-      jobTitle?: string;
-    }>;
-    address?: Array<{
-      '@type'?: string;
-      addressCountry?: string;
-      addressLocality?: string;
-    }>;
-  };
-}
-
-/**
- * Extract JSON-LD structured data from page
- * This is the most reliable data source on Dealigence pages
- */
-function extractFromJsonLd(): Partial<DealigenceCompanyData> | null {
-  const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-
-  for (const script of scripts) {
-    try {
-      const parsed = JSON.parse(script.textContent || '');
-      // Handle array wrapper - Dealigence wraps JSON-LD in an array
-      const data = (Array.isArray(parsed) ? parsed[0] : parsed) as JsonLdData;
-
-      // Check if this is the company data schema
-      if (!data?.mainEntity?.name) continue;
-
-      const entity = data.mainEntity;
-      const result: Partial<DealigenceCompanyData> = {
-        companyName: entity.name,
-      };
-
-      // Extract employees from JSON-LD
-      if (entity.numberOfEmployees !== undefined) {
-        result.employees = entity.numberOfEmployees.toString();
-      }
-
-      // Extract founding date
-      if (entity.foundingDate) {
-        // Format: "2025-01-01" -> "January 2025"
-        try {
-          const date = new Date(entity.foundingDate);
-          const month = date.toLocaleString('en-US', { month: 'long' });
-          const year = date.getFullYear();
-          result.founded = `${month} ${year}`;
-        } catch {
-          result.founded = entity.foundingDate;
-        }
-      }
-
-      // Extract URLs from sameAs (website and LinkedIn)
-      if (entity.sameAs && Array.isArray(entity.sameAs)) {
-        for (const url of entity.sameAs) {
-          if (url.includes('linkedin.com')) {
-            result.linkedinUrl = url;
-          } else if (!url.includes('twitter.com') && !url.includes('facebook.com')) {
-            // First non-social URL is likely the company website
-            if (!result.website) {
-              result.website = url;
-            }
-          }
-        }
-      }
-
-      // Extract founders
-      if (entity.founders && Array.isArray(entity.founders)) {
-        result.founders = entity.founders
-          .filter((f) => f.name)
-          .map((f) => ({
-            name: f.name!,
-            title: f.jobTitle,
-          }));
-      }
-
-      // Extract location from address
-      if (entity.address && Array.isArray(entity.address) && entity.address.length > 0) {
-        const addr = entity.address[0];
-        const parts = [addr.addressLocality, addr.addressCountry].filter(Boolean);
-        if (parts.length > 0) {
-          result.headquarters = parts.join(', ');
-        }
-      }
-
-      return result;
-    } catch {
-      // Invalid JSON, try next script
-      continue;
-    }
-  }
-
-  return null;
-}
 
 /**
  * Helper to get text content, trimmed and cleaned
@@ -134,7 +26,7 @@ function getAttr(el: Element | null, attr: string): string {
 }
 
 /**
- * Try multiple selectors and return first match
+ * Try multiple selectors (comma-separated) and return first match
  */
 function queryFirst(selectors: string): Element | null {
   for (const selector of selectors.split(', ')) {
@@ -145,14 +37,171 @@ function queryFirst(selectors: string): Element | null {
 }
 
 /**
- * Extract website URL from the page
- * Look for external links that aren't social media
+ * Wait for async DOM data to load.
+ * Polls until dataPointValue elements are populated (no "loading..." text).
+ */
+async function waitForDataLoaded(maxWaitMs = 5000): Promise<void> {
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWaitMs) {
+    const values = document.querySelectorAll(SELECTORS.dataPointValue);
+    if (values.length > 0) {
+      const loadingCount = Array.from(values).filter(
+        (v) => v.textContent?.trim().toLowerCase() === 'loading...'
+      ).length;
+      if (loadingCount === 0) return; // All loaded
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  // Timeout - extract what's available
+}
+
+/**
+ * Find a dataPointLabel by text and return its sibling dataPointValue content.
+ * Dealigence renders data as label-value pairs in the DOM.
+ */
+function extractLabelValue(labelText: string): string | undefined {
+  const labels = document.querySelectorAll(SELECTORS.dataPointLabel);
+  for (const label of labels) {
+    if (label.textContent?.trim().toLowerCase() === labelText.toLowerCase()) {
+      // The value is typically the next sibling element
+      const value = label.nextElementSibling;
+      if (value) {
+        const text = getText(value);
+        if (text && text.toLowerCase() !== 'loading...') {
+          return text;
+        }
+      }
+      // Also check parent's next sibling pattern
+      const parent = label.parentElement;
+      if (parent) {
+        const valueEl = parent.querySelector(SELECTORS.dataPointValue);
+        if (valueEl) {
+          const text = getText(valueEl);
+          if (text && text.toLowerCase() !== 'loading...') {
+            return text;
+          }
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Extract founders from the Founders data point (text fallback only).
+ *
+ * NOTE: Founders on Dealigence are rendered as avatar buttons with data stored
+ * in React fiber (page JS context). Content scripts can't access page JS properties,
+ * so the main fiber-based extraction happens in the background script via
+ * chrome.scripting.executeScript with world: 'MAIN'. This function only handles
+ * the text fallback case.
+ */
+function extractFounders(): DealigenceStakeholder[] {
+  const labels = document.querySelectorAll(SELECTORS.dataPointLabel);
+  let foundersValue: Element | null = null;
+  for (const label of labels) {
+    if (label.textContent?.trim() === 'Founders') {
+      foundersValue = label.nextElementSibling;
+      break;
+    }
+  }
+  if (!foundersValue) return [];
+
+  // Text fallback - comma-separated names (if not button-based)
+  const text = foundersValue.textContent?.trim();
+  if (text && text.toLowerCase() !== 'loading...') {
+    return text
+      .split(',')
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0)
+      .map((name) => ({ name }));
+  }
+
+  return [];
+}
+
+/**
+ * Extract stakeholders from person cards (board members, advisors).
+ * These are displayed as cards with personContainer class.
+ */
+function extractStakeholders(): DealigenceStakeholder[] {
+  const stakeholders: DealigenceStakeholder[] = [];
+
+  // Find the Stakeholders section by h4 heading
+  const stakeholdersH4 = Array.from(document.querySelectorAll('h4')).find((h) =>
+    h.textContent?.includes('Stakeholders')
+  );
+
+  let personContainers: NodeListOf<Element> | Element[] = [];
+
+  if (stakeholdersH4) {
+    const section = stakeholdersH4.nextElementSibling || stakeholdersH4.parentElement;
+    if (section) {
+      personContainers = section.querySelectorAll(SELECTORS.personContainer);
+    }
+  }
+
+  // Fallback: search all person containers
+  if (personContainers.length === 0) {
+    personContainers = document.querySelectorAll(SELECTORS.personContainer);
+  }
+
+  for (const card of personContainers) {
+    const detailsDiv = card.querySelector(SELECTORS.personDetails);
+
+    let name: string;
+    let title: string | undefined;
+
+    if (detailsDiv) {
+      const divs = detailsDiv.querySelectorAll('div');
+      name = divs[0]?.textContent?.trim() || '';
+      title = divs[1]?.textContent?.trim() || undefined;
+    } else {
+      name = getText(card.querySelector('h3, h4, [class*="name"]'));
+      title = getText(card.querySelector('[class*="title"], [class*="role"], small')) || undefined;
+    }
+
+    if (!name) continue;
+
+    const linkedinEl = card.querySelector(SELECTORS.founderLinkedin);
+    const linkedinUrl = linkedinEl ? getAttr(linkedinEl, 'href') : undefined;
+
+    stakeholders.push({
+      name,
+      title: title || undefined,
+      linkedinUrl: linkedinUrl || undefined,
+    });
+  }
+
+  return stakeholders.slice(0, 10);
+}
+
+/**
+ * Extract description from DOM
+ */
+function extractDescription(): string | undefined {
+  const descEl = queryFirst(SELECTORS.description);
+  if (descEl) {
+    const text = getText(descEl);
+    if (text && text.length >= 20) return text;
+  }
+
+  // Fallback: look for longer paragraphs in main
+  const paragraphs = document.querySelectorAll('main p, article p');
+  const texts = Array.from(paragraphs)
+    .map((p) => getText(p))
+    .filter((t) => t.length > 50);
+  return texts[0] || undefined;
+}
+
+/**
+ * Extract website URL from the page.
+ * Look for external links that aren't social media or Dealigence itself.
  */
 function extractWebsite(): string | undefined {
-  const links = document.querySelectorAll('a[href^="http"]');
+  const links = document.querySelectorAll(SELECTORS.website);
   for (const link of links) {
     const href = link.getAttribute('href') || '';
-    // Skip internal links and social media
     if (
       href.includes('dealigence.vc') ||
       href.includes('linkedin.com') ||
@@ -162,344 +211,141 @@ function extractWebsite(): string | undefined {
     ) {
       continue;
     }
-    // Found an external link, likely the company website
     return href;
   }
   return undefined;
 }
 
 /**
- * Extract funding information
- * Dealigence format: "Total Funding" followed by "$7.5m" on next line
- * and "Funding Status" followed by status on next line
- * Scoped to main container to avoid stale/mixed content during SPA navigation
+ * Extract funding information from label-value pairs
  */
 function extractFunding(): { totalFunding?: string; fundingStatus?: string } {
-  const result: { totalFunding?: string; fundingStatus?: string } = {};
-  // Scope to main content container, not entire body (prevents mixed content during SPA nav)
-  const mainContent = document.querySelector('main') || document.body;
-  const allText = mainContent.innerText;
-
-  // Dealigence-specific: "Total Funding" label followed by amount
-  const totalFundingMatch = allText.match(/Total Funding[\s\n]+(\$[\d.,]+[MBKmk]?)/i);
-  if (totalFundingMatch) {
-    result.totalFunding = totalFundingMatch[1].trim();
-  } else {
-    // Fallback: look for funding amount patterns like "$1.5M", "$10M raised"
-    const fundingMatch = allText.match(/\$[\d.,]+[MBKmk]?\s*(raised|funding)?/i);
-    if (fundingMatch) {
-      result.totalFunding = fundingMatch[0].trim();
-    }
-  }
-
-  // Dealigence-specific: "Funding Status" label followed by status value
-  const fundingStatusMatch = allText.match(/Funding Status[\s\n]+([^\n]+)/i);
-  if (fundingStatusMatch) {
-    const status = fundingStatusMatch[1].trim();
-    // Only use if it looks like a valid status (not another label)
-    if (status && !status.includes(':') && status.length < 30) {
-      result.fundingStatus = status;
-    }
-  }
-
-  // Fallback: look for known funding status keywords
-  if (!result.fundingStatus) {
-    const stagePatterns = [
-      'Runway Secured',
-      'Self-Funded',
-      'Need Funding',
-      'Seed',
-      'Series A',
-      'Series B',
-      'Series C',
-      'Pre-Seed',
-      'Fundraising',
-      'Funded',
-      'Bootstrapped',
-    ];
-    for (const pattern of stagePatterns) {
-      if (allText.includes(pattern)) {
-        result.fundingStatus = pattern;
-        break;
-      }
-    }
-  }
-
-  return result;
+  return {
+    totalFunding: extractLabelValue('Total Funding'),
+    fundingStatus: extractLabelValue('Funding Status'),
+  };
 }
 
 /**
- * Extract categories/tags
- * IMPORTANT: Must scope to main company container to avoid picking up
- * tags from "People Also Viewed" section
+ * Extract categories/tags.
+ * Scoped to main company container to avoid "People Also Viewed" section.
  */
 function extractCategories(): string[] {
   const categories: string[] = [];
 
-  // Scope to the main company container (first div in main)
   const companyContainer = document.querySelector(SELECTORS.companyContainer);
   if (!companyContainer) return categories;
 
-  // Find tags container within company section only
   const tagsContainer = companyContainer.querySelector(SELECTORS.tagsContainer);
   if (tagsContainer) {
-    // Get individual tag elements with noBg class (actual tags, not containers)
     const tags = tagsContainer.querySelectorAll(SELECTORS.tag);
     for (const tag of tags) {
       const text = tag.textContent?.trim();
-      // Filter out loading placeholders and unreasonably long text
       if (text && text.length < 50 && !text.includes('Load')) {
         categories.push(text);
       }
     }
   }
 
-  // Also check for data attributes or structured data
-  const metaTags = document.querySelectorAll('meta[property*="category"], meta[name*="category"]');
-  for (const meta of metaTags) {
-    const content = meta.getAttribute('content');
-    if (content) categories.push(content);
-  }
-
-  return [...new Set(categories)]; // Deduplicate
+  return [...new Set(categories)];
 }
 
 /**
- * Extract founder/team information
- */
-function extractFounders(): DealigenceStakeholder[] {
-  const founders: DealigenceStakeholder[] = [];
-
-  // Try to find a team/founders section
-  const founderCards = document.querySelectorAll(SELECTORS.founderCard);
-
-  for (const card of founderCards) {
-    const name = getText(card.querySelector(SELECTORS.founderName));
-    if (!name) continue;
-
-    const title = getText(card.querySelector(SELECTORS.founderTitle));
-    const linkedinEl = card.querySelector(SELECTORS.founderLinkedin);
-    const linkedinUrl = linkedinEl ? getAttr(linkedinEl, 'href') : undefined;
-
-    // Only include if it looks like a founder/executive
-    const isFounder =
-      !title ||
-      title.toLowerCase().includes('founder') ||
-      title.toLowerCase().includes('ceo') ||
-      title.toLowerCase().includes('cto') ||
-      title.toLowerCase().includes('chief');
-
-    if (isFounder) {
-      founders.push({
-        name,
-        title: title || undefined,
-        linkedinUrl: linkedinUrl || undefined,
-      });
-    }
-  }
-
-  // Limit to reasonable number
-  return founders.slice(0, 5);
-}
-
-/**
- * Extract company location/headquarters
- * Scoped to main container to avoid stale/mixed content during SPA navigation
+ * Extract headquarters from label-value pair
  */
 function extractHeadquarters(): string | undefined {
-  // Common location patterns
-  const locationPatterns = [
-    /(?:based in|located in|headquarters?:?)\s*([^.]+)/i,
-    /([A-Za-z\s]+,\s*(?:Israel|USA|UK|Germany|France|India))/i,
-  ];
-
-  // Scope to main content container, not entire body
-  const mainContent = document.querySelector('main') || document.body;
-  const allText = mainContent.innerText;
-  for (const pattern of locationPatterns) {
-    const match = allText.match(pattern);
-    if (match) {
-      return match[1].trim();
-    }
-  }
-
-  return undefined;
+  return extractLabelValue('Headquarters') || extractLabelValue('Location');
 }
 
 /**
- * Extract founding year/date
- * Dealigence format: "Established" followed by "October 2025" on next line
- * Scoped to main container to avoid stale/mixed content during SPA navigation
+ * Extract founding date from label-value pair
  */
 function extractFounded(): string | undefined {
-  // Scope to main content container, not entire body
-  const mainContent = document.querySelector('main') || document.body;
-  const allText = mainContent.innerText;
-
-  // Dealigence format: "Established" + newline + "Month Year"
-  const dealigenceMatch = allText.match(/Established[\s\n]+([A-Za-z]+\s+\d{4})/);
-  if (dealigenceMatch) {
-    return dealigenceMatch[1];
-  }
-
-  // Fallback patterns for other formats
-  const foundedPatterns = [/founded:?\s*(\d{4})/i, /established:?\s*(\d{4})/i, /since\s*(\d{4})/i];
-  for (const pattern of foundedPatterns) {
-    const match = allText.match(pattern);
-    if (match) {
-      return match[1];
-    }
-  }
-
-  return undefined;
+  return extractLabelValue('Established') || extractLabelValue('Founded');
 }
 
 /**
- * Extract employee count
- * Dealigence format: "Employees" followed by number on next line
- * Scoped to main container to avoid stale/mixed content during SPA navigation
+ * Extract employee count from label-value pair
  */
 function extractEmployees(): string | undefined {
-  // Scope to main content container, not entire body
-  const mainContent = document.querySelector('main') || document.body;
-  const allText = mainContent.innerText;
-  const match = allText.match(/Employees[\s\n]+(\d+)/);
-  return match?.[1];
+  return extractLabelValue('Employees');
 }
 
 /**
- * Extract company name from URL slug as fallback
- * e.g., /company/axia-security -> Axia Security
- */
-function getCompanyNameFromUrl(): string {
-  const match = window.location.pathname.match(/\/company\/([^/]+)/);
-  if (match) {
-    // Convert slug to title case: "axia-security" -> "Axia Security"
-    return match[1]
-      .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  }
-  return '';
-}
-
-/**
- * Check if the page is still loading (SPA navigation in progress)
- * Detects loading indicators, skeletons, and minimal content
+ * Check if the page is still loading (minimal content in DOM)
  */
 function isPageLoading(): boolean {
-  // Check for common React/SPA loading patterns
-  const loadingIndicators = [
-    '[class*="loading"]',
-    '[class*="skeleton"]',
-    '[class*="spinner"]',
-    '[data-loading="true"]',
-    '[class*="Skeleton"]', // Capitalized variant
-    '[class*="Loading"]',
-  ];
-
-  for (const selector of loadingIndicators) {
-    const element = document.querySelector(selector);
-    // Only count as loading if the element is visible (not hidden)
-    if (element) {
-      const style = window.getComputedStyle(element);
-      if (style.display !== 'none' && style.visibility !== 'hidden') {
-        return true;
-      }
-    }
-  }
-
-  // Check if main content container has minimal content (likely still loading)
   const mainContent = document.querySelector('main');
   if (mainContent) {
     const textContent = mainContent.textContent?.trim() || '';
-    // If main has very little text, page is probably still loading
-    if (textContent.length < 100) {
-      return true;
-    }
+    if (textContent.length < 100) return true;
+  }
+
+  // Check if data point values still show "loading..."
+  const values = document.querySelectorAll(SELECTORS.dataPointValue);
+  if (values.length > 0) {
+    const loadingCount = Array.from(values).filter(
+      (v) => v.textContent?.trim().toLowerCase() === 'loading...'
+    ).length;
+    if (loadingCount > 0) return true;
   }
 
   return false;
 }
 
 /**
- * Main extraction function
- * Uses JSON-LD as primary source, DOM extraction as fallback
- * Returns raw extracted data - validation happens in background script
+ * Main extraction function.
+ * Waits for async DOM data to load, then extracts all fields.
+ * Returns raw extracted data - validation happens in background script.
  */
-export function extractCompanyData(): DealigenceCompanyData {
-  // Check if page is still loading (SPA navigation in progress)
-  const loading = isPageLoading();
+export async function extractCompanyData(): Promise<DealigenceCompanyData> {
+  // 1. Wait for DOM data to load
+  await waitForDataLoaded();
 
-  // Try JSON-LD first (most reliable source)
-  const jsonLdData = extractFromJsonLd();
-  const hasJsonLd = jsonLdData !== null;
+  // 2. Extract company name from h2
+  const companyName = getText(document.querySelector(SELECTORS.companyName));
 
-  // Company name: JSON-LD > h2 > URL slug
-  // Track the source for validation (url-fallback is unreliable during SPA nav)
-  let companyName: string;
-  let companyNameSource: CompanyNameSource;
-
-  if (jsonLdData?.companyName) {
-    companyName = jsonLdData.companyName;
-    companyNameSource = 'json-ld';
-  } else {
-    const domName = getText(document.querySelector(SELECTORS.companyName));
-    if (domName) {
-      companyName = domName;
-      companyNameSource = 'dom';
-    } else {
-      companyName = getCompanyNameFromUrl();
-      companyNameSource = 'url-fallback';
-    }
-  }
-
-  // Description - always from DOM (not in JSON-LD)
-  let description: string | undefined;
-  const descEl = queryFirst(SELECTORS.description);
-  if (descEl) {
-    description = getText(descEl);
-  }
-  // If description is too short, try getting more content
-  if (!description || description.length < 50) {
-    const paragraphs = document.querySelectorAll('main p, article p');
-    const texts = Array.from(paragraphs)
-      .map((p) => getText(p))
-      .filter((t) => t.length > 50);
-    if (texts.length) {
-      description = texts[0];
-    }
-  }
-
-  // Website: JSON-LD > DOM
-  const website = jsonLdData?.website || extractWebsite();
-
-  // LinkedIn URL from JSON-LD
-  const linkedinUrl = jsonLdData?.linkedinUrl;
-
-  // Funding info: always from DOM (not in JSON-LD)
+  // 3. Extract label-value pairs
+  const founders = extractFounders();
   const { totalFunding, fundingStatus } = extractFunding();
+  const headquarters = extractHeadquarters();
+  const founded = extractFounded();
+  const employees = extractEmployees();
 
-  // Categories: always from DOM (not in JSON-LD)
+  // 4. Extract description from DOM
+  const description = extractDescription();
+
+  // 5. Extract stakeholders from person cards
+  const stakeholders = extractStakeholders();
+
+  // 6. Combine founders + relevant stakeholders
+  // Stakeholders with founder/CEO/CTO titles get added if not already in founders list
+  const founderNames = new Set(founders.map((f) => f.name.toLowerCase()));
+  for (const s of stakeholders) {
+    const titleLower = (s.title || '').toLowerCase();
+    const isFounderTitle =
+      titleLower.includes('founder') ||
+      titleLower.includes('ceo') ||
+      titleLower.includes('cto') ||
+      titleLower.includes('coo') ||
+      titleLower.includes('chief');
+    if (isFounderTitle && !founderNames.has(s.name.toLowerCase())) {
+      founders.push(s);
+      founderNames.add(s.name.toLowerCase());
+    }
+  }
+
+  // 7. Extract other fields
+  const website = extractWebsite();
   const categories = extractCategories();
 
-  // Location: JSON-LD > DOM
-  const headquarters = jsonLdData?.headquarters || extractHeadquarters();
-
-  // Founded: JSON-LD > DOM
-  const founded = jsonLdData?.founded || extractFounded();
-
-  // Employees: JSON-LD > DOM
-  const employees = jsonLdData?.employees || extractEmployees();
-
-  // Founders: JSON-LD > DOM
-  const founders = jsonLdData?.founders?.length ? jsonLdData.founders : extractFounders();
+  // 8. Check if still loading (fallback signal for background validation)
+  const loading = isPageLoading();
 
   return {
     companyName,
     description,
     website,
-    linkedinUrl,
     totalFunding,
     fundingStatus,
     categories,
@@ -508,9 +354,6 @@ export function extractCompanyData(): DealigenceCompanyData {
     employees,
     founders,
     sourceUrl: window.location.href,
-    // Extraction metadata for validation
-    companyNameSource,
-    hasJsonLd,
     isLoading: loading,
   };
 }

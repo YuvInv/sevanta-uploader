@@ -109,7 +109,92 @@ if (stillStaleAfterRetries) {
 
 ---
 
+---
+
+## 2026-02-05: Issue #54 - Four Failed Fix Attempts
+
+### What Happened
+
+Bug: Quick Upload data doesn't load consistently during navigation. After 4+ attempts to fix it, all failed. Each attempt followed the same broken pattern.
+
+### The Broken Pattern
+
+1. Read code
+2. Theorize: "This appears to be a race condition with..."
+3. Implement fix based on theory
+4. Fix doesn't work
+5. Repeat with new theory
+
+### Why Every Attempt Failed
+
+**Never observed actual behavior.** Every "root cause analysis" was speculation dressed as analysis. Phrases like "This appears to be..." and "The issue is likely..." are red flags - they indicate guessing, not observing.
+
+### Specific Failed Approaches
+
+1. Added `chrome.tabs.onUpdated` listener (theory: initial navigation not detected)
+2. Moved `sourceUrl` capture to start of extraction (theory: URL captured too late)
+3. Added hyphen-stripped name matching (theory: "UnitySCM" vs "unity-scm" mismatch)
+4. Added 100ms delay before extraction (theory: SPA needs stabilization time)
+
+All reverted. None were based on observed evidence.
+
+### The Rule
+
+**OBSERVATION BEFORE HYPOTHESIS**
+
+Before writing any statement about a bug's cause:
+1. Use browser DevTools or MCP tools to observe actual behavior
+2. Capture console logs during reproduction
+3. See what messages are sent/received
+4. Document what was OBSERVED, not theorized
+
+Banned until observation: "appears to be", "likely", "probably", "I think"
+Required: "I observed [X] in [console/network/DOM]"
+
+---
+
+---
+
+## 2026-02-05: Dealigence Extraction - Architectural Incompatibility
+
+### What We Discovered
+
+After Issue #54's failed fixes, proper browser investigation revealed a **fundamental architectural problem**, not a fixable bug.
+
+### The Architecture
+
+| Data Source | When Available | Contains |
+|-------------|---------------|----------|
+| JSON-LD | Full page load only | Complete data (founders) |
+| DOM Stakeholders | Always | Board/advisors (NOT founders) |
+
+**The trap**: JSON-LD has the best data but is NEVER updated during SPA navigation. We kept trying to "fix" code that couldn't access data that simply wasn't there.
+
+### Why Patches Failed
+
+All fixes addressed symptoms, not root cause:
+- URL validation → Correctly detected staleness, but fallback data was incomplete
+- Better selectors → Extracted stakeholders, but stakeholders ≠ founders
+- Timing fixes → DOM updates fine; JSON-LD never updates
+
+### The Lesson
+
+**Patches can't fix architecture.**
+
+Before attempting multiple fix iterations:
+1. Map all data sources completely
+2. Verify the data you need is actually accessible
+3. If it's not accessible, no code change will help
+
+### Decision
+
+Approach deprecated. Full postmortem: `docs/dealigence-extraction-postmortem.md`
+
+---
+
 ## Links
 
 - [Bug #44 Analysis](./bugs/bug-44-spa-stale-data.md) - Contains correct solution (never implemented)
 - [GitHub Issue #44](https://github.com/YuvInv/sevanta-uploader/issues/44)
+- [Notion Issue #54](NOTION_URL_REDACTED) - Quick Upload reliability bug
+- [Dealigence Postmortem](./dealigence-extraction-postmortem.md) - Full technical analysis

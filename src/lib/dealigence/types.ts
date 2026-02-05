@@ -9,9 +9,6 @@ export interface DealigenceStakeholder {
   linkedinUrl?: string;
 }
 
-// Source of company name extraction (for stale data validation)
-export type CompanyNameSource = 'json-ld' | 'dom' | 'url-fallback';
-
 // Complete extracted company data from Dealigence
 export interface DealigenceCompanyData {
   companyName: string;
@@ -27,9 +24,7 @@ export interface DealigenceCompanyData {
   founders: DealigenceStakeholder[];
   sourceUrl: string;
   // Extraction metadata for validation
-  companyNameSource?: CompanyNameSource;
-  hasJsonLd?: boolean;
-  isLoading?: boolean; // True if page is still loading (skeleton/spinner detected)
+  isLoading?: boolean; // True if page data is still loading
   // Response metadata (added by background script, not content script)
   _retryCount?: number; // Number of retries needed for extraction
 }

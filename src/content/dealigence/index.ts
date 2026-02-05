@@ -12,12 +12,14 @@ interface ExtractMessage {
 
 interface ExtractResponse {
   success: boolean;
-  data?: ReturnType<typeof extractCompanyData>;
+  data?: Awaited<ReturnType<typeof extractCompanyData>>;
   error?: string;
 }
 
 /**
  * Handle incoming messages from background script
+ * extractCompanyData is async (waits for DOM data to load),
+ * so we return true and use sendResponse asynchronously.
  */
 chrome.runtime.onMessage.addListener(
   (
@@ -26,17 +28,17 @@ chrome.runtime.onMessage.addListener(
     sendResponse: (response: ExtractResponse) => void
   ) => {
     if (message.type === 'EXTRACT_COMPANY_DATA') {
-      try {
-        const data = extractCompanyData();
-        sendResponse({ success: true, data });
-      } catch (error) {
-        sendResponse({
-          success: false,
-          error: error instanceof Error ? error.message : 'Extraction failed',
-        });
-      }
+      extractCompanyData()
+        .then((data) => sendResponse({ success: true, data }))
+        .catch((error) =>
+          sendResponse({
+            success: false,
+            error: error instanceof Error ? error.message : 'Extraction failed',
+          })
+        );
+      // Return true to indicate async response
+      return true;
     }
-    // Return false for synchronous response
     return false;
   }
 );
