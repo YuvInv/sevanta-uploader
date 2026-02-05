@@ -1,41 +1,42 @@
 /**
  * DOM selectors for Dealigence company pages
- * These selectors target the company profile page structure
  *
- * IMPORTANT: Dealigence uses h2 for company names, NOT h1
- * Categories must be scoped to main company container to avoid
- * picking up tags from "People Also Viewed" section
+ * Dealigence uses CSS Modules with class names like:
+ * "Person-module-scss-module__eMYvaG__personContainer"
+ * We use [class*="..."] selectors to match the stable part of the name.
+ *
+ * Data architecture (as of 2026-02):
+ * - All detailed data loads asynchronously into DOM
+ * - Data displayed as label-value pairs (dataPointLabel / dataPointValue)
+ * - Founders appear as avatar buttons in dataPointValue (data in React fiber)
+ * - Stakeholders appear as person cards (personContainer)
  */
 
 export const SELECTORS = {
   // Company name - Dealigence uses h2, NOT h1
   companyName: 'h2',
 
-  // Description - usually in a paragraph or description section
-  description: '[class*="description"], [class*="about"] p, main p:first-of-type',
+  // Label-value pairs for structured data (funding, employees, etc.)
+  dataPointLabel: '[class*="dataPointLabel"]',
+  dataPointValue: '[class*="dataPointValue"]',
 
-  // Website link
-  website: 'a[href*="http"]:not([href*="dealigence"]):not([href*="linkedin"])',
+  // Person cards (stakeholders & advisors section)
+  personContainer: '[class*="personContainer"]',
+  personDetails: '[class*="personDetails"]',
+
+  // Description
+  description: '[class*="description"], main p:first-of-type',
 
   // Main company container - scope tags to this to avoid "People Also Viewed"
   companyContainer: 'main > div > div',
 
-  // Categories/tags - these are scoped selectors used within companyContainer
+  // Categories/tags
   tagsContainer: '[class*="tags"]',
   tag: '[class*="tag"][class*="noBg"]',
 
-  // Funding information
-  totalFunding: '[class*="funding"], [class*="raised"]',
-  fundingStatus: '[class*="stage"], [class*="status"]',
+  // Website link
+  website: 'a[href^="http"]',
 
-  // Company details
-  headquarters: '[class*="location"], [class*="headquarters"]',
-  founded: '[class*="founded"], [class*="year"]',
-
-  // Team/Founders section
-  foundersSection: '[class*="team"], [class*="founder"], [class*="people"]',
-  founderCard: '[class*="person"], [class*="member"], [class*="founder"]',
-  founderName: '[class*="name"], h3, h4',
-  founderTitle: '[class*="title"], [class*="role"], small',
+  // Founder LinkedIn (within person cards)
   founderLinkedin: 'a[href*="linkedin"]',
 } as const;
