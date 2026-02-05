@@ -234,16 +234,18 @@ async function handleSearchContacts(
 async function handleExtractDealigenceData(
   tabId: number
 ): Promise<MessageResponse<DealigenceCompanyData>> {
-  // Get URL slug from tab - this is the ground truth
+  // Get URL from tab - this is the ground truth
+  let expectedUrl: string | null = null;
   let urlSlug: string | null = null;
   try {
     const tab = await chrome.tabs.get(tabId);
+    expectedUrl = tab.url || null;
     urlSlug = tab.url ? extractSlugFromUrl(tab.url) : null;
   } catch {
     return { success: false, error: 'Tab not found' };
   }
 
-  if (!urlSlug) {
+  if (!urlSlug || !expectedUrl) {
     return { success: false, error: 'Not a Dealigence company page' };
   }
 
@@ -251,6 +253,7 @@ async function handleExtractDealigenceData(
     data?: DealigenceCompanyData;
     error?: string;
     isStale?: boolean;
+    staleReason?: string;
   }> => {
     try {
       const response = await chrome.tabs.sendMessage(tabId, {
@@ -263,12 +266,42 @@ async function handleExtractDealigenceData(
 
       const data = response.data as DealigenceCompanyData;
 
-      // CRITICAL: Validate company matches URL (prevents stale data bug #44)
+      // VALIDATION 1: Check if page is still loading (skeleton/spinner detected)
+      if (data.isLoading) {
+        console.log('[Sevanta] Stale: page still loading (skeleton/spinner detected)');
+        return { isStale: true, staleReason: 'loading' };
+      }
+
+      // VALIDATION 2: Reject URL fallback as source (unreliable during SPA navigation)
+      // URL fallback always matches the URL, masking stale DOM/JSON-LD data
+      if (data.companyNameSource === 'url-fallback') {
+        console.log('[Sevanta] Stale: company name from URL fallback (unreliable)');
+        return { isStale: true, staleReason: 'url-fallback' };
+      }
+
+      // VALIDATION 3: Validate sourceUrl exactly matches tab URL (ground truth)
+      if (data.sourceUrl !== expectedUrl) {
+        console.log(
+          `[Sevanta] Stale: sourceUrl mismatch. Got "${data.sourceUrl}", expected "${expectedUrl}"`
+        );
+        return { isStale: true, staleReason: 'url-mismatch' };
+      }
+
+      // VALIDATION 4: Company name must match URL slug (existing check)
       if (data.companyName && urlSlug) {
         if (!doesCompanyMatchSlug(data.companyName, urlSlug)) {
           console.log(`[Sevanta] Stale: got "${data.companyName}" but URL is "${urlSlug}"`);
-          return { isStale: true };
+          return { isStale: true, staleReason: 'name-mismatch' };
         }
+      }
+
+      // VALIDATION 5: Require minimum content (prevents skeleton data)
+      // Must have at least description OR some funding info
+      const hasDescription = !!data.description && data.description.length > 20;
+      const hasFunding = !!data.totalFunding || !!data.fundingStatus;
+      if (!hasDescription && !hasFunding) {
+        console.log('[Sevanta] Stale: missing description and funding (likely skeleton)');
+        return { isStale: true, staleReason: 'skeleton' };
       }
 
       return { data };
@@ -291,14 +324,15 @@ async function handleExtractDealigenceData(
 
   while (result.isStale && attempt <= EXTRACTION_MAX_RETRIES) {
     console.log(
-      `[Sevanta] Extraction attempt ${attempt}/${EXTRACTION_MAX_RETRIES}, waiting ${delay}ms...`
+      `[Sevanta] Extraction attempt ${attempt}/${EXTRACTION_MAX_RETRIES}, waiting ${delay}ms... (reason: ${result.staleReason})`
     );
     await new Promise((r) => setTimeout(r, delay));
     result = await tryExtract();
 
     if (result.data) {
       console.log(`[Sevanta] Extraction succeeded on attempt ${attempt}`);
-      return { success: true, data: result.data };
+      // Include retry count in the data for UI feedback
+      return { success: true, data: { ...result.data, _retryCount: attempt } };
     }
 
     delay = Math.min(delay * EXTRACTION_DELAY_MULTIPLIER, EXTRACTION_MAX_DELAY_MS);

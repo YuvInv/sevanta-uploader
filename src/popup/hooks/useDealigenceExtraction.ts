@@ -61,9 +61,17 @@ export function useDealigenceExtraction() {
       });
 
       if (response?.success && response.data) {
+        // Extract retry count from response data (added by background script)
+        const { _retryCount, ...data } = response.data as DealigenceCompanyData & {
+          _retryCount?: number;
+        };
+        if (_retryCount && _retryCount > 0) {
+          console.log(`[Sevanta] Extraction succeeded after ${_retryCount} retries`);
+        }
         setState({
           step: 'success',
-          data: response.data as DealigenceCompanyData,
+          data: data as DealigenceCompanyData,
+          retryCount: _retryCount,
         });
       } else {
         setState({
