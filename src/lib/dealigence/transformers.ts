@@ -113,13 +113,20 @@ export function mapCategory(categories: string[]): string | undefined {
 }
 
 /**
- * Build source/notes text from all metadata
+ * Build simple source attribution text
  */
 function buildSourceText(data: DealigenceCompanyData): string {
+  return `Uploaded through Sevanta uploader extension ${data.sourceUrl}`;
+}
+
+/**
+ * Build full metadata comment for CRM comments section
+ */
+export function buildMetadataComment(data: DealigenceCompanyData): string {
   const parts: string[] = [];
 
-  parts.push(`Source: Dealigence`);
-  parts.push(`URL: ${data.sourceUrl}`);
+  parts.push(`== Dealigence Company Data ==`);
+  parts.push(`Source URL: ${data.sourceUrl}`);
 
   if (data.totalFunding) {
     parts.push(`Total Funding: ${data.totalFunding}`);

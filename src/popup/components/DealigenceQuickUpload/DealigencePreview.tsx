@@ -166,10 +166,6 @@ export function DealigencePreview({
               )}
               {roundLabel && <FieldRow label="Round" value={roundLabel} />}
               {industryLabel && <FieldRow label="Industry" value={industryLabel} />}
-              <FieldRow label="Source Type" value="Research" muted />
-              <FieldRow label="Deal Type" value="INV" muted />
-              <FieldRow label="Stage" value="Screening" muted />
-              <FieldRow label="Status" value="Active" muted />
             </div>
           </div>
 
@@ -195,18 +191,16 @@ export function DealigencePreview({
               Source Notes
             </button>
             {showSourceDetails && (
-              <div className="mt-2 p-3 bg-warm-50 rounded-lg text-xs text-warm-600 font-mono whitespace-pre-wrap">
-                {`Source: Dealigence
-URL: ${data.sourceUrl}
-${data.totalFunding ? `Total Funding: ${data.totalFunding}` : ''}
-${data.fundingStatus ? `Funding Status: ${data.fundingStatus}` : ''}
-${data.headquarters ? `Location: ${data.headquarters}` : ''}
-${data.founded ? `Founded: ${data.founded}` : ''}
-${data.employees ? `Employees: ${data.employees}` : ''}
-${data.categories.length > 0 ? `Categories: ${data.categories.join(', ')}` : ''}`
-                  .split('\n')
-                  .filter((line) => line.trim())
-                  .join('\n')}
+              <div className="mt-2 p-3 bg-warm-50 rounded-lg text-xs text-warm-600">
+                <p>Uploaded through Sevanta uploader extension</p>
+                <a
+                  href={data.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent-500 hover:underline"
+                >
+                  {data.sourceUrl}
+                </a>
               </div>
             )}
           </div>
