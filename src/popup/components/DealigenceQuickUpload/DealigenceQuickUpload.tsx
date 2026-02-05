@@ -11,6 +11,7 @@ import { ExtractionError } from './ExtractionError';
 import { DealigencePreview } from './DealigencePreview';
 import { DealigenceEditor } from './DealigenceEditor';
 import { UploadSuccess } from './UploadSuccess';
+import { DuplicateWarningModal } from './DuplicateWarningModal';
 
 interface DealigenceQuickUploadProps {
   connected: boolean;
@@ -28,10 +29,14 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
     isUploading,
     uploadError,
     createdDealId,
-    checkDuplicate,
+    showDuplicateModal,
+    duplicateMatch,
+    pendingUploadData,
+    checkDuplicateAndUpload,
+    confirmUpload,
+    cancelUpload,
     updateCrmData,
     toggleFounder,
-    upload,
     reset: resetUpload,
   } = useDealigenceUpload();
 
@@ -41,13 +46,9 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
   // Initialize CRM data when extraction completes
   const handleUploadClick = useCallback(async () => {
     if (!data) return;
-    // Check for duplicates first
-    const hasDuplicate = await checkDuplicate(data);
-    // Then upload (user can proceed even if duplicate)
-    if (!hasDuplicate || confirm('This company may already exist in the CRM. Upload anyway?')) {
-      await upload(data);
-    }
-  }, [data, checkDuplicate, upload]);
+    // Check for duplicates and upload (shows modal if duplicate found)
+    await checkDuplicateAndUpload(data);
+  }, [data, checkDuplicateAndUpload]);
 
   const handleEditClick = useCallback(() => {
     setIsEditing(true);
@@ -192,13 +193,24 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
   // Preview state
   if (hasData && data) {
     return (
-      <DealigencePreview
-        data={data}
-        onUpload={handleUploadClick}
-        onEdit={handleEditClick}
-        isUploading={isUploading}
-        duplicateWarning={duplicateWarning}
-      />
+      <>
+        <DealigencePreview
+          data={data}
+          onUpload={handleUploadClick}
+          onEdit={handleEditClick}
+          isUploading={isUploading}
+          duplicateWarning={duplicateWarning}
+        />
+        {showDuplicateModal && pendingUploadData && (
+          <DuplicateWarningModal
+            companyName={pendingUploadData.companyName}
+            matchedCompanyName={duplicateMatch?.name || 'Unknown'}
+            matchedCompanyId={duplicateMatch?.id}
+            onCancel={cancelUpload}
+            onProceed={confirmUpload}
+          />
+        )}
+      </>
     );
   }
 
