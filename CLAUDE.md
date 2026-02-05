@@ -40,7 +40,7 @@ Enter plan mode for any task with 3+ steps. If things go sideways during impleme
 ### Pre-Implementation Requirements
 
 **Before Writing Code for Bug Fixes:**
-1. Check for existing analysis: `bugs/bug-*.md`, `docs/`, or issue comments
+1. Check for existing analysis: `docs/bugs/bug-*.md`, `docs/`, or issue comments
 2. Read linked documentation fully - don't re-derive existing research
 3. Validate proposed solution addresses root cause, not symptoms
 
@@ -54,7 +54,7 @@ Enter plan mode for any task with 3+ steps. If things go sideways during impleme
 Use subagents liberally for parallel work. One focused task per subagent - don't overload them with multiple concerns.
 
 ### Self-Improvement Loop
-After receiving corrections or discovering gotchas, update `tasks/lessons.md`. Write rules to prevent the same mistakes from recurring.
+After receiving corrections or discovering gotchas, update `docs/lessons.md`. Write rules to prevent the same mistakes from recurring.
 
 ### Verification Before Done
 Never mark a task complete without proving it works. Run tests, check the build, verify the feature manually if needed.
@@ -277,8 +277,7 @@ npm run bump:major   # Bump major version (1.0.1 -> 2.0.0)
 
 ### Tracking Locations
 - **[Notion Kanban Board](NOTION_URL_REDACTED)** - PRIMARY source of truth for all tasks, features, bugs, and backlog
-- `tasks/lessons.md` - Learnings and rules from past mistakes
-- `TODO.md` - DEPRECATED (migrated to Notion)
+- `docs/lessons.md` - Learnings and rules from past mistakes
 - GitHub Issues - DEPRECATED (migrated to Notion)
 
 ### Notion Database Structure
@@ -301,16 +300,15 @@ Each task includes:
 4. **Track Progress**: Update Notion task status (Backlog → In Progress → Done)
 5. **Explain Changes**: Provide high-level summary at each step
 6. **Document Results**: Update Notion task with implementation notes
-7. **Capture Lessons**: Update `tasks/lessons.md` after corrections or discoveries
+7. **Capture Lessons**: Update `docs/lessons.md` after corrections or discoveries
 
 ### Syncing with Notion
 Use the `/sync-todos` skill to:
-- Sync local TODO.md with Notion (if needed)
 - Create new Notion tasks from completed work
 - Update task statuses based on progress
 
-## api examples
-the folder .schema_examples/ contains example JSON responses from various API endpoints for reference when working with the Sevanta Dealflow API. you can use these files to understand the structure of API responses and to test your code against real data formats.
+## API Examples
+The folder `docs/api-examples/` contains example JSON responses from various API endpoints for reference when working with the Sevanta Dealflow API. Use these files to understand the structure of API responses and to test your code against real data formats.
 
 
 ## Field Reference (Commonly Used)
