@@ -1,0 +1,27 @@
+Sevanta Uploader — Bulk upload companies to Sevanta Dealflow CRM directly from your browser.
+
+KEY FEATURES
+
+• Bulk CSV Upload — Drag-and-drop CSV files to import multiple companies at once.
+• Smart Column Mapping — Automatically maps CSV columns to CRM fields with manual override.
+• Field Validation — Validates required fields, dropdown values, URLs, and data types before upload.
+• Duplicate Detection — Checks for existing companies by name and website to prevent duplicates.
+• Inline Editing — Review and edit every record in an interactive table before uploading.
+• Upload Progress — Real-time progress tracking with per-record success/failure status.
+• Contact Lookup — Paste contact names and emails to search the CRM for existing matches.
+• Dealigence Integration — Extract company data from Dealigence.vc pages to pre-fill CRM fields.
+
+HOW IT WORKS
+
+1. Open the extension side panel while logged into Sevanta Dealflow.
+2. Upload a CSV file or extract data from Dealigence.
+3. Map columns, review validation results, and check for duplicates.
+4. Edit any records inline, then upload — all in one workflow.
+
+AUTHENTICATION
+
+Uses your existing Sevanta Dealflow browser session — no API keys or passwords needed. Simply log in to the CRM and the extension works automatically.
+
+PRIVACY
+
+All CSV parsing happens locally in your browser. No data is sent to third parties. See the full privacy policy for details.
