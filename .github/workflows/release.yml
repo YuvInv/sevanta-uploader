@@ -1,18 +1,45 @@
-name: Release
+name: Release & Publish
 
 on:
-  push:
-    tags:
-      - 'v*'
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 jobs:
-  build-and-release:
+  release:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: v$VERSION"
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/${{ steps.get_version.outputs.VERSION }}$"; then
+            echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ steps.get_version.outputs.VERSION }} already exists"
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "Tag ${{ steps.get_version.outputs.VERSION }} does not exist"
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.get_version.outputs.VERSION }}
+          git push origin ${{ steps.get_version.outputs.VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -26,19 +53,27 @@ jobs:
       - name: Build extension
         run: npm run build
 
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
       - name: Zip extension
         run: |
           cd dist
           zip -r ../sevanta-uploader-${{ steps.get_version.outputs.VERSION }}.zip .
           cd ..
 
-      - name: Create Release
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
           files: sevanta-uploader-${{ steps.get_version.outputs.VERSION }}.zip
           generate_release_notes: true
           draft: false
+
+      - name: Upload to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: sevanta-uploader-${{ steps.get_version.outputs.VERSION }}.zip
+          extension-id: ${{ secrets.CWS_EXTENSION_ID }}
+          client-id: ${{ secrets.CWS_CLIENT_ID }}
+          client-secret: ${{ secrets.CWS_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CWS_REFRESH_TOKEN }}
+          publish: true
