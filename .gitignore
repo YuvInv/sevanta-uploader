@@ -10,3 +10,4 @@ coverage/
 *.tmp
 *.bak
 .claude/settings.local.json
+*.zip
