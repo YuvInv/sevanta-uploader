@@ -9,7 +9,7 @@ import { UploadPreview } from './components/UploadPreview';
 import { DuplicateCheckProgress } from './components/DuplicateCheckProgress';
 import { TabNav, type AppMode } from './components/TabNav';
 import { ContactLookup } from './components/ContactLookup';
-import { DealigenceQuickUpload } from './components/DealigenceQuickUpload';
+import { QuickUpload } from './components/QuickUpload';
 import { useSevantaApi } from './hooks/useSevantaApi';
 import { useValidation } from './hooks/useValidation';
 import { useDuplicateCheck } from './hooks/useDuplicateCheck';
@@ -27,8 +27,10 @@ export default function App() {
     const checkInitialPage = async () => {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_ACTIVE_TAB_INFO' });
-        if (mounted && response?.success && response.data?.isDealigenceCompanyPage) {
-          setMode('dealigence');
+        if (mounted && response?.success && response.data) {
+          if (response.data.isDealigenceCompanyPage || response.data.isIvcCompanyPage) {
+            setMode('dealigence');
+          }
         }
       } catch {
         // Ignore - stay on default tab
@@ -42,11 +44,21 @@ export default function App() {
     };
   }, []);
 
-  // Listen for SPA navigation on Dealigence - auto-switch when navigating TO a company page
+  // Listen for navigation/tab switches - auto-switch to Quick Upload on supported pages
   useEffect(() => {
-    const handleMessage = (message: { type: string; url?: string }) => {
+    const handleMessage = (message: {
+      type: string;
+      url?: string;
+      isDealigenceCompanyPage?: boolean;
+      isIvcCompanyPage?: boolean;
+    }) => {
       if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
         if (isDealigenceCompanyPage(message.url)) {
+          setMode('dealigence');
+        }
+      }
+      if (message.type === 'TAB_ACTIVATED') {
+        if (message.isDealigenceCompanyPage || message.isIvcCompanyPage) {
           setMode('dealigence');
         }
       }
@@ -136,7 +148,7 @@ export default function App() {
       {/* Main Content */}
       <main className="p-4">
         {/* Dealigence Quick Upload Mode */}
-        {mode === 'dealigence' && <DealigenceQuickUpload connected={connected} />}
+        {mode === 'dealigence' && <QuickUpload connected={connected} />}
 
         {/* Contact Lookup Mode */}
         {mode === 'lookup' && <ContactLookup connected={connected} />}

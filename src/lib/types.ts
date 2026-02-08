@@ -133,6 +133,7 @@ export type MessageType =
   | { type: 'SEARCH_CONTACTS'; name?: string; email?: string }
   | { type: 'ADD_DEAL_COMMENT'; dealId: string; comment: string }
   | { type: 'EXTRACT_DEALIGENCE_DATA'; tabId: number }
+  | { type: 'EXTRACT_IVC_DATA'; tabId: number }
   | { type: 'GET_ACTIVE_TAB_INFO' };
 
 export interface MessageResponse<T = unknown> {
