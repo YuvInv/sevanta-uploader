@@ -52,4 +52,5 @@ export interface TabInfo {
   tabId: number;
   url: string;
   isDealigenceCompanyPage: boolean;
+  isIvcCompanyPage?: boolean;
 }

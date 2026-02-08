@@ -7,6 +7,8 @@ import {
   doesCompanyMatchSlug,
   isDealigenceCompanyPage,
 } from '../lib/dealigence/urlUtils';
+import type { IvcCompanyData } from '../lib/ivc/types';
+import { isIvcCompanyPage } from '../lib/ivc/urlUtils';
 import {
   EXTRACTION_MAX_RETRIES,
   EXTRACTION_INITIAL_DELAY_MS,
@@ -73,6 +75,9 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
 
     case 'EXTRACT_DEALIGENCE_DATA':
       return handleExtractDealigenceData(message.tabId);
+
+    case 'EXTRACT_IVC_DATA':
+      return handleExtractIvcData(message.tabId);
 
     case 'GET_ACTIVE_TAB_INFO':
       return handleGetActiveTabInfo();
@@ -431,6 +436,124 @@ async function handleExtractDealigenceData(
   return { success: false, error: result.error || 'Extraction failed' };
 }
 
+/**
+ * Extract IVC company data directly from the page DOM using chrome.scripting.
+ * This works even when the content script isn't loaded (e.g. after extension reload).
+ * IVC pages are server-rendered with stable DOM IDs, so this is reliable.
+ */
+async function extractIvcDataFromPage(tabId: number): Promise<IvcCompanyData | null> {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        function getText(selector: string): string | undefined {
+          const el = document.querySelector(selector);
+          const text = el?.textContent?.trim();
+          return text || undefined;
+        }
+
+        function stripHonorific(name: string): string {
+          return name.replace(/^(Mr\.?|Ms\.?|Mrs\.?|Dr\.?|Prof\.?)\s+/i, '');
+        }
+
+        // Website from link in the website row
+        const websiteRow = document.querySelector('[id$="HeaderCard1_trWebSite"]');
+        const websiteLink = websiteRow?.querySelector('a') as HTMLAnchorElement | null;
+        const website = websiteLink?.href || undefined;
+
+        // LinkedIn from account table
+        const linkedinTable = document.querySelector('[id$="HeaderCard1_TblAccount"]');
+        const linkedinLink = linkedinTable?.querySelector(
+          'a[href*="linkedin.com"]'
+        ) as HTMLAnchorElement | null;
+        const linkedinUrl = linkedinLink?.href || undefined;
+
+        // Management team
+        const management: Array<{ name: string; title?: string; email?: string }> = [];
+        for (let i = 0; i < 50; i++) {
+          const nameEl = document.querySelector(`[id$="ManagementBoard1_RptMang_link_${i}"]`);
+          if (!nameEl) break;
+          const name = nameEl.textContent?.trim();
+          if (!name) continue;
+          const nameTd = nameEl.closest('td');
+          const titleTd = nameTd?.nextElementSibling;
+          const title = titleTd?.textContent?.trim() || undefined;
+          const row = nameEl.closest('tr');
+          const emailLink = row?.querySelector(
+            'a[id*="htContactEmail"]'
+          ) as HTMLAnchorElement | null;
+          const email = emailLink?.href?.replace('mailto:', '') || undefined;
+          management.push({ name: stripHonorific(name), title, email });
+        }
+
+        // Tags
+        const tagLinks = document.querySelectorAll('a[href*="Advanced-Search?Tag="]');
+        const tags = Array.from(tagLinks)
+          .map((el) => el.textContent?.trim())
+          .filter((t): t is string => !!t);
+
+        return {
+          companyName: getText('[id$="HeaderCard1_lFullName"]') || 'Unknown Company',
+          description: getText('[id$="GeneralData1_lDisc"]'),
+          website,
+          linkedinUrl,
+          sector: getText('[id$="GeneralData1_lSector"]'),
+          stage: getText('[id$="GeneralData1_lStage"]'),
+          established: getText('[id$="GeneralData1_lEstYear"]'),
+          employees: getText('[id$="GeneralData1_lEmployees"]'),
+          technology: getText('[id$="GeneralData1_lTech"]'),
+          targetMarkets: getText('[id$="GeneralData1_lTarCos"]'),
+          businessModel: getText('[id$="GeneralData1_lBusMod"]'),
+          totalCapital: getText('[id$="Deals1_lblTotal"]'),
+          tags,
+          management,
+          sourceUrl: window.location.href,
+        };
+      },
+    });
+
+    const data = results?.[0]?.result;
+    return data as IvcCompanyData | null;
+  } catch (error) {
+    console.log('[Sevanta] IVC scripting extraction failed:', error);
+    return null;
+  }
+}
+
+async function handleExtractIvcData(tabId: number): Promise<MessageResponse<IvcCompanyData>> {
+  // Verify it's an IVC page
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab.url || !isIvcCompanyPage(tab.url)) {
+      return { success: false, error: 'Not an IVC company page' };
+    }
+  } catch {
+    return { success: false, error: 'Tab not found' };
+  }
+
+  // Try content script first, fall back to direct scripting extraction
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, {
+      type: 'EXTRACT_IVC_COMPANY_DATA',
+    });
+
+    if (response?.success && response.data) {
+      return { success: true, data: response.data as IvcCompanyData };
+    }
+  } catch {
+    // Content script not loaded - fall through to direct extraction
+    console.log('[Sevanta] IVC content script not available, using direct extraction');
+  }
+
+  // Direct extraction via chrome.scripting (works without content script)
+  const data = await extractIvcDataFromPage(tabId);
+  if (data) {
+    return { success: true, data };
+  }
+
+  return { success: false, error: 'IVC extraction failed' };
+}
+
 async function handleGetActiveTabInfo(): Promise<MessageResponse<TabInfo>> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -445,6 +568,7 @@ async function handleGetActiveTabInfo(): Promise<MessageResponse<TabInfo>> {
         tabId: tab.id,
         url: tab.url,
         isDealigenceCompanyPage: isDealigenceCompanyPage(tab.url),
+        isIvcCompanyPage: isIvcCompanyPage(tab.url),
       },
     };
   } catch (error) {
@@ -494,6 +618,46 @@ chrome.storage.local.remove(['schema', 'contactSchema']);
 chrome.action.onClicked.addListener((tab) => {
   if (tab.id) {
     chrome.sidePanel.open({ tabId: tab.id });
+  }
+});
+
+// Broadcast tab activation changes so sidepanel can detect site switches
+// This is needed for non-SPA sites like IVC where there's no URL change event
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab.url) {
+      chrome.runtime
+        .sendMessage({
+          type: 'TAB_ACTIVATED',
+          url: tab.url,
+          tabId: activeInfo.tabId,
+          isDealigenceCompanyPage: isDealigenceCompanyPage(tab.url),
+          isIvcCompanyPage: isIvcCompanyPage(tab.url),
+        })
+        .catch(() => {
+          // Ignore if no listeners
+        });
+    }
+  } catch {
+    // Ignore
+  }
+});
+
+// Also broadcast when a tab finishes loading (covers page navigation within same tab)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.active) {
+    chrome.runtime
+      .sendMessage({
+        type: 'TAB_ACTIVATED',
+        url: tab.url,
+        tabId,
+        isDealigenceCompanyPage: isDealigenceCompanyPage(tab.url),
+        isIvcCompanyPage: isIvcCompanyPage(tab.url),
+      })
+      .catch(() => {
+        // Ignore if no listeners
+      });
   }
 });
 

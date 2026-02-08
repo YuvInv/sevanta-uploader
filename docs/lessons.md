@@ -192,6 +192,53 @@ Approach deprecated. Full postmortem: `docs/dealigence-extraction-postmortem.md`
 
 ---
 
+## 2026-02-08: IVC Quick Upload - Broke Working Feature, Zero Browser Testing
+
+### What Happened
+
+Implemented a large refactor (IVC Quick Upload + unified multi-site architecture) that:
+1. **Broke the working Dealigence Quick Upload** - renamed message types (`DEALIGENCE_URL_CHANGED` → `QUICK_UPLOAD_URL_CHANGED`), changed `handleGetActiveTabInfo` return shape (`isDealigenceCompanyPage` → `site`), renamed AppMode from `'dealigence'` → `'quickUpload'`. These breaking changes cascaded through the entire flow.
+2. **Built IVC extraction based on guessed DOM selectors** - wrote selectors (`.cc_header_stickyMain`, `.cc_box_header`, `.divTag`) without ever loading an actual IVC page in the browser to verify they exist and work correctly.
+3. **Never tested in the browser** - built the feature, ran `npm run build` + `npm run check`, and declared it done. Zero browser testing.
+
+### Every Rule Violated
+
+1. **"Verification Before Done"** (CLAUDE.md): "Never mark a task complete without proving it works. Run tests, check the build, verify the feature manually if needed." - I only ran build/lint, never loaded the extension.
+
+2. **"Observation Before Hypothesis"** (CLAUDE.md, MEMORY.md): The IVC selectors were pure guesswork. I never opened an IVC page to observe the actual DOM structure. Even though I had browser MCP tools available.
+
+3. **"Test in browser, not just build"** (lessons.md, line 79): This exact rule already existed from a previous failure. I ignored it.
+
+4. **Plan mode systematic-debugging skill**: Available and listed. Never used.
+
+5. **"Minimal Impact"** (CLAUDE.md): "Only touch what's necessary. Avoid introducing bugs in unrelated areas." - Renamed working message types and broke the existing Dealigence feature.
+
+### Root Cause: Rushing Through Implementation
+
+I treated this as a code-generation task: read the plan → write all the files → build → done. The plan was detailed enough that I trusted it would work without verification. This is the same mistake as theorizing without observing, just applied to feature development instead of debugging.
+
+### Rules (Additive to Existing)
+
+1. **Never rename working message types / interfaces in a multi-site refactor** - Add new ones, keep old ones working, migrate incrementally. Breaking renames break existing features.
+
+2. **For new site integrations**: FIRST observe the real page DOM with browser MCP tools, THEN write selectors. Never guess selectors from documentation or assumptions.
+
+3. **For any feature that involves Chrome Extension content scripts**: Load the extension, navigate to the target page, verify the content script loads and extracts data correctly. `npm run build` passing is necessary but NOT sufficient.
+
+4. **Incremental delivery > big-bang refactor**: Should have added IVC as a second parallel path first (keeping Dealigence untouched), verified IVC works, THEN refactored to unified architecture.
+
+### What Should Have Happened
+
+1. Open IVC company page in browser
+2. Use MCP tools to observe actual DOM structure
+3. Write selectors based on observed DOM
+4. Add IVC support WITHOUT changing any Dealigence code
+5. Build, load extension, test IVC extraction in browser
+6. Only THEN refactor to unified architecture
+7. Re-test Dealigence after refactor
+
+---
+
 ## Links
 
 - [Bug #44 Analysis](./bugs/bug-44-spa-stale-data.md) - Contains correct solution (never implemented)
