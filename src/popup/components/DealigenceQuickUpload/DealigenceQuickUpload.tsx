@@ -3,14 +3,14 @@
  * Handles extraction, preview, and upload flow (no editing)
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDealigenceExtraction } from '../../hooks/useDealigenceExtraction';
 import { useDealigenceUpload } from '../../hooks/useDealigenceUpload';
+import { useDealigenceDuplicateCheck } from '../../hooks/useDealigenceDuplicateCheck';
 import { ExtractionProgress } from './ExtractionProgress';
 import { ExtractionError } from './ExtractionError';
 import { DealigencePreview } from './DealigencePreview';
 import { UploadSuccess } from './UploadSuccess';
-import { DuplicateWarningModal } from './DuplicateWarningModal';
 
 interface DealigenceQuickUploadProps {
   connected: boolean;
@@ -22,24 +22,30 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
 
   const {
     uploadStep,
-    duplicateWarning,
     isUploading,
     uploadError,
     createdDealId,
-    showDuplicateModal,
-    duplicateMatch,
-    pendingUploadData,
-    checkDuplicateAndUpload,
-    confirmUpload,
-    cancelUpload,
+    upload,
     reset: resetUpload,
   } = useDealigenceUpload();
 
-  // Handle upload click - check for duplicates and upload
+  const { duplicateCheck } = useDealigenceDuplicateCheck(data);
+
+  // Track which company the user has overridden duplicate warning for.
+  // Stores company key (name|website) so override auto-resets when company changes.
+  const [overriddenCompanyKey, setOverriddenCompanyKey] = useState<string | null>(null);
+  const currentCompanyKey = data ? `${data.companyName}|${data.website ?? ''}` : null;
+  const duplicateOverride =
+    overriddenCompanyKey !== null && overriddenCompanyKey === currentCompanyKey;
+
+  // Upload is allowed when not actively checking and either clear/error or user overrode
+  const canUpload =
+    duplicateCheck.step !== 'checking' && (duplicateCheck.step !== 'found' || duplicateOverride);
+
   const handleUploadClick = useCallback(async () => {
     if (!data) return;
-    await checkDuplicateAndUpload(data);
-  }, [data, checkDuplicateAndUpload]);
+    await upload(data);
+  }, [data, upload]);
 
   const handleUploadAnother = useCallback(() => {
     resetUpload();
@@ -151,23 +157,14 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
   // Preview state - direct to upload (no editing)
   if (hasData && data) {
     return (
-      <>
-        <DealigencePreview
-          data={data}
-          onUpload={handleUploadClick}
-          isUploading={isUploading}
-          duplicateWarning={duplicateWarning}
-        />
-        {showDuplicateModal && pendingUploadData && (
-          <DuplicateWarningModal
-            companyName={pendingUploadData.companyName}
-            matchedCompanyName={duplicateMatch?.name || 'Unknown'}
-            matchedCompanyId={duplicateMatch?.id}
-            onCancel={cancelUpload}
-            onProceed={confirmUpload}
-          />
-        )}
-      </>
+      <DealigencePreview
+        data={data}
+        onUpload={handleUploadClick}
+        isUploading={isUploading}
+        duplicateCheck={duplicateCheck}
+        canUpload={canUpload}
+        onDuplicateOverride={() => setOverriddenCompanyKey(currentCompanyKey)}
+      />
     );
   }
 
