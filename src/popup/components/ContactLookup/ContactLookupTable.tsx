@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { ContactLookupResult, MatchType } from '../../../lib/types';
-import { MatchBadge } from './MatchBadge';
+import { StatusBadge } from '../shared/StatusBadge';
+import { CrmLink } from '../shared/CrmLink';
 import { exportContactResults } from '../../../lib/contactExport';
 
 interface ContactLookupTableProps {
@@ -93,17 +94,17 @@ export function ContactLookupTable({
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-warm-200">
-                <th className="px-5 py-4 text-left text-sm font-semibold text-warm-600 bg-warm-50/50">
+              <tr className="bg-warm-100 border-b border-warm-200">
+                <th className="px-5 py-3 text-left text-sm font-semibold text-warm-600">
                   Your Input
                 </th>
-                <th className="px-5 py-4 text-left text-sm font-semibold text-warm-600 bg-warm-50/50 w-32">
+                <th className="px-5 py-3 text-left text-sm font-semibold text-warm-600 w-32">
                   Match
                 </th>
-                <th className="px-5 py-4 text-left text-sm font-semibold text-warm-600 bg-warm-50/50">
+                <th className="px-5 py-3 text-left text-sm font-semibold text-warm-600">
                   CRM Contact
                 </th>
-                <th className="px-5 py-4 text-left text-sm font-semibold text-warm-600 bg-warm-50/50">
+                <th className="px-5 py-3 text-left text-sm font-semibold text-warm-600">
                   Company
                 </th>
               </tr>
@@ -130,35 +131,15 @@ export function ContactLookupTable({
 
                   {/* Match badge */}
                   <td className="px-5 py-4">
-                    <MatchBadge type={result.matchType} />
+                    <StatusBadge status={result.matchType} />
                   </td>
 
                   {/* CRM Contact with link */}
                   <td className="px-5 py-4">
                     {result.bestMatch ? (
-                      <a
-                        href={`https://run.mydealflow.com/inv/#/Contact.php?ContactID=${result.bestMatch.contactId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex items-center gap-2 text-accent-600 hover:text-accent-700"
-                      >
-                        <span className="font-medium underline decoration-accent-300 underline-offset-2 group-hover:decoration-accent-500">
-                          {result.bestMatch.name}
-                        </span>
-                        <svg
-                          className="w-4 h-4 opacity-50 group-hover:opacity-100"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          />
-                        </svg>
-                      </a>
+                      <CrmLink type="contact" id={result.bestMatch.contactId}>
+                        {result.bestMatch.name}
+                      </CrmLink>
                     ) : (
                       <span className="text-warm-400">-</span>
                     )}
