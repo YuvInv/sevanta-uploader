@@ -224,26 +224,46 @@ export function ColumnMapper({
       {/* Unified mapping table */}
       <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-warm-50">
+          <thead className="bg-warm-100">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-warm-600 text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-warm-600">
                 CSV Column
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-warm-600 text-xs uppercase tracking-wider w-32">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-warm-600 w-32">
                 Type
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-warm-600 text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-warm-600">
                 CRM Field
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-warm-100">
-            {unifiedMappings.map((mapping) => {
+          <tbody>
+            {/* Deal Fields Section */}
+            {unifiedMappings.some((m) => m.type === 'deal') && (
+              <tr className="bg-warm-50">
+                <td colSpan={3} className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-warm-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
+                    </svg>
+                    <span className="text-xs font-semibold text-warm-700 uppercase tracking-wide">
+                      Deal Fields
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            )}
+            {unifiedMappings.filter((m) => m.type === 'deal').map((mapping) => {
               const currentDealField = schemaFields.find((f) => f.name === mapping.field);
-              const isRequired = mapping.type === 'deal' && currentDealField?.required;
+              const isRequired = currentDealField?.required;
 
               return (
-                <tr key={mapping.csvColumn} className="hover:bg-warm-50 transition-colors">
+                <tr key={mapping.csvColumn} className="border-t border-warm-100 hover:bg-warm-50 transition-colors">
                   <td className="px-4 py-3">
                     <code className="bg-warm-100 px-2 py-1 rounded-lg text-sm font-mono text-warm-700">
                       {mapping.csvColumn}
@@ -255,84 +275,168 @@ export function ColumnMapper({
                       onChange={(e) =>
                         handleTypeChange(mapping.csvColumn, e.target.value as MappingType)
                       }
-                      className={`w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent ${
-                        mapping.type === 'deal'
-                          ? 'bg-accent-50 text-accent-700 border-accent-200'
-                          : mapping.type === 'contact'
-                            ? 'bg-accent-50 text-accent-700 border-accent-200'
-                            : 'bg-warm-50 text-warm-600 border-warm-200'
-                      }`}
+                      className="w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-accent-50 text-accent-700 border-accent-200"
                     >
-                      <option value="deal">Deal</option>
-                      {hasContactFields && <option value="contact">Contact</option>}
-                      <option value="skip">Skip</option>
+                      <option value="deal">🏢 Deal Field</option>
+                      {hasContactFields && <option value="contact">👤 Contact Field</option>}
+                      <option value="skip">⊘ Skip Column</option>
                     </select>
                   </td>
                   <td className="px-4 py-3">
-                    {mapping.type === 'skip' ? (
-                      <span className="text-warm-400 italic">Column will be ignored</span>
-                    ) : mapping.type === 'deal' ? (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={mapping.field || ''}
-                          onChange={(e) =>
-                            handleFieldChange(mapping.csvColumn, 'deal', e.target.value || null)
-                          }
-                          className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
-                        >
-                          <option value="">-- Select field --</option>
-                          {schemaFields.map((field) => {
-                            const isAlreadyMapped = mappings.some(
-                              (m) => m.crmField === field.name && m.csvColumn !== mapping.csvColumn
-                            );
-                            return (
-                              <option
-                                key={field.name}
-                                value={field.name}
-                                disabled={isAlreadyMapped}
-                              >
-                                {field.label}
-                                {field.required ? ' *' : ''}
-                                {isAlreadyMapped ? ' (already mapped)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        {isRequired && (
-                          <span className="px-2 py-1 bg-success-100 text-success-700 text-xs rounded-full whitespace-nowrap font-medium">
-                            Required
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={mapping.field || ''}
-                          onChange={(e) =>
-                            handleFieldChange(mapping.csvColumn, 'contact', e.target.value || null)
-                          }
-                          className="w-full border border-accent-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-accent-50"
-                        >
-                          <option value="">-- Select contact field --</option>
-                          {contactSchemaFields?.map((field) => {
-                            const isAlreadyMapped = contactMappings?.some(
-                              (m) =>
-                                m.contactField === field.name && m.csvColumn !== mapping.csvColumn
-                            );
-                            return (
-                              <option
-                                key={field.name}
-                                value={field.name}
-                                disabled={isAlreadyMapped}
-                              >
-                                {field.label}
-                                {isAlreadyMapped ? ' (already mapped)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={mapping.field || ''}
+                        onChange={(e) =>
+                          handleFieldChange(mapping.csvColumn, 'deal', e.target.value || null)
+                        }
+                        className="w-full border border-warm-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+                      >
+                        <option value="">-- Select field --</option>
+                        {schemaFields.map((field) => {
+                          const isAlreadyMapped = mappings.some(
+                            (m) => m.crmField === field.name && m.csvColumn !== mapping.csvColumn
+                          );
+                          return (
+                            <option
+                              key={field.name}
+                              value={field.name}
+                              disabled={isAlreadyMapped}
+                            >
+                              {field.label}
+                              {field.required ? ' *' : ''}
+                              {isAlreadyMapped ? ' (already mapped)' : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {isRequired && (
+                        <span className="px-2 py-1 bg-success-100 text-success-700 text-xs rounded-full whitespace-nowrap font-medium">
+                          Required
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {/* Contact Fields Section */}
+            {hasContactFields && unifiedMappings.some((m) => m.type === 'contact') && (
+              <tr className="bg-accent-50">
+                <td colSpan={3} className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-accent-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span className="text-xs font-semibold text-accent-700 uppercase tracking-wide">
+                      Contact Fields
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            )}
+            {hasContactFields && unifiedMappings.filter((m) => m.type === 'contact').map((mapping) => {
+              return (
+                <tr key={mapping.csvColumn} className="border-t border-accent-100 hover:bg-accent-50/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <code className="bg-accent-100 px-2 py-1 rounded-lg text-sm font-mono text-accent-800">
+                      {mapping.csvColumn}
+                    </code>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={mapping.type}
+                      onChange={(e) =>
+                        handleTypeChange(mapping.csvColumn, e.target.value as MappingType)
+                      }
+                      className="w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-accent-50 text-accent-700 border-accent-200"
+                    >
+                      <option value="deal">🏢 Deal Field</option>
+                      {hasContactFields && <option value="contact">👤 Contact Field</option>}
+                      <option value="skip">⊘ Skip Column</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={mapping.field || ''}
+                        onChange={(e) =>
+                          handleFieldChange(mapping.csvColumn, 'contact', e.target.value || null)
+                        }
+                        className="w-full border border-accent-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-accent-50"
+                      >
+                        <option value="">-- Select contact field --</option>
+                        {contactSchemaFields?.map((field) => {
+                          const isAlreadyMapped = contactMappings?.some(
+                            (m) =>
+                              m.contactField === field.name && m.csvColumn !== mapping.csvColumn
+                          );
+                          return (
+                            <option
+                              key={field.name}
+                              value={field.name}
+                              disabled={isAlreadyMapped}
+                            >
+                              {field.label}
+                              {isAlreadyMapped ? ' (already mapped)' : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {/* Skipped Fields Section */}
+            {unifiedMappings.some((m) => m.type === 'skip') && (
+              <tr className="bg-warm-50">
+                <td colSpan={3} className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                      />
+                    </svg>
+                    <span className="text-xs font-semibold text-warm-600 uppercase tracking-wide">
+                      Skipped Columns
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            )}
+            {unifiedMappings.filter((m) => m.type === 'skip').map((mapping) => {
+              return (
+                <tr key={mapping.csvColumn} className="border-t border-warm-100 hover:bg-warm-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <code className="bg-warm-100 px-2 py-1 rounded-lg text-sm font-mono text-warm-500">
+                      {mapping.csvColumn}
+                    </code>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={mapping.type}
+                      onChange={(e) =>
+                        handleTypeChange(mapping.csvColumn, e.target.value as MappingType)
+                      }
+                      className="w-full border rounded-lg px-2 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-warm-50 text-warm-600 border-warm-200"
+                    >
+                      <option value="deal">🏢 Deal Field</option>
+                      {hasContactFields && <option value="contact">👤 Contact Field</option>}
+                      <option value="skip">⊘ Skip Column</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-warm-400 italic">Column will be ignored</span>
                   </td>
                 </tr>
               );

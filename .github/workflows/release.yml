@@ -1,4 +1,4 @@
-name: Release & Publish
+name: Release & Upload to Chrome Web Store
 
 on:
   pull_request:
@@ -76,4 +76,4 @@ jobs:
           client-id: ${{ secrets.CWS_CLIENT_ID }}
           client-secret: ${{ secrets.CWS_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CWS_REFRESH_TOKEN }}
-          publish: true
+          publish: false  # Upload as draft - manually publish from Chrome Web Store Dashboard after review

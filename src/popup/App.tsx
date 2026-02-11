@@ -106,6 +106,8 @@ export default function App() {
     invalidCount,
     duplicateCount,
     skippedCount,
+    handleOverrideDuplicate,
+    overriddenDuplicates,
   } = useUploadWorkflow({
     schema,
     contactSchema,
@@ -303,6 +305,8 @@ export default function App() {
                   selectedId={selectedCompanyId}
                   onSelect={setSelectedCompanyId}
                   onToggleSkip={handleToggleSkip}
+                  onOverrideDuplicate={handleOverrideDuplicate}
+                  overriddenDuplicates={overriddenDuplicates}
                 />
 
                 {/* Editor Modal */}

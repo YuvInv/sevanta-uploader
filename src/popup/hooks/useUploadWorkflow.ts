@@ -60,6 +60,7 @@ export function useUploadWorkflow({
   const [duplicateCheckProgress, setDuplicateCheckProgress] =
     useState<DuplicateCheckProgress | null>(null);
   const [autoDiscardedCount, setAutoDiscardedCount] = useState(0);
+  const [overriddenDuplicates, setOverriddenDuplicates] = useState<Set<string>>(new Set());
 
   // Handle CSV upload
   const handleCsvUpload = useCallback(
@@ -136,18 +137,8 @@ export function useUploadWorkflow({
       setDuplicateCheckProgress(progress);
     });
 
-    // Auto-discard duplicates
-    let discardedCount = 0;
-    const withAutoDiscard = withDuplicates.map((company) => {
-      if (company.duplicate?.isDuplicate) {
-        discardedCount++;
-        return { ...company, skipped: true };
-      }
-      return company;
-    });
-
-    setCompanies(withAutoDiscard);
-    setAutoDiscardedCount(discardedCount);
+    // Don't auto-discard duplicates - let user decide
+    setCompanies(withDuplicates);
     setDuplicateCheckProgress(null);
     setStep('review');
   }, [csvData, schema, columnMappings, contactColumnMappings, validateCompanies, checkDuplicates]);
@@ -202,6 +193,15 @@ export function useUploadWorkflow({
     );
   }, []);
 
+  // Handle overriding a duplicate (allow upload anyway)
+  const handleOverrideDuplicate = useCallback((id: string) => {
+    setOverriddenDuplicates((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
   // Clear auto-discarded notification
   const clearAutoDiscardedNotification = useCallback(() => {
     setAutoDiscardedCount(0);
@@ -213,8 +213,9 @@ export function useUploadWorkflow({
       (c) =>
         c.validation.valid &&
         c.uploadStatus === 'pending' &&
-        !c.duplicate?.isDuplicate &&
-        !c.skipped
+        !c.skipped &&
+        // Include if not a duplicate, OR if duplicate is overridden
+        (!c.duplicate?.isDuplicate || overriddenDuplicates.has(c.id))
     );
 
     if (toUpload.length === 0) return;
@@ -335,7 +336,7 @@ export function useUploadWorkflow({
 
     setUploadProgress((prev) => (prev ? { ...prev, current: undefined } : null));
     setStep('complete');
-  }, [companies]);
+  }, [companies, overriddenDuplicates]);
 
   // Reset to start
   const handleReset = useCallback(() => {
@@ -347,16 +348,22 @@ export function useUploadWorkflow({
     setUploadProgress(null);
     setDuplicateCheckProgress(null);
     setAutoDiscardedCount(0);
+    setOverriddenDuplicates(new Set());
     setStep('upload');
   }, []);
 
   // Computed values
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
   const validCount = companies.filter(
-    (c) => c.validation.valid && !c.duplicate?.isDuplicate && !c.skipped
+    (c) =>
+      c.validation.valid &&
+      !c.skipped &&
+      (!c.duplicate?.isDuplicate || overriddenDuplicates.has(c.id))
   ).length;
   const invalidCount = companies.filter((c) => !c.validation.valid && !c.skipped).length;
-  const duplicateCount = companies.filter((c) => c.duplicate?.isDuplicate && !c.skipped).length;
+  const duplicateCount = companies.filter(
+    (c) => c.duplicate?.isDuplicate && !c.skipped && !overriddenDuplicates.has(c.id)
+  ).length;
   const skippedCount = companies.filter((c) => c.skipped).length;
 
   return {
@@ -380,6 +387,7 @@ export function useUploadWorkflow({
     handleMappingConfirm,
     handleCompanySave,
     handleToggleSkip,
+    handleOverrideDuplicate,
     handleConfirmedUpload,
     handleReset,
     clearAutoDiscardedNotification,
@@ -390,5 +398,6 @@ export function useUploadWorkflow({
     invalidCount,
     duplicateCount,
     skippedCount,
+    overriddenDuplicates,
   };
 }
