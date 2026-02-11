@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import type { Company } from '../../lib/types';
-import { FieldRow, SectionCard } from './shared/FieldDisplay';
-import { StatusBadge } from './shared/StatusBadge';
 
 interface UploadPreviewProps {
   companies: Company[];
@@ -25,10 +23,10 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-warm-800">Upload Preview</h2>
+        <h2 className="text-base font-semibold text-warm-800">Upload Preview (Dry-Run Mode)</h2>
         <button
           onClick={onCancel}
-          className="text-warm-500 hover:text-warm-700 text-sm font-medium transition-colors"
+          className="text-warm-500 hover:text-warm-700 text-sm font-medium"
         >
           Cancel
         </button>
@@ -59,130 +57,84 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
               {validCompanies.length !== 1 ? 's' : ''} in your CRM.
               {totalContacts > 0 && (
                 <>
-                  {' '}
-                  <strong>{totalContacts}</strong> contact
-                  {totalContacts !== 1 ? 's' : ''} will be created across{' '}
-                  <strong>{companiesWithContacts.length}</strong> compan
-                  {companiesWithContacts.length !== 1 ? 'ies' : 'y'}.
+                  <br />
+                  <span className="text-accent-700">
+                    <strong>{totalContacts}</strong> contact
+                    {totalContacts !== 1 ? 's' : ''} will be created across{' '}
+                    <strong>{companiesWithContacts.length}</strong> compan
+                    {companiesWithContacts.length !== 1 ? 'ies' : 'y'}.
+                  </span>
                 </>
               )}
+              <br />
+              Please review the data below carefully before proceeding.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Companies to Upload - Formatted Display */}
+      {/* API Endpoint Info */}
+      <div className="bg-warm-50 border border-warm-200 rounded-xl p-3 text-xs font-mono">
+        <div className="text-warm-500 mb-1">Endpoints:</div>
+        <div className="text-warm-700">POST https://run.mydealflow.com/inv/api/deal/add</div>
+        {totalContacts > 0 && (
+          <div className="text-accent-600">
+            POST https://run.mydealflow.com/inv/api/contact/add ({totalContacts}x)
+          </div>
+        )}
+      </div>
+
+      {/* Companies to Upload */}
       <div>
         <h3 className="font-semibold text-sm text-warm-800 mb-2">
-          Companies to Upload ({validCompanies.length})
+          Payloads to Send ({validCompanies.length})
         </h3>
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {validCompanies.map((company) => (
-            <div
-              key={company.id}
-              className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden"
-            >
-              {/* Company Header */}
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {validCompanies.map((company, index) => (
+            <div key={company.id} className="border border-warm-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => setExpandedId(expandedId === company.id ? null : company.id)}
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-warm-50 transition-colors"
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-warm-50 text-left transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <StatusBadge status="valid" iconOnly />
-                  <span className="font-semibold text-warm-800">
-                    {company.data.CompanyName || '(No name)'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
+                <span className="text-sm flex items-center gap-2">
+                  <span className="text-warm-500">#{index + 1}</span>
+                  <strong className="text-warm-800">
+                    {company.data.CompanyName || '(no name)'}
+                  </strong>
                   {company.contacts && company.contacts.length > 0 && (
                     <span className="px-2 py-0.5 bg-accent-100 text-accent-700 text-xs rounded-lg font-medium">
-                      {company.contacts.length} contact{company.contacts.length > 1 ? 's' : ''}
+                      {company.contacts.length}{' '}
+                      {company.contacts.length === 1 ? 'contact' : 'contacts'}
                     </span>
                   )}
-                  <svg
-                    className={`w-4 h-4 text-warm-400 transition-transform ${
-                      expandedId === company.id ? 'rotate-90' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
+                </span>
+                <span className="text-warm-400">{expandedId === company.id ? '▼' : '▶'}</span>
               </button>
 
-              {/* Expanded Content - Formatted Fields */}
               {expandedId === company.id && (
-                <div className="border-t border-warm-200 p-5 space-y-4 bg-warm-25">
-                  {/* Basic Info */}
-                  <SectionCard title="Company Information">
-                    <FieldRow label="Company Name" value={company.data.CompanyName} />
-                    <FieldRow label="Website" value={company.data.Website} type="url" />
-                    <FieldRow label="Description" value={company.data.Description} />
-                  </SectionCard>
-
-                  {/* Classification */}
-                  {(company.data.SectorID || company.data.StageID) && (
-                    <SectionCard title="Classification">
-                      <FieldRow label="Sector" value={company.data.SectorID} />
-                      <FieldRow label="Stage" value={company.data.StageID} />
-                    </SectionCard>
-                  )}
-
-                  {/* Source Info */}
-                  {(company.data.SourceTypeID ||
-                    company.data.SourceNotes ||
-                    company.data.PastInvestments) && (
-                    <SectionCard title="Source Information">
-                      <FieldRow label="Source Type" value={company.data.SourceTypeID} />
-                      <FieldRow label="Source Notes" value={company.data.SourceNotes} />
-                      <FieldRow
-                        label="Past Investments"
-                        value={company.data.PastInvestments}
-                        type="currency"
-                      />
-                    </SectionCard>
-                  )}
-
-                  {/* Contacts */}
-                  {company.contacts && company.contacts.length > 0 && (
-                    <SectionCard
-                      title={`Contacts (${company.contacts.length})`}
-                      icon={
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
-                      }
-                    >
-                      <div className="space-y-3">
-                        {company.contacts.map((contact, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-accent-50 border border-accent-200 rounded-xl p-3 space-y-1"
-                          >
-                            <FieldRow label="Name" value={contact.data.Name} />
-                            <FieldRow label="Email" value={contact.data.Email} type="email" />
-                            {contact.data.Phone && (
-                              <FieldRow label="Phone" value={contact.data.Phone} />
-                            )}
-                            {contact.data.Title && (
-                              <FieldRow label="Title" value={contact.data.Title} />
-                            )}
-                          </div>
-                        ))}
+                <div className="border-t border-warm-200 bg-warm-800 p-3 text-xs font-mono overflow-x-auto space-y-2">
+                  <div>
+                    <div className="text-warm-400 mb-1">Deal Data:</div>
+                    <pre className="text-success-400">{JSON.stringify(company.data, null, 2)}</pre>
+                  </div>
+                  {company.contacts && company.contacts.length > 0 ? (
+                    <div>
+                      <div className="text-warm-400 mb-1">
+                        Contacts ({company.contacts.length}) - will be linked to deal:
                       </div>
-                    </SectionCard>
+                      {company.contacts.map((contact, contactIndex) => (
+                        <div key={contactIndex} className="mb-2">
+                          <div className="text-accent-300 text-xs mb-1">
+                            Contact {contactIndex + 1}:
+                          </div>
+                          <pre className="text-accent-400 ml-2">
+                            {JSON.stringify(contact.data, null, 2)}
+                          </pre>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-warm-500 italic">No contacts</div>
                   )}
                 </div>
               )}
@@ -193,26 +145,30 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
 
       {/* Skipped Companies */}
       {companies.length > validCompanies.length && (
-        <div className="text-sm text-warm-600">
+        <div className="text-sm text-warm-500">
           <strong>{companies.length - validCompanies.length}</strong> companies will be skipped
           (invalid or duplicates)
         </div>
       )}
 
       {/* Confirmation Checkbox */}
-      <div className="bg-caution-50 border border-caution-200 rounded-xl p-4">
+      <div className="bg-danger-50 border border-danger-200 rounded-xl p-4">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
-            className="mt-1 h-4 w-4 text-accent-600 rounded border-warm-300 focus:ring-accent-500 focus:ring-4 focus:ring-accent-500/20"
+            className="mt-1 h-4 w-4 text-danger-600 rounded border-warm-300 focus:ring-danger-500"
           />
           <div>
-            <span className="font-semibold text-caution-800">
-              I understand this will create {validCompanies.length} new records in my production
-              CRM
+            <span className="font-semibold text-danger-800">
+              I have reviewed the data above and understand that:
             </span>
+            <ul className="text-sm text-danger-700 mt-1 list-disc list-inside">
+              <li>This will create {validCompanies.length} new records in my production CRM</li>
+              <li>This action cannot be easily undone</li>
+              <li>I will need to manually delete test records afterward</li>
+            </ul>
           </div>
         </label>
       </div>
@@ -223,14 +179,14 @@ export function UploadPreview({ companies, onConfirm, onCancel }: UploadPreviewP
           onClick={onCancel}
           className="px-5 py-2.5 text-warm-700 hover:text-warm-900 bg-white border border-warm-200 rounded-xl font-medium hover:bg-warm-50 transition-colors"
         >
-          Go Back
+          Go Back (Safe)
         </button>
         <button
           onClick={onConfirm}
           disabled={!confirmed}
-          className="px-5 py-2.5 bg-accent-500 text-white rounded-xl font-semibold hover:bg-accent-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          className="px-5 py-2.5 bg-danger-500 text-white rounded-xl font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {confirmed ? `Upload ${validCompanies.length} Companies` : 'Check Box to Enable'}
+          {confirmed ? `Upload ${validCompanies.length} Companies` : 'Confirm Above to Enable'}
         </button>
       </div>
     </div>

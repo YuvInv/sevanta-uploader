@@ -1,6 +1,6 @@
 import { useContactLookup } from '../../hooks/useContactLookup';
 import { ContactInput } from './ContactInput';
-import { ProgressModal } from '../shared/ProgressModal';
+import { ContactLookupProgress } from './ContactLookupProgress';
 import { ContactLookupTable } from './ContactLookupTable';
 
 interface ContactLookupProps {
@@ -64,19 +64,7 @@ export function ContactLookup({ connected }: ContactLookupProps) {
   return (
     <div>
       {/* Progress Modal */}
-      {step === 'searching' && progress && (
-        <ProgressModal
-          title="Looking Up Contacts"
-          description="Searching the CRM for matches..."
-          progress={progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}
-          currentItem={progress.current}
-          stats={[
-            { label: 'Strong Matches', value: progress.strongCount, color: 'text-success-600' },
-            { label: 'Possible Matches', value: progress.possibleCount, color: 'text-caution-600' },
-          ]}
-          icon="search"
-        />
-      )}
+      {step === 'searching' && progress && <ContactLookupProgress progress={progress} />}
 
       {/* Error message */}
       {error && (
