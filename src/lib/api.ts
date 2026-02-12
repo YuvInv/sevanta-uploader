@@ -6,7 +6,11 @@ import {
   REQUEST_TIMEOUT_MS,
   SEMANTIC_SCORE_THRESHOLD,
 } from './constants';
-import { doCompanyNamesFuzzyMatch } from './nameMatching';
+import {
+  doCompanyNamesFuzzyMatch,
+  normalizeCompanyName,
+  stripCommonSuffixes,
+} from './nameMatching';
 
 // Rate limiting state
 interface QueuedRequest {
@@ -256,8 +260,15 @@ export async function checkDuplicate(
 
   // Search by company name using text search
   if (companyName) {
-    // Use _text= search which properly filters results
-    const nameResults = await searchDealsByText(companyName);
+    // Normalize search query by stripping suffixes to broaden search
+    // Example: "Marquee AI Ltd." → search for "Marquee AI"
+    // This helps the API return "Marquee.ai" which we then fuzzy match
+    const normalized = normalizeCompanyName(companyName);
+    const strippedQuery = stripCommonSuffixes(normalized);
+    const searchQuery = strippedQuery || normalized || companyName;
+
+    // Use _text= search with normalized query for broader results
+    const nameResults = await searchDealsByText(searchQuery);
 
     // Filter client-side for fuzzy match (handles suffixes, formatting differences)
     const exactMatches = nameResults.filter(
@@ -268,10 +279,19 @@ export async function checkDuplicate(
       // Found exact match - skip semantic search (optimization)
       matches.push(...exactMatches);
     } else if (nameResults.length === 0) {
-      // Text search returned no results - skip semantic search as it's unlikely to help
-      // This optimization significantly reduces API calls
+      // Text search returned no results - try semantic search with original name
+      const semanticResults = await searchDealsSemantically(companyName);
+      // Only include semantic matches with high confidence AND fuzzy name match
+      const highConfidenceMatches = semanticResults.filter(
+        (deal) =>
+          deal.semanticScore &&
+          deal.semanticScore > SEMANTIC_SCORE_THRESHOLD &&
+          deal.CompanyName &&
+          doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
+      );
+      matches.push(...highConfidenceMatches);
     } else {
-      // Text search returned results but no exact match - try semantic search
+      // Text search returned results but no fuzzy match - try semantic search
       const semanticResults = await searchDealsSemantically(companyName);
       // Only include semantic matches with high confidence AND fuzzy name match
       const highConfidenceMatches = semanticResults.filter(
