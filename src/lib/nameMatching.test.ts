@@ -128,9 +128,7 @@ describe('doCompanyNamesFuzzyMatch', () => {
     });
 
     it('does NOT match when only a small part overlaps', () => {
-      expect(doCompanyNamesFuzzyMatch('The Tech Company', 'Tech Innovations')).toBe(
-        false
-      );
+      expect(doCompanyNamesFuzzyMatch('The Tech Company', 'Tech Innovations')).toBe(false);
     });
   });
 
@@ -161,9 +159,7 @@ describe('doCompanyNamesFuzzyMatch', () => {
     });
 
     it('matches common company name variations', () => {
-      expect(doCompanyNamesFuzzyMatch('Microsoft Corporation', 'Microsoft Corp')).toBe(
-        true
-      );
+      expect(doCompanyNamesFuzzyMatch('Microsoft Corporation', 'Microsoft Corp')).toBe(true);
       expect(doCompanyNamesFuzzyMatch('Apple Inc.', 'Apple')).toBe(true);
       expect(doCompanyNamesFuzzyMatch('Alphabet Inc', 'Alphabet')).toBe(true);
     });

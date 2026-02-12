@@ -258,42 +258,41 @@ export async function checkDuplicate(
 ): Promise<{ isDuplicate: boolean; matches: Deal[] }> {
   const matches: Deal[] = [];
 
-  // Search by company name using text search
+  // Search by company name using multiple query variations
+  // The API _text search is sensitive to punctuation — "marquee-ai" won't find "Marquee.ai"
+  // So we try multiple formats: spaces, dots, hyphens, and broadest (first word only)
   if (companyName) {
-    // Normalize search query by stripping suffixes to broaden search
-    // Example: "Marquee AI Ltd." → search for "Marquee AI"
-    // This helps the API return "Marquee.ai" which we then fuzzy match
     const normalized = normalizeCompanyName(companyName);
-    const strippedQuery = stripCommonSuffixes(normalized);
-    const searchQuery = strippedQuery || normalized || companyName;
+    const stripped = stripCommonSuffixes(normalized);
+    const base = stripped || normalized || companyName;
 
-    // Use _text= search with normalized query for broader results
-    const nameResults = await searchDealsByText(searchQuery);
+    // Generate query variations ordered by specificity (most specific first)
+    const queryVariations = [
+      base.replace(/-/g, ' '), // "marquee ai" — natural text search
+      base.replace(/-/g, '.'), // "marquee.ai" — domain-style names
+      base, // "marquee-ai" — hyphenated (original behavior)
+    ].filter((q, i, arr) => q.length > 2 && arr.indexOf(q) === i);
 
-    // Filter client-side for fuzzy match (handles suffixes, formatting differences)
-    const exactMatches = nameResults.filter(
-      (deal) => deal.CompanyName && doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
-    );
+    let nameMatches: Deal[] = [];
+    for (const query of queryVariations) {
+      const results = await searchDealsByText(query);
 
-    if (exactMatches.length > 0) {
-      // Found exact match - skip semantic search (optimization)
-      matches.push(...exactMatches);
-    } else if (nameResults.length === 0) {
-      // Text search returned no results - try semantic search with original name
-      const semanticResults = await searchDealsSemantically(companyName);
-      // Only include semantic matches with high confidence AND fuzzy name match
-      const highConfidenceMatches = semanticResults.filter(
-        (deal) =>
-          deal.semanticScore &&
-          deal.semanticScore > SEMANTIC_SCORE_THRESHOLD &&
-          deal.CompanyName &&
-          doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
-      );
-      matches.push(...highConfidenceMatches);
+      if (results.length > 0) {
+        const fuzzyMatches = results.filter(
+          (deal) => deal.CompanyName && doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
+        );
+        if (fuzzyMatches.length > 0) {
+          nameMatches = fuzzyMatches;
+          break;
+        }
+      }
+    }
+
+    if (nameMatches.length > 0) {
+      matches.push(...nameMatches);
     } else {
-      // Text search returned results but no fuzzy match - try semantic search
+      // No text search variation found a match — try semantic search as fallback
       const semanticResults = await searchDealsSemantically(companyName);
-      // Only include semantic matches with high confidence AND fuzzy name match
       const highConfidenceMatches = semanticResults.filter(
         (deal) =>
           deal.semanticScore &&
