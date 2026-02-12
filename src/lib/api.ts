@@ -6,6 +6,7 @@ import {
   REQUEST_TIMEOUT_MS,
   SEMANTIC_SCORE_THRESHOLD,
 } from './constants';
+import { doCompanyNamesFuzzyMatch } from './nameMatching';
 
 // Rate limiting state
 interface QueuedRequest {
@@ -258,9 +259,9 @@ export async function checkDuplicate(
     // Use _text= search which properly filters results
     const nameResults = await searchDealsByText(companyName);
 
-    // Filter client-side for exact match (case-insensitive)
+    // Filter client-side for fuzzy match (handles suffixes, formatting differences)
     const exactMatches = nameResults.filter(
-      (deal) => deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
+      (deal) => deal.CompanyName && doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
     );
 
     if (exactMatches.length > 0) {
@@ -272,12 +273,13 @@ export async function checkDuplicate(
     } else {
       // Text search returned results but no exact match - try semantic search
       const semanticResults = await searchDealsSemantically(companyName);
-      // Only include semantic matches with high confidence AND exact name match
+      // Only include semantic matches with high confidence AND fuzzy name match
       const highConfidenceMatches = semanticResults.filter(
         (deal) =>
           deal.semanticScore &&
           deal.semanticScore > SEMANTIC_SCORE_THRESHOLD &&
-          deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
+          deal.CompanyName &&
+          doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
       );
       matches.push(...highConfidenceMatches);
     }
