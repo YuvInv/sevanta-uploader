@@ -3,6 +3,8 @@
  * Used to validate extracted data against URL slug (ground truth)
  */
 
+import { normalizeCompanyName, stripCommonSuffixes } from '../nameMatching';
+
 const COMPANY_PATH_REGEX = /\/company\/([^/?#]+)/;
 
 /**
@@ -32,42 +34,31 @@ export function extractSlugFromUrl(url: string): string | null {
 
 /**
  * Normalize company name to slug format for comparison
- * "LeaFix Medical" → "leafix-medical"
+ * @deprecated Use normalizeCompanyName from nameMatching.ts instead
+ * Kept for backward compatibility
  */
 export function normalizeToSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/['']/g, '') // Remove apostrophes
-    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with dashes
-    .replace(/^-+|-+$/g, ''); // Trim leading/trailing dashes
+  return normalizeCompanyName(name);
 }
 
 /**
  * Check if company name matches URL slug (fuzzy match)
- * Handles common suffixes and partial matches
+ * Uses shared fuzzy matching logic with slug-specific handling
  */
 export function doesCompanyMatchSlug(companyName: string, urlSlug: string): boolean {
-  const normalized = normalizeToSlug(companyName);
+  const normalized = normalizeCompanyName(companyName);
   const slug = urlSlug.toLowerCase();
 
-  // Exact match
+  // Three-level matching (same strategy as general duplicate check)
+  // Level 1: Exact match
   if (normalized === slug) return true;
 
-  // One contains the other (handles partial names)
+  // Level 2: One contains the other (handles partial names)
   if (normalized.includes(slug) || slug.includes(normalized)) return true;
 
-  // Remove common suffixes and compare
-  const suffixes = ['ltd', 'inc', 'llc', 'corp', 'co', 'technologies', 'tech', 'medical'];
-  const removeSuffixes = (s: string) => {
-    let result = s;
-    for (const suffix of suffixes) {
-      result = result.replace(new RegExp(`-${suffix}$`), '');
-    }
-    return result;
-  };
+  // Level 3: Suffix-stripped match
+  const normalizedStripped = stripCommonSuffixes(normalized);
+  const slugStripped = stripCommonSuffixes(slug);
 
-  const normalizedStripped = removeSuffixes(normalized);
-  const slugStripped = removeSuffixes(slug);
-
-  return normalizedStripped === slugStripped;
+  return normalizedStripped === slugStripped && normalizedStripped.length > 0;
 }

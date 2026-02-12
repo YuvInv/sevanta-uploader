@@ -6,6 +6,11 @@ import {
   REQUEST_TIMEOUT_MS,
   SEMANTIC_SCORE_THRESHOLD,
 } from './constants';
+import {
+  doCompanyNamesFuzzyMatch,
+  normalizeCompanyName,
+  stripCommonSuffixes,
+} from './nameMatching';
 
 // Rate limiting state
 interface QueuedRequest {
@@ -253,31 +258,47 @@ export async function checkDuplicate(
 ): Promise<{ isDuplicate: boolean; matches: Deal[] }> {
   const matches: Deal[] = [];
 
-  // Search by company name using text search
+  // Search by company name using multiple query variations
+  // The API _text search is sensitive to punctuation — "marquee-ai" won't find "Marquee.ai"
+  // So we try multiple formats: spaces, dots, hyphens, and broadest (first word only)
   if (companyName) {
-    // Use _text= search which properly filters results
-    const nameResults = await searchDealsByText(companyName);
+    const normalized = normalizeCompanyName(companyName);
+    const stripped = stripCommonSuffixes(normalized);
+    const base = stripped || normalized || companyName;
 
-    // Filter client-side for exact match (case-insensitive)
-    const exactMatches = nameResults.filter(
-      (deal) => deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
-    );
+    // Generate query variations ordered by specificity (most specific first)
+    const queryVariations = [
+      base.replace(/-/g, ' '), // "marquee ai" — natural text search
+      base.replace(/-/g, '.'), // "marquee.ai" — domain-style names
+      base, // "marquee-ai" — hyphenated (original behavior)
+    ].filter((q, i, arr) => q.length > 2 && arr.indexOf(q) === i);
 
-    if (exactMatches.length > 0) {
-      // Found exact match - skip semantic search (optimization)
-      matches.push(...exactMatches);
-    } else if (nameResults.length === 0) {
-      // Text search returned no results - skip semantic search as it's unlikely to help
-      // This optimization significantly reduces API calls
+    let nameMatches: Deal[] = [];
+    for (const query of queryVariations) {
+      const results = await searchDealsByText(query);
+
+      if (results.length > 0) {
+        const fuzzyMatches = results.filter(
+          (deal) => deal.CompanyName && doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
+        );
+        if (fuzzyMatches.length > 0) {
+          nameMatches = fuzzyMatches;
+          break;
+        }
+      }
+    }
+
+    if (nameMatches.length > 0) {
+      matches.push(...nameMatches);
     } else {
-      // Text search returned results but no exact match - try semantic search
+      // No text search variation found a match — try semantic search as fallback
       const semanticResults = await searchDealsSemantically(companyName);
-      // Only include semantic matches with high confidence AND exact name match
       const highConfidenceMatches = semanticResults.filter(
         (deal) =>
           deal.semanticScore &&
           deal.semanticScore > SEMANTIC_SCORE_THRESHOLD &&
-          deal.CompanyName?.toLowerCase() === companyName.toLowerCase()
+          deal.CompanyName &&
+          doCompanyNamesFuzzyMatch(deal.CompanyName, companyName)
       );
       matches.push(...highConfidenceMatches);
     }
