@@ -258,19 +258,17 @@ export async function checkDuplicate(
 ): Promise<{ isDuplicate: boolean; matches: Deal[] }> {
   const matches: Deal[] = [];
 
-  // Search by company name using multiple query variations
-  // The API _text search is sensitive to punctuation — "marquee-ai" won't find "Marquee.ai"
-  // So we try multiple formats: spaces, dots, hyphens, and broadest (first word only)
+  // Search by company name: try original name first (most likely to match),
+  // then suffix-stripped fallback, then semantic search
   if (companyName) {
     const normalized = normalizeCompanyName(companyName);
     const stripped = stripCommonSuffixes(normalized);
     const base = stripped || normalized || companyName;
 
-    // Generate query variations ordered by specificity (most specific first)
+    // Query variations: original name first, then normalized fallback
     const queryVariations = [
-      base.replace(/-/g, ' '), // "marquee ai" — natural text search
-      base.replace(/-/g, '.'), // "marquee.ai" — domain-style names
-      base, // "marquee-ai" — hyphenated (original behavior)
+      companyName, // "NovaLink Space Ltd." — original name, most likely to match
+      base.replace(/-/g, ' '), // "novalink space" — suffix-stripped fallback
     ].filter((q, i, arr) => q.length > 2 && arr.indexOf(q) === i);
 
     let nameMatches: Deal[] = [];
