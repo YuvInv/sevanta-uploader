@@ -3,7 +3,7 @@
  * Handles extraction, preview, and upload flow
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useIvcExtraction } from '../../hooks/useIvcExtraction';
 import { useIvcUpload } from '../../hooks/useIvcUpload';
 import { useQuickUploadDuplicateCheck } from '../../hooks/useQuickUploadDuplicateCheck';
@@ -17,7 +17,8 @@ interface IvcQuickUploadProps {
 }
 
 export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
-  const { isExtracting, hasError, hasData, data, error, retry, isIvcPage } = useIvcExtraction();
+  const { state, isExtracting, hasError, hasData, data, error, retry, isIvcPage } =
+    useIvcExtraction();
 
   const {
     uploadStep,
@@ -30,6 +31,13 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
 
   const duplicateData = data ? { companyName: data.companyName, website: data.website } : undefined;
   const { duplicateCheck } = useQuickUploadDuplicateCheck(duplicateData);
+
+  // Reset upload state when extraction resets (company navigation)
+  useEffect(() => {
+    if (state.step === 'idle' && uploadStep !== 'idle') {
+      resetUpload();
+    }
+  }, [state.step, uploadStep, resetUpload]);
 
   // Track duplicate override per company
   const [overriddenCompanyKey, setOverriddenCompanyKey] = useState<string | null>(null);

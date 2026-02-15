@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { IvcCompanyData } from '../../lib/ivc/types';
 import type { TabInfo, ExtractionStep } from '../../lib/dealigence/types';
+import { isIvcCompanyPage } from '../../lib/ivc/urlUtils';
 
 // Re-use the same state shape as Dealigence extraction
 interface IvcExtractionState {
@@ -83,6 +84,36 @@ export function useIvcExtraction() {
   const reset = useCallback(() => {
     setState({ step: 'idle' });
   }, []);
+
+  // Listen for URL changes and tab activations (same-site navigation)
+  useEffect(() => {
+    const handleMessage = (message: {
+      type: string;
+      url?: string;
+      tabId?: number;
+      isIvcCompanyPage?: boolean;
+    }) => {
+      if (message.type === 'IVC_URL_CHANGED' && message.url) {
+        const isCompany = isIvcCompanyPage(message.url);
+        setTabInfo((prev) => {
+          if (!prev) return prev;
+          return { ...prev, url: message.url!, isIvcCompanyPage: isCompany };
+        });
+        if (isCompany) {
+          setState({ step: 'idle' });
+        }
+      }
+      if (message.type === 'TAB_ACTIVATED' && message.isIvcCompanyPage) {
+        // Full page load on IVC — refresh tab info and re-extract
+        refreshTabInfo().then(() => {
+          setState({ step: 'idle' });
+        });
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+    return () => chrome.runtime.onMessage.removeListener(handleMessage);
+  }, [refreshTabInfo]);
 
   // Initial tab info fetch
   useEffect(() => {

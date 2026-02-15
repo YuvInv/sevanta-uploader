@@ -314,6 +314,190 @@ async function extractFoundersFromPage(
   }
 }
 
+/**
+ * Extract Dealigence company data directly from the page DOM using chrome.scripting.
+ * This works even when the content script isn't loaded (e.g. after extension reload).
+ * Replicates the content script's extraction logic with all selectors inline.
+ */
+async function extractDealigenceDataFromPage(tabId: number): Promise<DealigenceCompanyData | null> {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        function getText(el: Element | null): string | undefined {
+          const text = el?.textContent?.trim();
+          return text || undefined;
+        }
+
+        function extractLabelValue(...labelNames: string[]): string | undefined {
+          const labels = document.querySelectorAll('[class*="dataPointLabel"]');
+          for (const label of labels) {
+            const text = label.textContent?.trim().toLowerCase();
+            if (text && labelNames.some((n) => n.toLowerCase() === text)) {
+              // Try next sibling first, then parent's dataPointValue
+              const sibling = label.nextElementSibling;
+              if (sibling && sibling.matches('[class*="dataPointValue"]')) {
+                const val = sibling.textContent?.trim();
+                if (val && !val.toLowerCase().includes('loading')) return val;
+              }
+              const parent = label.parentElement;
+              if (parent) {
+                const value = parent.querySelector('[class*="dataPointValue"]');
+                if (value) {
+                  const val = value.textContent?.trim();
+                  if (val && !val.toLowerCase().includes('loading')) return val;
+                }
+              }
+            }
+          }
+          return undefined;
+        }
+
+        // Check if page is still loading
+        function isPageLoading(): boolean {
+          const main = document.querySelector('main');
+          if (main && main.textContent && main.textContent.trim().length < 100) return true;
+          const values = document.querySelectorAll('[class*="dataPointValue"]');
+          for (const v of values) {
+            if (v.textContent?.toLowerCase().includes('loading')) return true;
+          }
+          return false;
+        }
+
+        // Company name from h2
+        const companyName = getText(document.querySelector('h2')) || 'Unknown Company';
+
+        // Description
+        const descEl =
+          document.querySelector('[class*="description"]') ||
+          document.querySelector('main p:first-of-type');
+        const description = getText(descEl);
+
+        // Label-value fields
+        const totalFunding = extractLabelValue('Total Funding');
+        const fundingStatus = extractLabelValue('Funding Status');
+        const headquarters = extractLabelValue('Headquarters', 'Location');
+        const founded = extractLabelValue('Established', 'Founded');
+        const employees = extractLabelValue('Employees');
+
+        // Founders from label-value (text only, fiber extraction done separately)
+        const foundersText = extractLabelValue('Founders');
+        const founders: Array<{ name: string; title?: string; linkedinUrl?: string }> = [];
+        if (foundersText) {
+          foundersText.split(',').forEach((name) => {
+            const trimmed = name.trim();
+            if (trimmed) founders.push({ name: trimmed });
+          });
+        }
+
+        // Stakeholders from person cards (filter for founder/CEO/CTO titles)
+        let stakeholderHeading: Element | null = null;
+        const h4s = document.querySelectorAll('h4');
+        for (const h4 of h4s) {
+          if (h4.textContent?.trim().toLowerCase().includes('stakeholder')) {
+            stakeholderHeading = h4;
+            break;
+          }
+        }
+        if (stakeholderHeading) {
+          const container =
+            stakeholderHeading.closest('section') || stakeholderHeading.parentElement;
+          if (container) {
+            const cards = container.querySelectorAll('[class*="personContainer"]');
+            const founderTitles = /founder|ceo|cto|co-founder|cofounder/i;
+            const existingNames = new Set(founders.map((f) => f.name.toLowerCase()));
+            cards.forEach((card) => {
+              const details = card.querySelector('[class*="personDetails"]');
+              if (!details) return;
+              const divs = details.querySelectorAll('div');
+              const name = divs[0]?.textContent?.trim();
+              const title = divs[1]?.textContent?.trim();
+              if (!name) return;
+              if (title && founderTitles.test(title) && !existingNames.has(name.toLowerCase())) {
+                const linkedinEl = card.querySelector(
+                  'a[href*="linkedin"]'
+                ) as HTMLAnchorElement | null;
+                founders.push({
+                  name,
+                  title,
+                  linkedinUrl: linkedinEl?.href || undefined,
+                });
+                existingNames.add(name.toLowerCase());
+              }
+            });
+          }
+        }
+
+        // Website (first external link, skip social/dealigence)
+        let website: string | undefined;
+        const links = document.querySelectorAll('a[href^="http"]');
+        const skipDomains = [
+          'dealigence.vc',
+          'linkedin.com',
+          'twitter.com',
+          'facebook.com',
+          'crunchbase.com',
+        ];
+        for (const link of links) {
+          const href = (link as HTMLAnchorElement).href;
+          if (!skipDomains.some((d) => href.includes(d))) {
+            website = href;
+            break;
+          }
+        }
+
+        // Categories/tags
+        const categories: string[] = [];
+        const mainContainer = document.querySelector('main > div > div');
+        if (mainContainer) {
+          const tagsContainer = mainContainer.querySelector('[class*="tags"]');
+          if (tagsContainer) {
+            const tags = tagsContainer.querySelectorAll('[class*="tag"][class*="noBg"]');
+            const seen = new Set<string>();
+            tags.forEach((tag) => {
+              const text = tag.textContent?.trim();
+              if (
+                text &&
+                !text.toLowerCase().includes('loading') &&
+                text.length <= 50 &&
+                !seen.has(text)
+              ) {
+                categories.push(text);
+                seen.add(text);
+              }
+            });
+          }
+        }
+
+        return {
+          companyName,
+          description,
+          website,
+          totalFunding,
+          fundingStatus,
+          categories,
+          headquarters,
+          founded,
+          employees,
+          founders,
+          sourceUrl: window.location.href,
+          isLoading: isPageLoading(),
+        };
+      },
+    });
+
+    const data = results?.[0]?.result;
+    if (data) {
+      console.log('[Sevanta] Dealigence direct extraction succeeded');
+      return data as DealigenceCompanyData;
+    }
+    return null;
+  } catch (error) {
+    console.log('[Sevanta] Dealigence scripting extraction failed:', error);
+    return null;
+  }
+}
+
 async function handleExtractDealigenceData(
   tabId: number
 ): Promise<MessageResponse<DealigenceCompanyData>> {
@@ -338,51 +522,59 @@ async function handleExtractDealigenceData(
     isStale?: boolean;
     staleReason?: string;
   }> => {
+    let data: DealigenceCompanyData | null = null;
+
+    // Try content script first, fall back to direct scripting extraction
     try {
       const response = await chrome.tabs.sendMessage(tabId, {
         type: 'EXTRACT_COMPANY_DATA',
       });
 
-      if (!response?.success || !response.data) {
+      if (response?.success && response.data) {
+        data = response.data as DealigenceCompanyData;
+      } else {
         return { error: response?.error || 'Extraction failed' };
       }
-
-      const data = response.data as DealigenceCompanyData;
-
-      // VALIDATION 1: Check if page is still loading
-      if (data.isLoading) {
-        console.log('[Sevanta] Stale: page still loading');
-        return { isStale: true, staleReason: 'loading' };
+    } catch {
+      // Content script not loaded (orphaned after extension reload) - use direct extraction
+      console.log('[Sevanta] Content script not available, using direct Dealigence extraction');
+      data = await extractDealigenceDataFromPage(tabId);
+      if (!data) {
+        return { error: 'Extraction failed - content script unavailable' };
       }
-
-      // VALIDATION 2: Validate sourceUrl exactly matches tab URL (ground truth)
-      if (data.sourceUrl !== expectedUrl) {
-        console.log(
-          `[Sevanta] Stale: sourceUrl mismatch. Got "${data.sourceUrl}", expected "${expectedUrl}"`
-        );
-        return { isStale: true, staleReason: 'url-mismatch' };
-      }
-
-      // VALIDATION 3: Company name must match URL slug
-      if (data.companyName && urlSlug) {
-        if (!doesCompanyMatchSlug(data.companyName, urlSlug)) {
-          console.log(`[Sevanta] Stale: got "${data.companyName}" but URL is "${urlSlug}"`);
-          return { isStale: true, staleReason: 'name-mismatch' };
-        }
-      }
-
-      // VALIDATION 4: Require minimum content (prevents skeleton data)
-      const hasDescription = !!data.description && data.description.length > 20;
-      const hasFunding = !!data.totalFunding || !!data.fundingStatus;
-      if (!hasDescription && !hasFunding) {
-        console.log('[Sevanta] Stale: missing description and funding (likely skeleton)');
-        return { isStale: true, staleReason: 'skeleton' };
-      }
-
-      return { data };
-    } catch (error) {
-      return { error: error instanceof Error ? error.message : 'Failed' };
     }
+
+    // VALIDATION 1: Check if page is still loading
+    if (data.isLoading) {
+      console.log('[Sevanta] Stale: page still loading');
+      return { isStale: true, staleReason: 'loading' };
+    }
+
+    // VALIDATION 2: Validate sourceUrl exactly matches tab URL (ground truth)
+    if (data.sourceUrl !== expectedUrl) {
+      console.log(
+        `[Sevanta] Stale: sourceUrl mismatch. Got "${data.sourceUrl}", expected "${expectedUrl}"`
+      );
+      return { isStale: true, staleReason: 'url-mismatch' };
+    }
+
+    // VALIDATION 3: Company name must match URL slug
+    if (data.companyName && urlSlug) {
+      if (!doesCompanyMatchSlug(data.companyName, urlSlug)) {
+        console.log(`[Sevanta] Stale: got "${data.companyName}" but URL is "${urlSlug}"`);
+        return { isStale: true, staleReason: 'name-mismatch' };
+      }
+    }
+
+    // VALIDATION 4: Require minimum content (prevents skeleton data)
+    const hasDescription = !!data.description && data.description.length > 20;
+    const hasFunding = !!data.totalFunding || !!data.fundingStatus;
+    if (!hasDescription && !hasFunding) {
+      console.log('[Sevanta] Stale: missing description and funding (likely skeleton)');
+      return { isStale: true, staleReason: 'skeleton' };
+    }
+
+    return { data };
   };
 
   // Initial attempt
@@ -681,4 +873,25 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(
     }
   },
   { url: [{ hostEquals: 'dealigence.vc' }] }
+);
+
+// Listen for SPA navigation (History API) on IVC
+// Safety net in case IVC adds client-side routing in the future.
+// IVC currently uses full page loads (ASP.NET WebForms), so TAB_ACTIVATED
+// handles most navigation — but this covers pushState/replaceState if it ever occurs.
+chrome.webNavigation.onHistoryStateUpdated.addListener(
+  (details) => {
+    if (details.frameId === 0) {
+      chrome.runtime
+        .sendMessage({
+          type: 'IVC_URL_CHANGED',
+          url: details.url,
+          tabId: details.tabId,
+        })
+        .catch(() => {
+          // Ignore errors if no listeners (sidepanel closed)
+        });
+    }
+  },
+  { url: [{ hostEquals: 'www.ivc-online.com' }] }
 );
