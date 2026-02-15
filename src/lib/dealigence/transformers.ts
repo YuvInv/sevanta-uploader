@@ -4,6 +4,7 @@
 
 import type { DealigenceCompanyData, DealigenceStakeholder } from './types';
 import { applyDealDefaults } from '../defaults';
+import { stripDisplaySuffixes } from '../nameMatching';
 
 /**
  * Funding status to CRM LifeStageID mapping
@@ -162,7 +163,7 @@ export function buildMetadataComment(data: DealigenceCompanyData): string {
  */
 export function mapToCrmDeal(data: DealigenceCompanyData): Record<string, string> {
   const crmData: Record<string, string> = {
-    CompanyName: data.companyName,
+    CompanyName: stripDisplaySuffixes(data.companyName),
   };
 
   // Description (truncate to 5000 chars)

@@ -4,6 +4,7 @@
 
 import type { IvcCompanyData, IvcStakeholder } from './types';
 import { applyDealDefaults } from '../defaults';
+import { stripDisplaySuffixes } from '../nameMatching';
 
 /**
  * IVC Stage to CRM StageID mapping
@@ -155,7 +156,7 @@ export function buildMetadataComment(data: IvcCompanyData): string {
  */
 export function mapToCrmDeal(data: IvcCompanyData): Record<string, string> {
   const crmData: Record<string, string> = {
-    CompanyName: data.companyName,
+    CompanyName: stripDisplaySuffixes(data.companyName),
   };
 
   // Description - combine description, technology, target markets, business model

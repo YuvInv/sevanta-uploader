@@ -69,6 +69,23 @@ export function stripCommonSuffixes(normalizedName: string): string {
  * doCompanyNamesFuzzyMatch("Acme Technologies", "Acme Tech") // true (both strip to "acme")
  * doCompanyNamesFuzzyMatch("ABC Inc", "ABC International") // false (different companies)
  */
+/**
+ * Strip legal/corporate suffixes while preserving original casing
+ *
+ * Unlike stripCommonSuffixes (which works on normalized slugs), this works on
+ * display names and preserves casing for upload to CRM.
+ *
+ * @example
+ * stripDisplaySuffixes("NovaLink Space Ltd.") // "NovaLink Space"
+ * stripDisplaySuffixes("Acme Inc") // "Acme"
+ * stripDisplaySuffixes("HealthTech Medical") // "HealthTech Medical" (identity word, not stripped)
+ */
+export function stripDisplaySuffixes(name: string): string {
+  return name
+    .replace(/\s+(?:Ltd\.?|Inc\.?|LLC|Corp\.?|Co\.?|Limited|Incorporated|Corporation)\s*$/i, '')
+    .trim();
+}
+
 export function doCompanyNamesFuzzyMatch(name1: string, name2: string): boolean {
   const normalized1 = normalizeCompanyName(name1);
   const normalized2 = normalizeCompanyName(name2);
