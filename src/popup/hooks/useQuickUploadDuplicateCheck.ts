@@ -68,7 +68,7 @@ export function useQuickUploadDuplicateCheck(data: CompanyIdentifier | undefined
         const match = response.data.matches?.[0];
         dispatch({
           type: 'found',
-          match: match ? { name: match.CompanyName, id: match.CompanyID?.toString() } : undefined,
+          match: match ? { name: match.CompanyName, id: match.id } : undefined,
         });
       } else {
         dispatch({ type: 'clear' });
