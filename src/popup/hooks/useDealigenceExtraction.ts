@@ -7,11 +7,19 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { DealigenceCompanyData, ExtractionState, TabInfo } from '../../lib/dealigence/types';
 import { isDealigenceCompanyPage } from '../../lib/dealigence/urlUtils';
 
-// Message type for URL changes from background script
+// Message types from background script
 interface UrlChangedMessage {
   type: 'DEALIGENCE_URL_CHANGED';
   url: string;
   tabId: number;
+}
+
+interface TabActivatedMessage {
+  type: 'TAB_ACTIVATED';
+  url: string;
+  tabId: number;
+  isDealigenceCompanyPage: boolean;
+  isIvcCompanyPage: boolean;
 }
 
 export function useDealigenceExtraction() {
@@ -101,9 +109,9 @@ export function useDealigenceExtraction() {
     setState({ step: 'idle' });
   }, []);
 
-  // Listen for URL changes from background script (SPA navigation)
+  // Listen for URL changes (SPA navigation) and tab activation (full page load)
   useEffect(() => {
-    const handleMessage = (message: UrlChangedMessage) => {
+    const handleMessage = (message: UrlChangedMessage | TabActivatedMessage) => {
       if (message.type === 'DEALIGENCE_URL_CHANGED') {
         // Check if new URL is a company page
         const isCompanyPage = isDealigenceCompanyPage(message.url);
@@ -125,11 +133,18 @@ export function useDealigenceExtraction() {
           setState({ step: 'idle' });
         }
       }
+
+      // Handle tab activation / full page load navigation
+      if (message.type === 'TAB_ACTIVATED' && message.isDealigenceCompanyPage) {
+        refreshTabInfo().then(() => {
+          setState({ step: 'idle' });
+        });
+      }
     };
 
     chrome.runtime.onMessage.addListener(handleMessage);
     return () => chrome.runtime.onMessage.removeListener(handleMessage);
-  }, []);
+  }, [refreshTabInfo]);
 
   // Initial tab info fetch
   useEffect(() => {
