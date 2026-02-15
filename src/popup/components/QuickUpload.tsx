@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { DealigenceQuickUpload } from './DealigenceQuickUpload';
 import { IvcQuickUpload } from './IvcQuickUpload';
 import { isDealigenceCompanyPage } from '../../lib/dealigence/urlUtils';
+import { isIvcCompanyPage } from '../../lib/ivc/urlUtils';
 
 interface QuickUploadProps {
   connected: boolean;
@@ -61,6 +62,13 @@ export function QuickUpload({ connected }: QuickUploadProps) {
       if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
         if (isDealigenceCompanyPage(message.url)) {
           setActiveSite('dealigence');
+        } else {
+          setActiveSite('none');
+        }
+      }
+      if (message.type === 'IVC_URL_CHANGED' && message.url) {
+        if (isIvcCompanyPage(message.url)) {
+          setActiveSite('ivc');
         } else {
           setActiveSite('none');
         }

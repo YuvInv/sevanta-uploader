@@ -3,7 +3,7 @@
  * Handles extraction, preview, and upload flow (no editing)
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDealigenceExtraction } from '../../hooks/useDealigenceExtraction';
 import { useDealigenceUpload } from '../../hooks/useDealigenceUpload';
 import { useDealigenceDuplicateCheck } from '../../hooks/useDealigenceDuplicateCheck';
@@ -30,6 +30,13 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
   } = useDealigenceUpload();
 
   const { duplicateCheck } = useDealigenceDuplicateCheck(data);
+
+  // Reset upload state when extraction resets (company navigation)
+  useEffect(() => {
+    if (state.step === 'idle' && uploadStep !== 'idle') {
+      resetUpload();
+    }
+  }, [state.step, uploadStep, resetUpload]);
 
   // Track which company the user has overridden duplicate warning for.
   // Stores company key (name|website) so override auto-resets when company changes.

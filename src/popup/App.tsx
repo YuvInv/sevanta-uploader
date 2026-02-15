@@ -15,6 +15,7 @@ import { useValidation } from './hooks/useValidation';
 import { useDuplicateCheck } from './hooks/useDuplicateCheck';
 import { useUploadWorkflow } from './hooks/useUploadWorkflow';
 import { isDealigenceCompanyPage } from '../lib/dealigence/urlUtils';
+import { isIvcCompanyPage } from '../lib/ivc/urlUtils';
 import logo from '../assets/icons/inv-logo.png';
 
 export default function App() {
@@ -55,11 +56,22 @@ export default function App() {
       if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
         if (isDealigenceCompanyPage(message.url)) {
           setMode('dealigence');
+        } else {
+          setMode('upload');
+        }
+      }
+      if (message.type === 'IVC_URL_CHANGED' && message.url) {
+        if (isIvcCompanyPage(message.url)) {
+          setMode('dealigence');
+        } else {
+          setMode('upload');
         }
       }
       if (message.type === 'TAB_ACTIVATED') {
         if (message.isDealigenceCompanyPage || message.isIvcCompanyPage) {
           setMode('dealigence');
+        } else {
+          setMode('upload');
         }
       }
     };
