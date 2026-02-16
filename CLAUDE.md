@@ -299,7 +299,7 @@ npm run bump:major   # Bump major version (1.0.1 -> 2.0.0)
 ## Task Management
 
 ### Tracking Locations
-- **[Notion Kanban Board](NOTION_URL_REDACTED)** - PRIMARY source of truth for all tasks, features, bugs, and backlog
+- **Notion Kanban Board** - PRIMARY source of truth for all tasks, features, bugs, and backlog
 - `docs/lessons.md` - Learnings and rules from past mistakes
 - GitHub Issues - DEPRECATED (migrated to Notion)
 
@@ -329,10 +329,6 @@ Each task includes:
 Use the `/sync-todos` skill to:
 - Create new Notion tasks from completed work
 - Update task statuses based on progress
-
-## API Examples
-The folder `docs/api-examples/` contains example JSON responses from various API endpoints for reference when working with the Sevanta Dealflow API. Use these files to understand the structure of API responses and to test your code against real data formats.
-
 
 ## Field Reference (Commonly Used)
 

@@ -73,8 +73,7 @@ The API can only **update** existing items. The first upload must be done manual
 5. **Privacy tab**:
    - Single purpose: "Bulk upload companies to Sevanta Dealflow CRM"
    - Permission justifications: Copy from `PRIVACY_POLICY.md` (the permissions table)
-   - Privacy policy URL (must be publicly accessible):
-     `GIST_URL_REDACTED`
+   - Privacy policy URL: Host your privacy policy at a public URL (e.g., GitHub Gist or GitHub Pages)
 6. **Distribution tab**:
    - Visibility: **Unlisted** (only people with the direct link can find it)
 7. Click **Submit for review**

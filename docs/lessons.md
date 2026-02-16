@@ -243,5 +243,5 @@ I treated this as a code-generation task: read the plan → write all the files 
 
 - [Bug #44 Analysis](./bugs/bug-44-spa-stale-data.md) - Contains correct solution (never implemented)
 - [GitHub Issue #44](https://github.com/YuvInv/sevanta-uploader/issues/44)
-- [Notion Issue #54](NOTION_URL_REDACTED) - Quick Upload reliability bug
+- Notion Issue #54 - Quick Upload reliability bug
 - [Dealigence Postmortem](./dealigence-extraction-postmortem.md) - Full technical analysis
