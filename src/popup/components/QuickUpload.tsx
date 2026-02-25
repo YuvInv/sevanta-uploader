@@ -7,14 +7,16 @@
 import { useState, useEffect } from 'react';
 import { DealigenceQuickUpload } from './DealigenceQuickUpload';
 import { IvcQuickUpload } from './IvcQuickUpload';
+import { TimelessQuickUpload } from './TimelessQuickUpload';
 import { isDealigenceCompanyPage } from '../../lib/dealigence/urlUtils';
 import { isIvcCompanyPage } from '../../lib/ivc/urlUtils';
+import { isTimelessMemoPage } from '../../lib/timeless/urlUtils';
 
 interface QuickUploadProps {
   connected: boolean;
 }
 
-type ActiveSite = 'dealigence' | 'ivc' | 'none';
+type ActiveSite = 'dealigence' | 'ivc' | 'timeless' | 'none';
 
 export function QuickUpload({ connected }: QuickUploadProps) {
   const [activeSite, setActiveSite] = useState<ActiveSite>('none');
@@ -34,6 +36,8 @@ export function QuickUpload({ connected }: QuickUploadProps) {
             setActiveSite('dealigence');
           } else if (response.data.isIvcCompanyPage) {
             setActiveSite('ivc');
+          } else if (response.data.isTimelessMemoPage) {
+            setActiveSite('timeless');
           } else {
             setActiveSite('none');
           }
@@ -58,6 +62,7 @@ export function QuickUpload({ connected }: QuickUploadProps) {
       url?: string;
       isDealigenceCompanyPage?: boolean;
       isIvcCompanyPage?: boolean;
+      isTimelessMemoPage?: boolean;
     }) => {
       if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
         if (isDealigenceCompanyPage(message.url)) {
@@ -73,11 +78,20 @@ export function QuickUpload({ connected }: QuickUploadProps) {
           setActiveSite('none');
         }
       }
+      if (message.type === 'TIMELESS_URL_CHANGED' && message.url) {
+        if (isTimelessMemoPage(message.url)) {
+          setActiveSite('timeless');
+        } else {
+          setActiveSite('none');
+        }
+      }
       if (message.type === 'TAB_ACTIVATED') {
         if (message.isDealigenceCompanyPage) {
           setActiveSite('dealigence');
         } else if (message.isIvcCompanyPage) {
           setActiveSite('ivc');
+        } else if (message.isTimelessMemoPage) {
+          setActiveSite('timeless');
         } else {
           setActiveSite('none');
         }
@@ -96,6 +110,10 @@ export function QuickUpload({ connected }: QuickUploadProps) {
 
   if (activeSite === 'ivc') {
     return <IvcQuickUpload connected={connected} />;
+  }
+
+  if (activeSite === 'timeless') {
+    return <TimelessQuickUpload connected={connected} />;
   }
 
   // Not on any supported site
@@ -136,6 +154,14 @@ export function QuickUpload({ connected }: QuickUploadProps) {
           className="text-accent-600 hover:underline text-sm"
         >
           ivc-online.com
+        </a>
+        <a
+          href="https://my.timeless.day"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent-600 hover:underline text-sm"
+        >
+          my.timeless.day
         </a>
       </div>
     </div>

@@ -13,7 +13,8 @@
   "host_permissions": [
     "https://run.mydealflow.com/*",
     "https://dealigence.vc/*",
-    "https://www.ivc-online.com/*"
+    "https://www.ivc-online.com/*",
+    "https://my.timeless.day/*"
   ],
   "action": {
     "default_icon": {
@@ -46,6 +47,15 @@
       ],
       "js": [
         "src/content/ivc/index.ts"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://my.timeless.day/*"
+      ],
+      "js": [
+        "src/content/timeless/index.ts"
       ],
       "run_at": "document_idle"
     }

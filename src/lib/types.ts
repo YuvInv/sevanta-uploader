@@ -134,6 +134,7 @@ export type MessageType =
   | { type: 'ADD_DEAL_COMMENT'; dealId: string; comment: string }
   | { type: 'EXTRACT_DEALIGENCE_DATA'; tabId: number }
   | { type: 'EXTRACT_IVC_DATA'; tabId: number }
+  | { type: 'EXTRACT_TIMELESS_DATA'; tabId: number }
   | { type: 'GET_ACTIVE_TAB_INFO' };
 
 export interface MessageResponse<T = unknown> {
