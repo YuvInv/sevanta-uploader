@@ -19,6 +19,10 @@ A powerful Chrome Extension for bulk uploading companies to the Sevanta Dealflow
 - ✅ **Real-time Validation** - Validates required fields, dropdowns, and data types before upload.
 - ⚡️ **Duplicate Detection** - Prevents data clutter by checking for existing records.
 - 🛠 **Inline Editing** - Fix data issues directly within the upload preview table.
+- 🌐 **Quick Upload** - One-click extraction from supported websites:
+  - **Dealigence** - Extract company data from Dealigence company pages.
+  - **IVC** - Extract company data from IVC company pages.
+  - **Timeless** - Extract meeting memo data from [Timeless](https://my.timeless.day) memo pages, with editable fields and automatic duplicate detection. Supports two upload paths: create a new company (with CRM fields + full memo as comment + founder contacts), or add the memo as a comment to an existing company.
 
 ## 🚀 Installation
 
@@ -48,12 +52,23 @@ A powerful Chrome Extension for bulk uploading companies to the Sevanta Dealflow
 
 ## 🛠 Usage
 
+### Bulk CSV Upload
+
 1.  **Log In**: Ensure you are logged into [Sevanta Dealflow](https://run.mydealflow.com).
 2.  **Open Extension**: Click the Sevanta Uploader icon in your toolbar.
 3.  **Upload CSV**: Drop your CSV file containing company data.
 4.  **Map Columns**: Confirm the column mapping (the AI will try to guess them).
 5.  **Review**: Check the validation table. Rows with errors will be highlighted.
 6.  **Upload**: Click the upload button to send data to the CRM.
+
+### Quick Upload (Dealigence / IVC / Timeless)
+
+1.  **Log In**: Ensure you are logged into [Sevanta Dealflow](https://run.mydealflow.com).
+2.  **Navigate**: Go to a company page on Dealigence, IVC, or a meeting memo on [Timeless](https://my.timeless.day/m/).
+3.  **Auto-Extract**: The extension automatically detects the page and extracts company data.
+4.  **Edit Fields** (Timeless): Review and edit extracted fields — company name, description, funding, industry, location, and founder contacts — before uploading.
+5.  **Duplicate Check**: The extension checks if the company already exists in your CRM.
+6.  **Upload**: Create a new company or add the memo as a comment to an existing one.
 
 ## 📦 Releases
 
