@@ -27,11 +27,7 @@ export interface TimelessMemoData {
   isLoading?: boolean;
 }
 
-export type TimelessExtractionStep =
-  | 'idle'
-  | 'extracting'
-  | 'success'
-  | 'error';
+export type TimelessExtractionStep = 'idle' | 'extracting' | 'success' | 'error';
 
 export interface TimelessExtractionState {
   step: TimelessExtractionStep;

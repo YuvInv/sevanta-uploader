@@ -135,7 +135,8 @@ export type MessageType =
   | { type: 'EXTRACT_DEALIGENCE_DATA'; tabId: number }
   | { type: 'EXTRACT_IVC_DATA'; tabId: number }
   | { type: 'EXTRACT_TIMELESS_DATA'; tabId: number }
-  | { type: 'GET_ACTIVE_TAB_INFO' };
+  | { type: 'GET_ACTIVE_TAB_INFO' }
+  | { type: 'GET_DEAL_CONTACTS'; dealId: string };
 
 export interface MessageResponse<T = unknown> {
   success: boolean;

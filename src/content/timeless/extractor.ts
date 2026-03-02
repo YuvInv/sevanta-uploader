@@ -124,10 +124,7 @@ function isMetadataLabels(p: Element): boolean {
   if (strongs.length === 0) return false;
   const labels = Array.from(strongs).map((s) => s.textContent?.trim().toLowerCase() || '');
   return labels.some(
-    (l) =>
-      l.startsWith('team size') ||
-      l.startsWith('founded') ||
-      l.startsWith('location')
+    (l) => l.startsWith('team size') || l.startsWith('founded') || l.startsWith('location')
   );
 }
 
@@ -200,7 +197,9 @@ export async function extractMemoData(): Promise<TimelessMemoData> {
 
   // Extract founders from Team section
   const teamElements = sectionContent['team'] || [];
-  const founderParagraphs = teamElements.filter((el) => el.tagName === 'P' && isFounderParagraph(el));
+  const founderParagraphs = teamElements.filter(
+    (el) => el.tagName === 'P' && isFounderParagraph(el)
+  );
   const founders = parseFounders(founderParagraphs);
 
   // Extract team metadata (Team size, Founded, Location)

@@ -1,6 +1,7 @@
 /**
  * Generic duplicate check hook for Quick Upload (works with any site data).
  * Takes company name and optional website, runs CHECK_DUPLICATE against CRM.
+ * Returns all matches so the user can pick which company to update.
  */
 
 import { useReducer, useEffect, useRef, useCallback } from 'react';
@@ -14,7 +15,7 @@ export interface DuplicateCheckMatch {
 
 export interface DuplicateCheckResult {
   step: DuplicateCheckStep;
-  match?: DuplicateCheckMatch;
+  matches: DuplicateCheckMatch[];
 }
 
 interface CompanyIdentifier {
@@ -25,22 +26,22 @@ interface CompanyIdentifier {
 type Action =
   | { type: 'reset' }
   | { type: 'checking' }
-  | { type: 'found'; match?: DuplicateCheckMatch }
+  | { type: 'found'; matches: DuplicateCheckMatch[] }
   | { type: 'clear' }
   | { type: 'error' };
 
 function reducer(_state: DuplicateCheckResult, action: Action): DuplicateCheckResult {
   switch (action.type) {
     case 'reset':
-      return { step: 'idle' };
+      return { step: 'idle', matches: [] };
     case 'checking':
-      return { step: 'checking' };
+      return { step: 'checking', matches: [] };
     case 'found':
-      return { step: 'found', match: action.match };
+      return { step: 'found', matches: action.matches };
     case 'clear':
-      return { step: 'clear' };
+      return { step: 'clear', matches: [] };
     case 'error':
-      return { step: 'error' };
+      return { step: 'error', matches: [] };
   }
 }
 
@@ -49,7 +50,7 @@ function companyKey(data: CompanyIdentifier): string {
 }
 
 export function useQuickUploadDuplicateCheck(data: CompanyIdentifier | undefined) {
-  const [result, dispatch] = useReducer(reducer, { step: 'idle' });
+  const [result, dispatch] = useReducer(reducer, { step: 'idle', matches: [] });
   const lastKeyRef = useRef<string | null>(null);
 
   const runCheck = useCallback(async (company: CompanyIdentifier, key: string) => {
@@ -65,11 +66,13 @@ export function useQuickUploadDuplicateCheck(data: CompanyIdentifier | undefined
       if (lastKeyRef.current !== key) return;
 
       if (response?.success && response.data?.isDuplicate) {
-        const match = response.data.matches?.[0];
-        dispatch({
-          type: 'found',
-          match: match ? { name: match.CompanyName, id: match.id } : undefined,
-        });
+        const allMatches = (response.data.matches || []).map(
+          (m: { CompanyName: string; id?: string }) => ({
+            name: m.CompanyName,
+            id: m.id,
+          })
+        );
+        dispatch({ type: 'found', matches: allMatches });
       } else {
         dispatch({ type: 'clear' });
       }

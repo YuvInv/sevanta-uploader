@@ -11,6 +11,7 @@ import {
   mapToCrmDeal,
   mapToCrmContact,
   buildMemoComment,
+  type TimelessUploadOverrides,
 } from '../../lib/timeless/transformers';
 
 export type TimelessUploadStep = 'idle' | 'uploading' | 'success' | 'error';
@@ -24,62 +25,65 @@ export function useTimelessUpload() {
   /**
    * Upload as a new company: create deal + memo comment + founder contacts
    */
-  const uploadNew = useCallback(async (data: TimelessMemoData, overrides?: { industryId?: string }) => {
-    setUploadStep('uploading');
-    setUploadError(undefined);
+  const uploadNew = useCallback(
+    async (data: TimelessMemoData, overrides?: TimelessUploadOverrides) => {
+      setUploadStep('uploading');
+      setUploadError(undefined);
 
-    try {
-      const dealData = mapToCrmDeal(data, overrides);
+      try {
+        const dealData = mapToCrmDeal(data, overrides);
 
-      const dealResponse = await chrome.runtime.sendMessage({
-        type: 'CREATE_DEAL',
-        data: dealData,
-      });
+        const dealResponse = await chrome.runtime.sendMessage({
+          type: 'CREATE_DEAL',
+          data: dealData,
+        });
 
-      if (!dealResponse?.success) {
-        throw new Error(dealResponse?.error || 'Failed to create deal');
-      }
+        if (!dealResponse?.success) {
+          throw new Error(dealResponse?.error || 'Failed to create deal');
+        }
 
-      const dealId = dealResponse.data?.dealId;
-      if (!dealId) {
-        throw new Error('No deal ID returned');
-      }
+        const dealId = dealResponse.data?.dealId;
+        if (!dealId) {
+          throw new Error('No deal ID returned');
+        }
 
-      // Add full memo as comment
-      const memoComment = buildMemoComment(data);
-      const commentResponse = await chrome.runtime.sendMessage({
-        type: 'ADD_DEAL_COMMENT',
-        dealId,
-        comment: memoComment,
-      });
+        // Add full memo as comment
+        const memoComment = buildMemoComment(data);
+        const commentResponse = await chrome.runtime.sendMessage({
+          type: 'ADD_DEAL_COMMENT',
+          dealId,
+          comment: memoComment,
+        });
 
-      if (!commentResponse?.success) {
-        console.warn('[Sevanta] Failed to add memo comment:', commentResponse?.error);
-      }
+        if (!commentResponse?.success) {
+          console.warn('[Sevanta] Failed to add memo comment:', commentResponse?.error);
+        }
 
-      // Create founder contacts
-      if (data.founders.length > 0) {
-        for (const founder of data.founders) {
-          const contactData = mapToCrmContact(founder, dealId);
-          const contactResponse = await chrome.runtime.sendMessage({
-            type: 'CREATE_CONTACT',
-            data: contactData,
-            companyId: dealId,
-          });
+        // Create founder contacts
+        if (data.founders.length > 0) {
+          for (const founder of data.founders) {
+            const contactData = mapToCrmContact(founder, dealId);
+            const contactResponse = await chrome.runtime.sendMessage({
+              type: 'CREATE_CONTACT',
+              data: contactData,
+              companyId: dealId,
+            });
 
-          if (!contactResponse?.success) {
-            console.warn('[Sevanta] Founder contact creation failed:', contactResponse?.error);
+            if (!contactResponse?.success) {
+              console.warn('[Sevanta] Founder contact creation failed:', contactResponse?.error);
+            }
           }
         }
-      }
 
-      setCreatedDealId(dealId);
-      setUploadStep('success');
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Upload failed');
-      setUploadStep('error');
-    }
-  }, []);
+        setCreatedDealId(dealId);
+        setUploadStep('success');
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : 'Upload failed');
+        setUploadStep('error');
+      }
+    },
+    []
+  );
 
   /**
    * Upload memo as comment to an existing company

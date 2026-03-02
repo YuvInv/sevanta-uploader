@@ -3,14 +3,16 @@
  * Handles extraction, preview, and upload flow (no editing)
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useDealigenceExtraction } from '../../hooks/useDealigenceExtraction';
 import { useDealigenceUpload } from '../../hooks/useDealigenceUpload';
 import { useDealigenceDuplicateCheck } from '../../hooks/useDealigenceDuplicateCheck';
 import { ExtractionProgress } from './ExtractionProgress';
 import { ExtractionError } from './ExtractionError';
 import { DealigencePreview } from './DealigencePreview';
+import { DealigenceDuplicateMatch } from './DealigenceDuplicateMatch';
 import { UploadSuccess } from './UploadSuccess';
+import type { DealigenceStakeholder } from '../../../lib/dealigence/types';
 
 interface DealigenceQuickUploadProps {
   connected: boolean;
@@ -25,11 +27,29 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
     isUploading,
     uploadError,
     createdDealId,
+    successAction,
     upload,
+    uploadContactsToExisting,
+    addCommentToExisting,
     reset: resetUpload,
   } = useDealigenceUpload();
 
   const { duplicateCheck } = useDealigenceDuplicateCheck(data);
+
+  // Track which company key the user chose "Create as new" for.
+  // Auto-resets when the company changes (key no longer matches).
+  const [createNewForKey, setCreateNewForKey] = useState<string | null>(null);
+  const currentCompanyKey = data ? `${data.companyName}|${data.website ?? ''}` : null;
+  const createNewChosen = createNewForKey !== null && createNewForKey === currentCompanyKey;
+
+  // Derive success subtitle from what action was taken
+  const successSubtitle = useMemo(() => {
+    if (!successAction || successAction === 'created-new') return undefined;
+    const name = data?.companyName ?? '';
+    if (successAction === 'added-contacts') return `Contacts added to ${name} in CRM.`;
+    if (successAction === 'added-comment')
+      return `Dealigence data added as comment to ${name} in CRM.`;
+  }, [successAction, data?.companyName]);
 
   // Reset upload state when extraction resets (company navigation)
   useEffect(() => {
@@ -38,21 +58,29 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
     }
   }, [state.step, uploadStep, resetUpload]);
 
-  // Track which company the user has overridden duplicate warning for.
-  // Stores company key (name|website) so override auto-resets when company changes.
-  const [overriddenCompanyKey, setOverriddenCompanyKey] = useState<string | null>(null);
-  const currentCompanyKey = data ? `${data.companyName}|${data.website ?? ''}` : null;
-  const duplicateOverride =
-    overriddenCompanyKey !== null && overriddenCompanyKey === currentCompanyKey;
-
-  // Upload is allowed when not actively checking and either clear/error or user overrode
+  // Upload is allowed when not actively checking and either clear/error or user chose to create new
   const canUpload =
-    duplicateCheck.step !== 'checking' && (duplicateCheck.step !== 'found' || duplicateOverride);
+    duplicateCheck.step !== 'checking' && (duplicateCheck.step !== 'found' || createNewChosen);
 
   const handleUploadClick = useCallback(async () => {
     if (!data) return;
     await upload(data);
   }, [data, upload]);
+
+  const handleAddContactsToExisting = useCallback(
+    async (dealId: string, newFounders: DealigenceStakeholder[]) => {
+      await uploadContactsToExisting(dealId, newFounders);
+    },
+    [uploadContactsToExisting]
+  );
+
+  const handleAddCommentToExisting = useCallback(
+    async (dealId: string) => {
+      if (!data) return;
+      await addCommentToExisting(dealId, data);
+    },
+    [addCommentToExisting, data]
+  );
 
   const handleUploadAnother = useCallback(() => {
     resetUpload();
@@ -141,6 +169,7 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
       <UploadSuccess
         dealId={createdDealId}
         companyName={data?.companyName}
+        subtitle={successSubtitle}
         onUploadAnother={handleUploadAnother}
       />
     );
@@ -161,7 +190,21 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
     return <ExtractionError error={error} onRetry={retry} />;
   }
 
-  // Preview state - direct to upload (no editing)
+  // Duplicate found → show match screen (unless user chose to create new)
+  if (hasData && data && duplicateCheck.step === 'found' && !createNewChosen) {
+    return (
+      <DealigenceDuplicateMatch
+        data={data}
+        matches={duplicateCheck.matches}
+        onAddContacts={handleAddContactsToExisting}
+        onAddComment={handleAddCommentToExisting}
+        onCreateNew={() => setCreateNewForKey(currentCompanyKey)}
+        isUploading={isUploading}
+      />
+    );
+  }
+
+  // Preview state (checking, clear, or create-new-chosen)
   if (hasData && data) {
     return (
       <DealigencePreview
@@ -170,7 +213,7 @@ export function DealigenceQuickUpload({ connected }: DealigenceQuickUploadProps)
         isUploading={isUploading}
         duplicateCheck={duplicateCheck}
         canUpload={canUpload}
-        onDuplicateOverride={() => setOverriddenCompanyKey(currentCompanyKey)}
+        onDuplicateOverride={() => setCreateNewForKey(currentCompanyKey)}
       />
     );
   }

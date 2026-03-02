@@ -69,6 +69,9 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
     case 'SEARCH_CONTACTS':
       return handleSearchContacts(message.name, message.email);
 
+    case 'GET_DEAL_CONTACTS':
+      return handleGetDealContacts(message.dealId);
+
     case 'CLEAR_CACHE':
       return handleClearCache();
 
@@ -237,6 +240,18 @@ async function handleSearchContacts(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Contact search failed',
+    };
+  }
+}
+
+async function handleGetDealContacts(dealId: string): Promise<MessageResponse<SearchedContact[]>> {
+  try {
+    const contacts = await sevantaApi.getContactsForDeal(dealId);
+    return { success: true, data: contacts };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch deal contacts',
     };
   }
 }
@@ -860,9 +875,18 @@ async function extractTimelessDataFromPage(tabId: number): Promise<TimelessMemoD
               const st = strong.textContent?.trim().toLowerCase() || '';
               const ft = el.textContent?.trim().toLowerCase() || '';
               if (st === ft) {
-                if (st === 'solution') { subSection = 'solution'; continue; }
-                if (st === 'traction') { subSection = 'traction'; continue; }
-                if (st === 'funding') { subSection = 'funding'; continue; }
+                if (st === 'solution') {
+                  subSection = 'solution';
+                  continue;
+                }
+                if (st === 'traction') {
+                  subSection = 'traction';
+                  continue;
+                }
+                if (st === 'funding') {
+                  subSection = 'funding';
+                  continue;
+                }
               }
             }
           }

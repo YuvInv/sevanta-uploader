@@ -3,21 +3,24 @@
  * Shows extracted fields mapped to CRM — all editable before upload.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { TimelessMemoData, TimelessFounder } from '../../../lib/timeless/types';
+import type { TimelessUploadOverrides } from '../../../lib/timeless/transformers';
 import {
   parseFundingFromMemo,
+  parseFundraisingFromMemo,
   mapMarketToIndustry,
 } from '../../../lib/timeless/transformers';
 import { parseFundingAmount } from '../../../lib/dealigence/transformers';
+import type { Schema } from '../../../lib/types';
+import {
+  getIndustryOptions,
+  findRecommendationField,
+  findFundraisingField,
+} from '../../../lib/schemaUtils';
 
-interface TimelessPreviewProps {
-  data: TimelessMemoData;
-  onUpload: (editedData: TimelessMemoData, overrides?: { industryId?: string }) => void;
-  isUploading?: boolean;
-}
-
-const INDUSTRY_OPTIONS: { value: string; label: string }[] = [
+// Fallback industry options when schema is not yet available
+const FALLBACK_INDUSTRY_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'None' },
   { value: 'Health', label: 'Healthcare' },
   { value: 'HCD', label: 'Health Diagnostics' },
@@ -31,13 +34,14 @@ const INDUSTRY_OPTIONS: { value: string; label: string }[] = [
   { value: 'Clean', label: 'CleanTech' },
 ];
 
-function FounderBadge({
-  founder,
-  onRemove,
-}: {
-  founder: TimelessFounder;
-  onRemove: () => void;
-}) {
+interface TimelessPreviewProps {
+  data: TimelessMemoData;
+  onUpload: (editedData: TimelessMemoData, overrides?: TimelessUploadOverrides) => void;
+  isUploading?: boolean;
+  schema?: Schema | null;
+}
+
+function FounderBadge({ founder, onRemove }: { founder: TimelessFounder; onRemove: () => void }) {
   return (
     <div className="flex items-center gap-2 bg-warm-50 rounded-lg px-3 py-2 group">
       <div className="w-7 h-7 bg-accent-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -60,7 +64,12 @@ function FounderBadge({
         title="Remove contact"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
     </div>
@@ -72,17 +81,19 @@ function EditableField({
   value,
   onChange,
   placeholder,
+  type = 'text',
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  type?: 'text' | 'date' | 'number';
 }) {
   return (
     <div className="flex items-baseline gap-2 py-1.5">
       <span className="text-sm text-warm-500 flex-shrink-0 w-28">{label}</span>
       <input
-        type="text"
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -121,21 +132,46 @@ function EditableSelect({
   );
 }
 
-export function TimelessPreview({ data, onUpload, isUploading }: TimelessPreviewProps) {
+export function TimelessPreview({ data, onUpload, isUploading, schema }: TimelessPreviewProps) {
   const [showMemo, setShowMemo] = useState(false);
+
+  // Derive schema-based dropdown options and field names
+  const industryOptions = useMemo(() => {
+    const fromSchema = getIndustryOptions(schema ?? null);
+    return fromSchema.length > 1 ? fromSchema : FALLBACK_INDUSTRY_OPTIONS;
+  }, [schema]);
+
+  const recommendationFieldInfo = useMemo(
+    () => findRecommendationField(schema ?? null),
+    [schema]
+  );
+
+  const fundraisingFieldName = useMemo(
+    () => findFundraisingField(schema ?? null),
+    [schema]
+  );
 
   // Derive initial CRM field values from extracted data
   const rawAmount = parseFundingFromMemo(data.fundingHistory);
   const initialFunding = parseFundingAmount(rawAmount);
   const initialIndustry = mapMarketToIndustry(data.market) || '';
+  const rawFundraisingAmount = parseFundraisingFromMemo(data.fundingHistory);
+  const initialFundraisingAmount = parseFundingAmount(rawFundraisingAmount);
+  const today = new Date().toISOString().split('T')[0];
 
   // Editable state
   const [companyName, setCompanyName] = useState(data.companyName);
   const [solution, setSolution] = useState(data.solution || '');
+  const [description, setDescription] = useState(data.description || '');
   const [funding, setFunding] = useState(
     initialFunding !== undefined ? initialFunding.toString() : ''
   );
+  const [fundraisingAmount, setFundraisingAmount] = useState(
+    initialFundraisingAmount !== undefined ? initialFundraisingAmount.toString() : ''
+  );
   const [industryId, setIndustryId] = useState(initialIndustry);
+  const [recommendation, setRecommendation] = useState('');
+  const [firstCallDate, setFirstCallDate] = useState(today);
   const [location, setLocation] = useState(data.location || '');
   const [founded, setFounded] = useState(data.founded || '');
   const [founders, setFounders] = useState<TimelessFounder[]>([...data.founders]);
@@ -154,8 +190,36 @@ export function TimelessPreview({ data, onUpload, isUploading }: TimelessPreview
       founders,
       fundingHistory: funding ? `Raised $${funding}M` : data.fundingHistory,
     };
-    onUpload(editedData, industryId ? { industryId } : undefined);
-  }, [data, companyName, solution, funding, industryId, location, founded, founders, onUpload]);
+    const overrides: TimelessUploadOverrides = {};
+    if (industryId) overrides.industryId = industryId;
+    if (fundraisingAmount && fundraisingFieldName) {
+      overrides.fundraisingField = fundraisingFieldName;
+      overrides.fundraisingAmount = fundraisingAmount;
+    }
+    if (recommendation && recommendationFieldInfo) {
+      overrides.recommendationField = recommendationFieldInfo.name;
+      overrides.recommendationId = recommendation;
+    }
+    if (firstCallDate) overrides.firstCallDate = firstCallDate;
+    if (description) overrides.description = description;
+    onUpload(editedData, overrides);
+  }, [
+    data,
+    companyName,
+    solution,
+    description,
+    funding,
+    fundraisingAmount,
+    fundraisingFieldName,
+    industryId,
+    recommendation,
+    recommendationFieldInfo,
+    firstCallDate,
+    location,
+    founded,
+    founders,
+    onUpload,
+  ]);
 
   return (
     <div className="space-y-4">
@@ -174,13 +238,11 @@ export function TimelessPreview({ data, onUpload, isUploading }: TimelessPreview
             onChange={(e) => setCompanyName(e.target.value)}
             className="w-full text-xl font-semibold text-warm-800 mt-1 bg-transparent border-b border-transparent hover:border-warm-300 focus:border-accent-500 focus:outline-none transition-colors"
           />
-          {data.market && (
-            <p className="text-sm text-warm-500 mt-0.5">{data.market}</p>
-          )}
+          {data.market && <p className="text-sm text-warm-500 mt-0.5">{data.market}</p>}
         </div>
 
         <div className="p-5 space-y-4">
-          {/* Description */}
+          {/* Solution */}
           <div>
             <p className="text-sm font-medium text-warm-500 mb-1">Solution</p>
             <textarea
@@ -190,6 +252,19 @@ export function TimelessPreview({ data, onUpload, isUploading }: TimelessPreview
               className="w-full text-warm-700 text-sm leading-relaxed bg-transparent border border-transparent rounded-lg hover:border-warm-300 focus:border-accent-500 focus:outline-none transition-colors resize-y p-1"
             />
           </div>
+
+          {/* Description */}
+          {(description || data.description) && (
+            <div>
+              <p className="text-sm font-medium text-warm-500 mb-1">Description</p>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full text-warm-700 text-sm leading-relaxed bg-transparent border border-transparent rounded-lg hover:border-warm-300 focus:border-accent-500 focus:outline-none transition-colors resize-y p-1"
+              />
+            </div>
+          )}
 
           {/* CRM Fields */}
           <div className="bg-warm-50 rounded-xl p-4">
@@ -203,11 +278,33 @@ export function TimelessPreview({ data, onUpload, isUploading }: TimelessPreview
                 onChange={setFunding}
                 placeholder="e.g. 1.5 ($M)"
               />
+              {fundraisingFieldName && (
+                <EditableField
+                  label="Fundraising"
+                  value={fundraisingAmount}
+                  onChange={setFundraisingAmount}
+                  placeholder="e.g. 5 ($M)"
+                />
+              )}
+              {recommendationFieldInfo && (
+                <EditableSelect
+                  label="Recommendation"
+                  value={recommendation}
+                  onChange={setRecommendation}
+                  options={recommendationFieldInfo.options}
+                />
+              )}
               <EditableSelect
                 label="Industry"
                 value={industryId}
                 onChange={setIndustryId}
-                options={INDUSTRY_OPTIONS}
+                options={industryOptions}
+              />
+              <EditableField
+                label="First call date"
+                value={firstCallDate}
+                onChange={setFirstCallDate}
+                type="date"
               />
               <EditableField
                 label="Location"
@@ -261,11 +358,7 @@ export function TimelessPreview({ data, onUpload, isUploading }: TimelessPreview
               </p>
               <div className="flex flex-wrap gap-2">
                 {founders.map((founder, i) => (
-                  <FounderBadge
-                    key={i}
-                    founder={founder}
-                    onRemove={() => handleRemoveFounder(i)}
-                  />
+                  <FounderBadge key={i} founder={founder} onRemove={() => handleRemoveFounder(i)} />
                 ))}
               </div>
             </div>

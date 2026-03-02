@@ -7,6 +7,8 @@
 
 import { useCallback, useState } from 'react';
 import type { TimelessMemoData } from '../../../lib/timeless/types';
+import type { TimelessUploadOverrides } from '../../../lib/timeless/transformers';
+import type { Schema } from '../../../lib/types';
 import { useTimelessExtraction } from '../../hooks/useTimelessExtraction';
 import { useTimelessUpload } from '../../hooks/useTimelessUpload';
 import { useTimelessDuplicateCheck } from '../../hooks/useTimelessDuplicateCheck';
@@ -18,9 +20,10 @@ import { TimelessDuplicateMatch } from './TimelessDuplicateMatch';
 
 interface TimelessQuickUploadProps {
   connected: boolean;
+  schema?: Schema | null;
 }
 
-export function TimelessQuickUpload({ connected }: TimelessQuickUploadProps) {
+export function TimelessQuickUpload({ connected, schema }: TimelessQuickUploadProps) {
   const { isExtracting, hasError, hasData, data, error, retry, isTimelessPage } =
     useTimelessExtraction();
 
@@ -41,7 +44,7 @@ export function TimelessQuickUpload({ connected }: TimelessQuickUploadProps) {
   const [forceNew, setForceNew] = useState(false);
 
   const handleUploadNew = useCallback(
-    async (editedData: TimelessMemoData, overrides?: { industryId?: string }) => {
+    async (editedData: TimelessMemoData, overrides?: TimelessUploadOverrides) => {
       await uploadNew(editedData, overrides);
     },
     [uploadNew]
@@ -244,11 +247,7 @@ export function TimelessQuickUpload({ connected }: TimelessQuickUploadProps) {
 
     // No duplicate found, or user chose to create new
     return (
-      <TimelessPreview
-        data={data}
-        onUpload={handleUploadNew}
-        isUploading={isUploading}
-      />
+      <TimelessPreview data={data} onUpload={handleUploadNew} isUploading={isUploading} schema={schema} />
     );
   }
 

@@ -64,6 +64,31 @@ export function parseFundingFromMemo(fundingHistory: string | undefined): string
 }
 
 /**
+ * Parse "Raising $1.5M" (current fundraise) from funding history text.
+ */
+export function parseFundraisingFromMemo(fundingHistory: string | undefined): string | undefined {
+  if (!fundingHistory) return undefined;
+  const match = fundingHistory.match(/[Rr]aising\s+(\$[\d.,]+\s*[MBKmbk]?)/);
+  return match ? match[1] : undefined;
+}
+
+/**
+ * Detect fundraising round (LifeStageID) from free text.
+ * Returns the CRM value or undefined if not found.
+ */
+export function parseFundraisingStageFromText(text: string | undefined): string | undefined {
+  if (!text) return undefined;
+  const lower = text.toLowerCase();
+  if (lower.includes('pre-seed') || lower.includes('preseed')) return 'PS';
+  if (lower.includes('series d')) return 'D';
+  if (lower.includes('series c')) return 'C';
+  if (lower.includes('series b')) return 'B';
+  if (lower.includes('series a') || lower.includes('series-a')) return 'A';
+  if (lower.includes('seed')) return '0';
+  return undefined;
+}
+
+/**
  * Build source attribution text
  */
 function buildSourceText(data: TimelessMemoData): string {
@@ -82,22 +107,45 @@ export function buildMemoComment(data: TimelessMemoData): string {
   return parts.join('\n');
 }
 
+export interface TimelessUploadOverrides {
+  industryId?: string;
+  /** CRM dbname for the recommendation/grade field (looked up from schema) */
+  recommendationField?: string;
+  recommendationId?: string;
+  /** CRM dbname for the fundraising amount field (looked up from schema by label) */
+  fundraisingField?: string;
+  /** Fundraising amount in $M as a string number */
+  fundraisingAmount?: string;
+  /** First call date in YYYY-MM-DD format (maps to Date01) */
+  firstCallDate?: string;
+  /** Long description (maps to Description field) */
+  description?: string;
+}
+
 /**
  * Transform Timeless memo data to CRM deal fields.
  * Accepts optional overrides for fields the user edited in the preview.
  */
 export function mapToCrmDeal(
   data: TimelessMemoData,
-  overrides?: { industryId?: string }
+  overrides?: TimelessUploadOverrides
 ): Record<string, string> {
   const crmData: Record<string, string> = {
     CompanyName: data.companyName,
   };
 
-  // Description from solution text
+  // Short description from solution text
   if (data.solution) {
     crmData.DescriptionShort =
       data.solution.length > 5000 ? data.solution.slice(0, 4997) + '...' : data.solution;
+  }
+
+  // Long description override
+  if (overrides?.description) {
+    crmData.Description =
+      overrides.description.length > 10000
+        ? overrides.description.slice(0, 9997) + '...'
+        : overrides.description;
   }
 
   // Funding amount to Num01 field (Past Investment in $M)
@@ -111,6 +159,24 @@ export function mapToCrmDeal(
   const industry = overrides?.industryId || mapMarketToIndustry(data.market);
   if (industry) {
     crmData.IndustryID = industry;
+  }
+
+  // Fundraising amount (dynamic field looked up from schema by label)
+  if (overrides?.fundraisingField && overrides?.fundraisingAmount) {
+    const amount = parseFundingAmount(overrides.fundraisingAmount);
+    if (amount !== undefined) {
+      crmData[overrides.fundraisingField] = amount.toString();
+    }
+  }
+
+  // Recommendation/grade field (field name is dynamic from schema)
+  if (overrides?.recommendationField && overrides?.recommendationId) {
+    crmData[overrides.recommendationField] = overrides.recommendationId;
+  }
+
+  // First call date (Date01)
+  if (overrides?.firstCallDate) {
+    crmData.Date01 = overrides.firstCallDate;
   }
 
   // Source

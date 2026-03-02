@@ -96,7 +96,7 @@ export function IvcPreview({
       {/* Duplicate check status */}
       <DuplicateCheckBanner
         step={duplicateCheck.step}
-        match={duplicateCheck.match}
+        matches={duplicateCheck.matches}
         onOverride={onDuplicateOverride}
       />
 

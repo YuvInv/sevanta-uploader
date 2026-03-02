@@ -30,7 +30,11 @@ export default function App() {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_ACTIVE_TAB_INFO' });
         if (mounted && response?.success && response.data) {
-          if (response.data.isDealigenceCompanyPage || response.data.isIvcCompanyPage || response.data.isTimelessMemoPage) {
+          if (
+            response.data.isDealigenceCompanyPage ||
+            response.data.isIvcCompanyPage ||
+            response.data.isTimelessMemoPage
+          ) {
             setMode('dealigence');
           }
         }
@@ -77,7 +81,11 @@ export default function App() {
         }
       }
       if (message.type === 'TAB_ACTIVATED') {
-        if (message.isDealigenceCompanyPage || message.isIvcCompanyPage || message.isTimelessMemoPage) {
+        if (
+          message.isDealigenceCompanyPage ||
+          message.isIvcCompanyPage ||
+          message.isTimelessMemoPage
+        ) {
           setMode('dealigence');
         } else {
           setMode('upload');
@@ -169,7 +177,7 @@ export default function App() {
       {/* Main Content */}
       <main className="p-4">
         {/* Dealigence Quick Upload Mode */}
-        {mode === 'dealigence' && <QuickUpload connected={connected} />}
+        {mode === 'dealigence' && <QuickUpload connected={connected} schema={schema} />}
 
         {/* Contact Lookup Mode */}
         {mode === 'lookup' && <ContactLookup connected={connected} />}

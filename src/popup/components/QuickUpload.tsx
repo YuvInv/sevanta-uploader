@@ -11,14 +11,16 @@ import { TimelessQuickUpload } from './TimelessQuickUpload';
 import { isDealigenceCompanyPage } from '../../lib/dealigence/urlUtils';
 import { isIvcCompanyPage } from '../../lib/ivc/urlUtils';
 import { isTimelessMemoPage } from '../../lib/timeless/urlUtils';
+import type { Schema } from '../../lib/types';
 
 interface QuickUploadProps {
   connected: boolean;
+  schema?: Schema | null;
 }
 
 type ActiveSite = 'dealigence' | 'ivc' | 'timeless' | 'none';
 
-export function QuickUpload({ connected }: QuickUploadProps) {
+export function QuickUpload({ connected, schema }: QuickUploadProps) {
   const [activeSite, setActiveSite] = useState<ActiveSite>('none');
   const [loading, setLoading] = useState(true);
 
@@ -113,7 +115,7 @@ export function QuickUpload({ connected }: QuickUploadProps) {
   }
 
   if (activeSite === 'timeless') {
-    return <TimelessQuickUpload connected={connected} />;
+    return <TimelessQuickUpload connected={connected} schema={schema} />;
   }
 
   // Not on any supported site
