@@ -141,15 +141,9 @@ export function TimelessPreview({ data, onUpload, isUploading, schema }: Timeles
     return fromSchema.length > 1 ? fromSchema : FALLBACK_INDUSTRY_OPTIONS;
   }, [schema]);
 
-  const recommendationFieldInfo = useMemo(
-    () => findRecommendationField(schema ?? null),
-    [schema]
-  );
+  const recommendationFieldInfo = useMemo(() => findRecommendationField(schema ?? null), [schema]);
 
-  const fundraisingFieldName = useMemo(
-    () => findFundraisingField(schema ?? null),
-    [schema]
-  );
+  const fundraisingFieldName = useMemo(() => findFundraisingField(schema ?? null), [schema]);
 
   // Derive initial CRM field values from extracted data
   const rawAmount = parseFundingFromMemo(data.fundingHistory);

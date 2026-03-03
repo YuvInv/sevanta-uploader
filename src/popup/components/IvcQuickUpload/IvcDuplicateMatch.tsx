@@ -64,9 +64,7 @@ function EditableContactList({
     <div className="px-5 py-4 space-y-3 border-t border-warm-100">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-warm-600 uppercase tracking-wide">
-          Contacts to add
-        </p>
+        <p className="text-xs font-medium text-warm-600 uppercase tracking-wide">Contacts to add</p>
         <p className="text-xs text-warm-400">
           {contacts.length} new
           {existingCount > 0 && ` · ${existingCount} of ${totalCount} already in CRM`}
@@ -78,7 +76,10 @@ function EditableContactList({
         {contacts.map((contact, idx) =>
           editingIdx === idx ? (
             // ── Edit mode ──────────────────────────────────────────────────
-            <div key={idx} className="bg-accent-50 border border-accent-200 rounded-xl p-3 space-y-2">
+            <div
+              key={idx}
+              className="bg-accent-50 border border-accent-200 rounded-xl p-3 space-y-2"
+            >
               <div className="space-y-1.5">
                 <input
                   className="w-full text-sm px-2.5 py-1.5 border border-warm-300 rounded-lg focus:outline-none focus:border-accent-400 bg-white"
@@ -141,12 +142,8 @@ function EditableContactList({
               {/* Details */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-warm-800 truncate">{contact.name}</p>
-                {contact.title && (
-                  <p className="text-xs text-warm-500 truncate">{contact.title}</p>
-                )}
-                {contact.email && (
-                  <p className="text-xs text-warm-400 truncate">{contact.email}</p>
-                )}
+                {contact.title && <p className="text-xs text-warm-500 truncate">{contact.title}</p>}
+                {contact.email && <p className="text-xs text-warm-400 truncate">{contact.email}</p>}
               </div>
 
               {/* Actions */}
@@ -156,7 +153,12 @@ function EditableContactList({
                   title="Edit contact"
                   className="p-1 text-warm-400 hover:text-accent-600 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -170,7 +172,12 @@ function EditableContactList({
                   title="Remove contact"
                   className="p-1 text-warm-400 hover:text-red-500 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

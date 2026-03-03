@@ -247,7 +247,12 @@ export function TimelessQuickUpload({ connected, schema }: TimelessQuickUploadPr
 
     // No duplicate found, or user chose to create new
     return (
-      <TimelessPreview data={data} onUpload={handleUploadNew} isUploading={isUploading} schema={schema} />
+      <TimelessPreview
+        data={data}
+        onUpload={handleUploadNew}
+        isUploading={isUploading}
+        schema={schema}
+      />
     );
   }
 

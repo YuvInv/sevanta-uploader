@@ -12,10 +12,7 @@ export interface IndustryOption {
 /**
  * Extract options from any dropdown field in the schema by field name.
  */
-export function getDropdownOptions(
-  schema: Schema | null,
-  fieldName: string
-): IndustryOption[] {
+export function getDropdownOptions(schema: Schema | null, fieldName: string): IndustryOption[] {
   if (!schema) return [];
   const field = schema.fields.find((f) => f.name === fieldName);
   if (!field?.optionlistFull) return [];
