@@ -10,11 +10,19 @@ import type {
 
 interface DuplicateCheckBannerProps {
   step: DuplicateCheckStep;
-  match?: DuplicateCheckMatch;
+  matches: DuplicateCheckMatch[];
   onOverride: () => void;
+  existingContactCount?: number;
+  totalContactCount?: number;
 }
 
-export function DuplicateCheckBanner({ step, match, onOverride }: DuplicateCheckBannerProps) {
+export function DuplicateCheckBanner({
+  step,
+  matches,
+  onOverride,
+  existingContactCount,
+  totalContactCount,
+}: DuplicateCheckBannerProps) {
   if (step === 'idle' || step === 'error') return null;
 
   if (step === 'checking') {
@@ -46,9 +54,10 @@ export function DuplicateCheckBanner({ step, match, onOverride }: DuplicateCheck
   }
 
   if (step === 'found') {
-    const crmUrl = match?.id
-      ? `https://run.mydealflow.com/inv/#/Company.php?CompanyID=${match.id}`
-      : undefined;
+    const showContactInfo =
+      existingContactCount !== undefined &&
+      totalContactCount !== undefined &&
+      totalContactCount > 0;
 
     return (
       <div className="bg-danger-50 border border-danger-200 rounded-xl p-4">
@@ -68,38 +77,56 @@ export function DuplicateCheckBanner({ step, match, onOverride }: DuplicateCheck
             />
           </svg>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-danger-800">Already in CRM</p>
-            {match?.name && (
-              <p className="text-sm text-danger-700 mt-0.5">
-                Matched: &ldquo;{match.name}&rdquo;
-                {crmUrl && (
-                  <>
-                    {' — '}
-                    <a
-                      href={crmUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent-600 hover:text-accent-700 hover:underline inline-flex items-center gap-1"
-                    >
-                      View in CRM
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+            <p className="text-sm font-medium text-danger-800">
+              {matches.length === 1 ? 'Already in CRM' : `${matches.length} matches found in CRM`}
+            </p>
+
+            {/* Match list */}
+            <div className="mt-2 space-y-1">
+              {matches.map((match, i) => {
+                const crmUrl = match.id
+                  ? `https://run.mydealflow.com/inv/#/Company.php?CompanyID=${match.id}`
+                  : undefined;
+                return (
+                  <div key={i} className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-danger-700">{match.name}</span>
+                    {crmUrl && (
+                      <a
+                        href={crmUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent-600 hover:text-accent-700 hover:underline inline-flex items-center gap-1 text-sm"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        />
-                      </svg>
-                    </a>
-                  </>
-                )}
+                        View in CRM
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Contact overlap info */}
+            {showContactInfo && (
+              <p className="text-xs text-danger-600 mt-2">
+                {existingContactCount! > 0
+                  ? `${existingContactCount} of ${totalContactCount} contact${totalContactCount! > 1 ? 's' : ''} already in CRM`
+                  : 'No matching contacts found in CRM'}
               </p>
             )}
+
             <button
               onClick={onOverride}
               className="text-sm text-danger-600 hover:text-danger-800 underline mt-2 transition-colors"

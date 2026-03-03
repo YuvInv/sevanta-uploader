@@ -4,16 +4,18 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { IvcCompanyData } from '../../lib/ivc/types';
+import type { IvcCompanyData, IvcStakeholder } from '../../lib/ivc/types';
 import { mapToCrmDeal, mapToCrmContact, buildMetadataComment } from '../../lib/ivc/transformers';
 
 export type UploadStep = 'idle' | 'uploading' | 'success' | 'error';
+export type SuccessAction = 'created-new' | 'added-contacts' | 'added-comment';
 
 export function useIvcUpload() {
   const [uploadStep, setUploadStep] = useState<UploadStep>('idle');
   const [includeManagement, setIncludeManagement] = useState(true);
   const [uploadError, setUploadError] = useState<string | undefined>();
   const [createdDealId, setCreatedDealId] = useState<string | undefined>();
+  const [successAction, setSuccessAction] = useState<SuccessAction | null>(null);
 
   const toggleManagement = useCallback(() => {
     setIncludeManagement((prev) => !prev);
@@ -72,6 +74,7 @@ export function useIvcUpload() {
         }
 
         setCreatedDealId(dealId);
+        setSuccessAction('created-new');
         setUploadStep('success');
       } catch (error) {
         setUploadError(error instanceof Error ? error.message : 'Upload failed');
@@ -81,11 +84,67 @@ export function useIvcUpload() {
     [includeManagement]
   );
 
+  const uploadContactsToExisting = useCallback(
+    async (dealId: string, management: IvcStakeholder[]) => {
+      setUploadStep('uploading');
+      setUploadError(undefined);
+
+      try {
+        for (const person of management) {
+          const contactData = mapToCrmContact(person, dealId);
+          const contactResponse = await chrome.runtime.sendMessage({
+            type: 'CREATE_CONTACT',
+            data: contactData,
+            companyId: dealId,
+          });
+
+          if (!contactResponse?.success) {
+            console.warn('[Sevanta] Contact creation failed:', contactResponse?.error);
+          }
+        }
+
+        setCreatedDealId(dealId);
+        setSuccessAction('added-contacts');
+        setUploadStep('success');
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : 'Upload failed');
+        setUploadStep('error');
+      }
+    },
+    []
+  );
+
+  const addCommentToExisting = useCallback(async (dealId: string, data: IvcCompanyData) => {
+    setUploadStep('uploading');
+    setUploadError(undefined);
+
+    try {
+      const comment = buildMetadataComment(data);
+      const response = await chrome.runtime.sendMessage({
+        type: 'ADD_DEAL_COMMENT',
+        dealId,
+        comment,
+      });
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Failed to add comment');
+      }
+
+      setCreatedDealId(dealId);
+      setSuccessAction('added-comment');
+      setUploadStep('success');
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Upload failed');
+      setUploadStep('error');
+    }
+  }, []);
+
   const reset = useCallback(() => {
     setUploadStep('idle');
     setIncludeManagement(true);
     setUploadError(undefined);
     setCreatedDealId(undefined);
+    setSuccessAction(null);
   }, []);
 
   return {
@@ -93,8 +152,11 @@ export function useIvcUpload() {
     includeManagement,
     uploadError,
     createdDealId,
+    successAction,
     isUploading: uploadStep === 'uploading',
     upload,
+    uploadContactsToExisting,
+    addCommentToExisting,
     toggleManagement,
     reset,
   };

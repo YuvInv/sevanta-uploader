@@ -16,6 +16,7 @@ import { useDuplicateCheck } from './hooks/useDuplicateCheck';
 import { useUploadWorkflow } from './hooks/useUploadWorkflow';
 import { isDealigenceCompanyPage } from '../lib/dealigence/urlUtils';
 import { isIvcCompanyPage } from '../lib/ivc/urlUtils';
+import { isTimelessMemoPage } from '../lib/timeless/urlUtils';
 import logo from '../assets/icons/inv-logo.png';
 
 export default function App() {
@@ -29,7 +30,11 @@ export default function App() {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_ACTIVE_TAB_INFO' });
         if (mounted && response?.success && response.data) {
-          if (response.data.isDealigenceCompanyPage || response.data.isIvcCompanyPage) {
+          if (
+            response.data.isDealigenceCompanyPage ||
+            response.data.isIvcCompanyPage ||
+            response.data.isTimelessMemoPage
+          ) {
             setMode('dealigence');
           }
         }
@@ -52,6 +57,7 @@ export default function App() {
       url?: string;
       isDealigenceCompanyPage?: boolean;
       isIvcCompanyPage?: boolean;
+      isTimelessMemoPage?: boolean;
     }) => {
       if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
         if (isDealigenceCompanyPage(message.url)) {
@@ -67,8 +73,19 @@ export default function App() {
           setMode('upload');
         }
       }
+      if (message.type === 'TIMELESS_URL_CHANGED' && message.url) {
+        if (isTimelessMemoPage(message.url)) {
+          setMode('dealigence');
+        } else {
+          setMode('upload');
+        }
+      }
       if (message.type === 'TAB_ACTIVATED') {
-        if (message.isDealigenceCompanyPage || message.isIvcCompanyPage) {
+        if (
+          message.isDealigenceCompanyPage ||
+          message.isIvcCompanyPage ||
+          message.isTimelessMemoPage
+        ) {
           setMode('dealigence');
         } else {
           setMode('upload');
@@ -160,7 +177,7 @@ export default function App() {
       {/* Main Content */}
       <main className="p-4">
         {/* Dealigence Quick Upload Mode */}
-        {mode === 'dealigence' && <QuickUpload connected={connected} />}
+        {mode === 'dealigence' && <QuickUpload connected={connected} schema={schema} />}
 
         {/* Contact Lookup Mode */}
         {mode === 'lookup' && <ContactLookup connected={connected} />}

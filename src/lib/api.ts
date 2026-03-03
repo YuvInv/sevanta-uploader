@@ -567,6 +567,29 @@ export async function addDealComment(
   }
 }
 
+/**
+ * Get contacts linked to a specific deal/company by CompanyID.
+ * Returns contact names so we can check which people already exist.
+ */
+export async function getContactsForDeal(dealId: string): Promise<SearchedContact[]> {
+  const params = new URLSearchParams();
+  params.append('filter[CompanyID]', dealId);
+  params.append('_x[]', 'Name');
+  params.append('_x[]', 'Email');
+  params.append('_x[]', 'Company');
+  params.append('_x[]', 'CompanyID');
+
+  const response = await apiRequest<ContactSearchResponse>(`/contact/list?${params.toString()}`);
+  const rawData = response.data || [];
+  return rawData.map((item) => ({
+    contactId: item.ContactID?.toString() || '',
+    name: item['Contact Name'] || '',
+    email: item.Email || undefined,
+    company: item.Company || undefined,
+    companyId: item.CompanyID?.toString() || undefined,
+  }));
+}
+
 // Export for use in background service worker
 export const sevantaApi = {
   checkConnection,
@@ -579,5 +602,6 @@ export const sevantaApi = {
   createDeal,
   createContact,
   searchContacts,
+  getContactsForDeal,
   addDealComment,
 };

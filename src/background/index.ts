@@ -9,6 +9,8 @@ import {
 } from '../lib/dealigence/urlUtils';
 import type { IvcCompanyData } from '../lib/ivc/types';
 import { isIvcCompanyPage } from '../lib/ivc/urlUtils';
+import type { TimelessMemoData } from '../lib/timeless/types';
+import { isTimelessMemoPage } from '../lib/timeless/urlUtils';
 import {
   EXTRACTION_MAX_RETRIES,
   EXTRACTION_INITIAL_DELAY_MS,
@@ -67,6 +69,9 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
     case 'SEARCH_CONTACTS':
       return handleSearchContacts(message.name, message.email);
 
+    case 'GET_DEAL_CONTACTS':
+      return handleGetDealContacts(message.dealId);
+
     case 'CLEAR_CACHE':
       return handleClearCache();
 
@@ -78,6 +83,9 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
 
     case 'EXTRACT_IVC_DATA':
       return handleExtractIvcData(message.tabId);
+
+    case 'EXTRACT_TIMELESS_DATA':
+      return handleExtractTimelessData(message.tabId);
 
     case 'GET_ACTIVE_TAB_INFO':
       return handleGetActiveTabInfo();
@@ -232,6 +240,18 @@ async function handleSearchContacts(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Contact search failed',
+    };
+  }
+}
+
+async function handleGetDealContacts(dealId: string): Promise<MessageResponse<SearchedContact[]>> {
+  try {
+    const contacts = await sevantaApi.getContactsForDeal(dealId);
+    return { success: true, data: contacts };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch deal contacts',
     };
   }
 }
@@ -746,6 +766,246 @@ async function handleExtractIvcData(tabId: number): Promise<MessageResponse<IvcC
   return { success: false, error: 'IVC extraction failed' };
 }
 
+/**
+ * Extract Timeless memo data directly from the page DOM using chrome.scripting.
+ * Fallback when content script isn't loaded.
+ */
+async function extractTimelessDataFromPage(tabId: number): Promise<TimelessMemoData | null> {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        // Find the content-rich tiptap editor
+        const editors = document.querySelectorAll('.tiptap.ProseMirror');
+        let container: Element | null = null;
+        for (const ed of editors) {
+          if (ed.children.length > 1) {
+            container = ed;
+            break;
+          }
+        }
+        if (!container) {
+          return {
+            companyName: '',
+            traction: [] as string[],
+            founders: [] as Array<{ name: string; title?: string }>,
+            sourceUrl: window.location.href,
+            fullMemoText: '',
+            isLoading: true,
+          };
+        }
+
+        const children = Array.from(container.children);
+
+        // Company name from H1
+        const h1 = container.querySelector('h1');
+        const companyName = h1?.textContent?.trim() || '';
+
+        // Parse sections by H2
+        let currentSection = '';
+        const sectionContent: Record<string, Element[]> = {};
+        for (const child of children) {
+          if (child.tagName === 'H2') {
+            currentSection = (child.textContent?.trim() || '').toLowerCase();
+            sectionContent[currentSection] = [];
+          } else if (currentSection) {
+            if (!sectionContent[currentSection]) sectionContent[currentSection] = [];
+            sectionContent[currentSection].push(child);
+          }
+        }
+
+        // Founders from Team section
+        const founders: Array<{ name: string; title?: string }> = [];
+        const teamEls = sectionContent['team'] || [];
+        for (const el of teamEls) {
+          if (el.tagName !== 'P') continue;
+          const strong = el.querySelector('strong');
+          if (!strong) continue;
+          const strongText = strong.textContent?.trim() || '';
+          const dashMatch = strongText.match(/^(.+?)\s*[-–]\s*(.+)$/);
+          if (dashMatch && !strongText.includes(':')) {
+            founders.push({ name: dashMatch[1].trim(), title: dashMatch[2].trim() });
+          }
+        }
+
+        // Extract bold-label values
+        function extractLabel(elements: Element[], label: string): string | undefined {
+          for (const el of elements) {
+            if (el.tagName !== 'P') continue;
+            const strongs = el.querySelectorAll('strong');
+            for (const s of strongs) {
+              const st = s.textContent?.trim() || '';
+              if (st.toLowerCase().startsWith(label.toLowerCase())) {
+                const full = el.textContent?.trim() || '';
+                const lbl = st.endsWith(':') ? st : st + ':';
+                const idx = full.indexOf(lbl);
+                if (idx !== -1) return full.slice(idx + lbl.length).trim();
+              }
+            }
+          }
+          return undefined;
+        }
+
+        const teamSize = extractLabel(teamEls, 'Team size');
+        const founded = extractLabel(teamEls, 'Founded');
+        const location = extractLabel(teamEls, 'Location');
+
+        // Market & Problem
+        const marketEls = sectionContent['market'] || [];
+        const market = marketEls[0]?.textContent?.trim() || undefined;
+        const problemEls = sectionContent['problem'] || [];
+        const problem = problemEls[0]?.textContent?.trim() || undefined;
+
+        // Summary sub-sections
+        const summaryEls = sectionContent['summary'] || [];
+        let solution: string | undefined;
+        const traction: string[] = [];
+        let fundingHistory: string | undefined;
+        let useOfProceeds: string | undefined;
+        let revenueModel: string | undefined;
+        let totalRaised: string | undefined;
+        let subSection = '';
+
+        for (const el of summaryEls) {
+          const tag = el.tagName;
+          // Check bold sub-headings
+          if (tag === 'P') {
+            const strong = el.querySelector('strong');
+            if (strong) {
+              const st = strong.textContent?.trim().toLowerCase() || '';
+              const ft = el.textContent?.trim().toLowerCase() || '';
+              if (st === ft) {
+                if (st === 'solution') {
+                  subSection = 'solution';
+                  continue;
+                }
+                if (st === 'traction') {
+                  subSection = 'traction';
+                  continue;
+                }
+                if (st === 'funding') {
+                  subSection = 'funding';
+                  continue;
+                }
+              }
+            }
+          }
+          if (subSection === 'solution' && tag === 'P') {
+            const t = el.textContent?.trim();
+            if (t) solution = solution ? `${solution} ${t}` : t;
+          }
+          if (subSection === 'traction' && tag === 'UL') {
+            const items = el.querySelectorAll('li');
+            for (const item of items) {
+              const t = item.textContent?.trim();
+              if (t) traction.push(t);
+            }
+          }
+          if (subSection === 'funding' && tag === 'P') {
+            const fh = extractLabel([el], 'Funding History');
+            if (fh) {
+              fundingHistory = fh;
+              const m = fh.match(/[Rr]aised\s+(\$[\d.,]+\s*[MBKmbk]?)/);
+              if (m) totalRaised = m[1];
+            }
+            const uop = extractLabel([el], 'Use of proceeds');
+            if (uop) useOfProceeds = uop;
+            const rm = extractLabel([el], 'Revenue model');
+            if (rm) revenueModel = rm;
+          }
+        }
+
+        const descParts: string[] = [];
+        if (market) descParts.push(market);
+        if (solution) descParts.push(solution);
+        const description = descParts.length > 0 ? descParts.join('. ') : undefined;
+
+        // Build full memo text
+        const lines: string[] = [];
+        for (const child of children) {
+          const tag = child.tagName;
+          const text = child.textContent?.trim() || '';
+          if (!text) continue;
+          if (tag === 'H1' || tag === 'H2') {
+            if (lines.length > 0) lines.push('');
+            lines.push(text);
+          } else if (tag === 'UL') {
+            const items = child.querySelectorAll('li');
+            for (const item of items) lines.push(`* ${item.textContent?.trim()}`);
+          } else if (tag === 'P') {
+            lines.push(text);
+          }
+        }
+
+        return {
+          companyName,
+          description,
+          market,
+          problem,
+          solution,
+          traction,
+          founders,
+          fundingHistory,
+          useOfProceeds,
+          revenueModel,
+          totalRaised,
+          teamSize,
+          founded,
+          location,
+          sourceUrl: window.location.href,
+          fullMemoText: lines.join('\n'),
+          isLoading: !companyName,
+        };
+      },
+    });
+
+    const data = results?.[0]?.result;
+    if (data) {
+      console.log('[Sevanta] Timeless direct extraction succeeded');
+      return data as TimelessMemoData;
+    }
+    return null;
+  } catch (error) {
+    console.log('[Sevanta] Timeless scripting extraction failed:', error);
+    return null;
+  }
+}
+
+async function handleExtractTimelessData(
+  tabId: number
+): Promise<MessageResponse<TimelessMemoData>> {
+  // Verify it's a Timeless memo page
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab.url || !isTimelessMemoPage(tab.url)) {
+      return { success: false, error: 'Not a Timeless memo page' };
+    }
+  } catch {
+    return { success: false, error: 'Tab not found' };
+  }
+
+  // Try content script first, fall back to direct scripting extraction
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, {
+      type: 'EXTRACT_TIMELESS_DATA',
+    });
+
+    if (response?.success && response.data) {
+      return { success: true, data: response.data as TimelessMemoData };
+    }
+  } catch {
+    console.log('[Sevanta] Timeless content script not available, using direct extraction');
+  }
+
+  // Direct extraction via chrome.scripting
+  const data = await extractTimelessDataFromPage(tabId);
+  if (data) {
+    return { success: true, data };
+  }
+
+  return { success: false, error: 'Timeless extraction failed' };
+}
+
 async function handleGetActiveTabInfo(): Promise<MessageResponse<TabInfo>> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -761,6 +1021,7 @@ async function handleGetActiveTabInfo(): Promise<MessageResponse<TabInfo>> {
         url: tab.url,
         isDealigenceCompanyPage: isDealigenceCompanyPage(tab.url),
         isIvcCompanyPage: isIvcCompanyPage(tab.url),
+        isTimelessMemoPage: isTimelessMemoPage(tab.url),
       },
     };
   } catch (error) {
@@ -826,6 +1087,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
           tabId: activeInfo.tabId,
           isDealigenceCompanyPage: isDealigenceCompanyPage(tab.url),
           isIvcCompanyPage: isIvcCompanyPage(tab.url),
+          isTimelessMemoPage: isTimelessMemoPage(tab.url),
         })
         .catch(() => {
           // Ignore if no listeners
@@ -846,6 +1108,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         tabId,
         isDealigenceCompanyPage: isDealigenceCompanyPage(tab.url),
         isIvcCompanyPage: isIvcCompanyPage(tab.url),
+        isTimelessMemoPage: isTimelessMemoPage(tab.url),
       })
       .catch(() => {
         // Ignore if no listeners
@@ -894,4 +1157,22 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(
     }
   },
   { url: [{ hostEquals: 'www.ivc-online.com' }] }
+);
+
+// Listen for SPA navigation (History API) on Timeless
+chrome.webNavigation.onHistoryStateUpdated.addListener(
+  (details) => {
+    if (details.frameId === 0) {
+      chrome.runtime
+        .sendMessage({
+          type: 'TIMELESS_URL_CHANGED',
+          url: details.url,
+          tabId: details.tabId,
+        })
+        .catch(() => {
+          // Ignore errors if no listeners (sidepanel closed)
+        });
+    }
+  },
+  { url: [{ hostEquals: 'my.timeless.day' }] }
 );

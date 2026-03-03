@@ -3,7 +3,7 @@
  * Handles extraction, preview, and upload flow
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useIvcExtraction } from '../../hooks/useIvcExtraction';
 import { useIvcUpload } from '../../hooks/useIvcUpload';
 import { useQuickUploadDuplicateCheck } from '../../hooks/useQuickUploadDuplicateCheck';
@@ -11,6 +11,7 @@ import { ExtractionProgress } from '../DealigenceQuickUpload/ExtractionProgress'
 import { ExtractionError } from '../DealigenceQuickUpload/ExtractionError';
 import { UploadSuccess } from '../DealigenceQuickUpload/UploadSuccess';
 import { IvcPreview } from './IvcPreview';
+import { IvcDuplicateMatch } from './IvcDuplicateMatch';
 
 interface IvcQuickUploadProps {
   connected: boolean;
@@ -25,7 +26,10 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
     isUploading,
     uploadError,
     createdDealId,
+    successAction,
     upload,
+    uploadContactsToExisting,
+    addCommentToExisting,
     reset: resetUpload,
   } = useIvcUpload();
 
@@ -39,14 +43,13 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
     }
   }, [state.step, uploadStep, resetUpload]);
 
-  // Track duplicate override per company
-  const [overriddenCompanyKey, setOverriddenCompanyKey] = useState<string | null>(null);
+  // Track "create new anyway" per company using key pattern (no useEffect needed)
+  const [createNewForKey, setCreateNewForKey] = useState<string | null>(null);
   const currentCompanyKey = data ? `${data.companyName}|${data.website ?? ''}` : null;
-  const duplicateOverride =
-    overriddenCompanyKey !== null && overriddenCompanyKey === currentCompanyKey;
+  const createNewChosen = createNewForKey !== null && createNewForKey === currentCompanyKey;
 
   const canUpload =
-    duplicateCheck.step !== 'checking' && (duplicateCheck.step !== 'found' || duplicateOverride);
+    duplicateCheck.step !== 'checking' && (duplicateCheck.step !== 'found' || createNewChosen);
 
   const handleUploadClick = useCallback(async () => {
     if (!data) return;
@@ -57,6 +60,16 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
     resetUpload();
     retry();
   }, [resetUpload, retry]);
+
+  const successSubtitle = useMemo(() => {
+    if (successAction === 'added-contacts') {
+      return `Contacts added to ${data?.companyName ?? 'company'} in your CRM.`;
+    }
+    if (successAction === 'added-comment') {
+      return `Data added as a comment on ${data?.companyName ?? 'company'} in your CRM.`;
+    }
+    return undefined;
+  }, [successAction, data?.companyName]);
 
   // Not connected
   if (!connected) {
@@ -109,6 +122,7 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
       <UploadSuccess
         dealId={createdDealId}
         companyName={data?.companyName}
+        subtitle={successSubtitle}
         onUploadAnother={handleUploadAnother}
       />
     );
@@ -131,6 +145,20 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
 
   // Preview
   if (hasData && data) {
+    // Duplicate found and user hasn't chosen to create new → show duplicate match UI
+    if (duplicateCheck.step === 'found' && !createNewChosen) {
+      return (
+        <IvcDuplicateMatch
+          data={data}
+          matches={duplicateCheck.matches}
+          onAddContacts={uploadContactsToExisting}
+          onAddComment={(dealId) => addCommentToExisting(dealId, data)}
+          onCreateNew={() => setCreateNewForKey(currentCompanyKey)}
+          isUploading={isUploading}
+        />
+      );
+    }
+
     return (
       <IvcPreview
         data={data}
@@ -138,7 +166,7 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
         isUploading={isUploading}
         duplicateCheck={duplicateCheck}
         canUpload={canUpload}
-        onDuplicateOverride={() => setOverriddenCompanyKey(currentCompanyKey)}
+        onDuplicateOverride={() => setCreateNewForKey(currentCompanyKey)}
       />
     );
   }

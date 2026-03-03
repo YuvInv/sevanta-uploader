@@ -1,36 +1,31 @@
 /**
- * Generic duplicate check hook for Quick Upload (works with any site data).
- * Takes company name and optional website, runs CHECK_DUPLICATE against CRM.
- * Returns all matches so the user can pick which company to update.
+ * Hook that auto-triggers duplicate check when Timeless extraction data becomes available.
+ * Returns all matches so the user can pick which company to add the comment to.
  */
 
 import { useReducer, useEffect, useRef, useCallback } from 'react';
+import type { TimelessMemoData } from '../../lib/timeless/types';
 
-export type DuplicateCheckStep = 'idle' | 'checking' | 'found' | 'clear' | 'error';
+export type TimelessDuplicateStep = 'idle' | 'checking' | 'found' | 'clear' | 'error';
 
-export interface DuplicateCheckMatch {
+export interface TimelessDuplicateMatch {
   name: string;
   id?: string;
 }
 
-export interface DuplicateCheckResult {
-  step: DuplicateCheckStep;
-  matches: DuplicateCheckMatch[];
-}
-
-interface CompanyIdentifier {
-  companyName: string;
-  website?: string;
+export interface TimelessDuplicateResult {
+  step: TimelessDuplicateStep;
+  matches: TimelessDuplicateMatch[];
 }
 
 type Action =
   | { type: 'reset' }
   | { type: 'checking' }
-  | { type: 'found'; matches: DuplicateCheckMatch[] }
+  | { type: 'found'; matches: TimelessDuplicateMatch[] }
   | { type: 'clear' }
   | { type: 'error' };
 
-function reducer(_state: DuplicateCheckResult, action: Action): DuplicateCheckResult {
+function reducer(_state: TimelessDuplicateResult, action: Action): TimelessDuplicateResult {
   switch (action.type) {
     case 'reset':
       return { step: 'idle', matches: [] };
@@ -45,22 +40,21 @@ function reducer(_state: DuplicateCheckResult, action: Action): DuplicateCheckRe
   }
 }
 
-function companyKey(data: CompanyIdentifier): string {
-  return `${data.companyName}|${data.website ?? ''}`;
+function companyKey(data: TimelessMemoData): string {
+  return data.companyName;
 }
 
-export function useQuickUploadDuplicateCheck(data: CompanyIdentifier | undefined) {
+export function useTimelessDuplicateCheck(data: TimelessMemoData | undefined) {
   const [result, dispatch] = useReducer(reducer, { step: 'idle', matches: [] });
   const lastKeyRef = useRef<string | null>(null);
 
-  const runCheck = useCallback(async (company: CompanyIdentifier, key: string) => {
+  const runCheck = useCallback(async (company: TimelessMemoData, key: string) => {
     dispatch({ type: 'checking' });
 
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'CHECK_DUPLICATE',
         companyName: company.companyName,
-        website: company.website,
       });
 
       if (lastKeyRef.current !== key) return;
@@ -78,7 +72,7 @@ export function useQuickUploadDuplicateCheck(data: CompanyIdentifier | undefined
       }
     } catch (error) {
       if (lastKeyRef.current !== key) return;
-      console.error('[Sevanta] Duplicate check failed:', error);
+      console.error('[Sevanta] Timeless duplicate check failed:', error);
       dispatch({ type: 'error' });
     }
   }, []);

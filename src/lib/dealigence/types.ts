@@ -53,4 +53,5 @@ export interface TabInfo {
   url: string;
   isDealigenceCompanyPage: boolean;
   isIvcCompanyPage?: boolean;
+  isTimelessMemoPage?: boolean;
 }

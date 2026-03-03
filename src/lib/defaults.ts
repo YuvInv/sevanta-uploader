@@ -2,12 +2,13 @@
  * Default field values for automatic population during upload
  */
 
-export type UploadSource = 'csv' | 'dealigence' | 'ivc';
+export type UploadSource = 'csv' | 'dealigence' | 'ivc' | 'timeless';
 
 const SOURCE_LABELS: Record<UploadSource, string> = {
   csv: 'Sevanta Uploader',
   dealigence: 'Dealigence',
   ivc: 'IVC',
+  timeless: 'Timeless',
 };
 
 /**

@@ -5,10 +5,16 @@
 interface UploadSuccessProps {
   dealId: string;
   companyName?: string;
+  subtitle?: string;
   onUploadAnother: () => void;
 }
 
-export function UploadSuccess({ dealId, companyName, onUploadAnother }: UploadSuccessProps) {
+export function UploadSuccess({
+  dealId,
+  companyName,
+  subtitle,
+  onUploadAnother,
+}: UploadSuccessProps) {
   const crmUrl = `https://run.mydealflow.com/inv/#/Company.php?CompanyID=${dealId}`;
 
   return (
@@ -27,8 +33,10 @@ export function UploadSuccess({ dealId, companyName, onUploadAnother }: UploadSu
 
       {/* Title */}
       <h2 className="text-xl font-semibold text-warm-800 mb-2">Upload Successful!</h2>
-      {companyName && (
-        <p className="text-warm-600 mb-6">{companyName} has been added to your CRM.</p>
+      {(subtitle ?? companyName) && (
+        <p className="text-warm-600 mb-6">
+          {subtitle ?? `${companyName} has been added to your CRM.`}
+        </p>
       )}
 
       {/* CRM link */}

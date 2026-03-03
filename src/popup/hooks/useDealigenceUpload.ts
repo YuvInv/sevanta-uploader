@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { DealigenceCompanyData } from '../../lib/dealigence/types';
+import type { DealigenceCompanyData, DealigenceStakeholder } from '../../lib/dealigence/types';
 import {
   mapToCrmDeal,
   mapToCrmContact,
@@ -12,6 +12,7 @@ import {
 } from '../../lib/dealigence/transformers';
 
 export type UploadStep = 'idle' | 'uploading' | 'success' | 'error';
+export type SuccessAction = 'created-new' | 'added-contacts' | 'added-comment';
 
 export function useDealigenceUpload() {
   const [uploadStep, setUploadStep] = useState<UploadStep>('idle');
@@ -19,6 +20,7 @@ export function useDealigenceUpload() {
   const [includeFounder, setIncludeFounder] = useState(true);
   const [uploadError, setUploadError] = useState<string | undefined>();
   const [createdDealId, setCreatedDealId] = useState<string | undefined>();
+  const [successAction, setSuccessAction] = useState<SuccessAction | undefined>();
 
   const updateCrmData = useCallback((data: Record<string, string>) => {
     setCrmData(data);
@@ -81,6 +83,7 @@ export function useDealigenceUpload() {
         }
 
         setCreatedDealId(dealId);
+        setSuccessAction('created-new');
         setUploadStep('success');
       } catch (error) {
         setUploadError(error instanceof Error ? error.message : 'Upload failed');
@@ -90,12 +93,70 @@ export function useDealigenceUpload() {
     [crmData, includeFounder]
   );
 
+  /** Add extracted founders (already filtered to new-only) to an existing CRM deal */
+  const uploadContactsToExisting = useCallback(
+    async (dealId: string, founders: DealigenceStakeholder[]) => {
+      setUploadStep('uploading');
+      setUploadError(undefined);
+
+      try {
+        for (const founder of founders) {
+          const founderData = mapToCrmContact(founder, dealId);
+          const response = await chrome.runtime.sendMessage({
+            type: 'CREATE_CONTACT',
+            data: founderData,
+            companyId: dealId,
+          });
+
+          if (!response?.success) {
+            console.warn('[Sevanta] Contact creation failed:', response?.error);
+          }
+        }
+
+        setCreatedDealId(dealId);
+        setSuccessAction('added-contacts');
+        setUploadStep('success');
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : 'Failed to add contacts');
+        setUploadStep('error');
+      }
+    },
+    []
+  );
+
+  /** Add extracted data as a metadata comment to an existing CRM deal */
+  const addCommentToExisting = useCallback(async (dealId: string, data: DealigenceCompanyData) => {
+    setUploadStep('uploading');
+    setUploadError(undefined);
+
+    try {
+      const comment = buildMetadataComment(data);
+      const response = await chrome.runtime.sendMessage({
+        type: 'ADD_DEAL_COMMENT',
+        dealId,
+        comment,
+      });
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Failed to add comment');
+      }
+
+      setCreatedDealId(dealId);
+      setSuccessAction('added-comment');
+      setUploadStep('success');
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to add comment');
+      setUploadStep('error');
+    }
+  }, []);
+
   const reset = useCallback(() => {
     setUploadStep('idle');
     setCrmData({});
     setIncludeFounder(true);
     setUploadError(undefined);
     setCreatedDealId(undefined);
+    setSuccessAction(undefined);
   }, []);
 
   return {
@@ -104,8 +165,11 @@ export function useDealigenceUpload() {
     includeFounder,
     uploadError,
     createdDealId,
+    successAction,
     isUploading: uploadStep === 'uploading',
     upload,
+    uploadContactsToExisting,
+    addCommentToExisting,
     updateCrmData,
     toggleFounder,
     reset,
