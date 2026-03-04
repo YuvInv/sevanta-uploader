@@ -29,13 +29,13 @@ export function TaskFilters({ filters, users, currentUserId, onChange }: TaskFil
     <div className="space-y-2">
       {/* Status toggles */}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-warm-500 w-12 shrink-0">Status</span>
-        <div className="flex gap-1">
+        <span className="text-sm font-medium text-warm-500 w-12 shrink-0">Status</span>
+        <div className="flex gap-1.5">
           {STATUS_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               onClick={() => toggleStatus(opt.id)}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-all duration-200 ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
                 filters.status.includes(opt.id)
                   ? opt.id === 0
                     ? 'bg-accent-100 text-accent-700 ring-1 ring-accent-300'
@@ -53,11 +53,11 @@ export function TaskFilters({ filters, users, currentUserId, onChange }: TaskFil
 
       {/* Assignee + Sort */}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-warm-500 w-12 shrink-0">Filter</span>
+        <span className="text-sm font-medium text-warm-500 w-12 shrink-0">Filter</span>
         <select
           value={filters.assignee || ''}
           onChange={(e) => onChange({ assignee: e.target.value || null })}
-          className="flex-1 border border-warm-200 rounded-lg px-2 py-1 text-xs bg-white focus:border-accent-500 focus:ring-2 focus:ring-accent-500/10 transition-all"
+          className="flex-1 border border-warm-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:border-accent-500 focus:ring-2 focus:ring-accent-500/10 transition-all"
         >
           <option value="">All users</option>
           {currentUserId && <option value={currentUserId}>My tasks</option>}
@@ -73,7 +73,7 @@ export function TaskFilters({ filters, users, currentUserId, onChange }: TaskFil
         <select
           value={filters.sortBy}
           onChange={(e) => onChange({ sortBy: e.target.value as 'deadline' | 'created' })}
-          className="border border-warm-200 rounded-lg px-2 py-1 text-xs bg-white focus:border-accent-500 focus:ring-2 focus:ring-accent-500/10 transition-all"
+          className="border border-warm-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:border-accent-500 focus:ring-2 focus:ring-accent-500/10 transition-all"
         >
           <option value="deadline">Sort: Deadline</option>
           <option value="created">Sort: Created</option>

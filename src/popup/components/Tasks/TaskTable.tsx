@@ -14,7 +14,7 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
     return (
       <div className="text-center py-12 text-warm-500">
         <svg
-          className="w-12 h-12 mx-auto mb-3 text-warm-300"
+          className="w-14 h-14 mx-auto mb-3 text-warm-300"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -40,20 +40,20 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
 
   return (
     <div>
-      <p className="text-xs text-warm-500 mb-2">
+      <p className="text-sm text-warm-500 mb-2">
         {tasks.length} task{tasks.length !== 1 ? 's' : ''}
       </p>
 
-      <div className="bg-white rounded-xl border border-warm-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-warm-50 border-b border-warm-200">
-              <th className="w-8 px-2 py-2"></th>
-              <th className="text-left px-3 py-2 font-medium text-warm-600">Object</th>
-              <th className="text-left px-3 py-2 font-medium text-warm-600">Task</th>
-              <th className="w-8 px-2 py-2"></th>
-              <th className="text-left px-3 py-2 font-medium text-warm-600">For</th>
-              <th className="text-left px-3 py-2 font-medium text-warm-600">Deadline</th>
+              <th className="w-8 px-2 py-3"></th>
+              <th className="text-left px-4 py-3 font-semibold text-warm-600">Object</th>
+              <th className="text-left px-4 py-3 font-semibold text-warm-600">Task</th>
+              <th className="w-8 px-2 py-3"></th>
+              <th className="text-left px-4 py-3 font-semibold text-warm-600">For</th>
+              <th className="text-left px-4 py-3 font-semibold text-warm-600">Deadline</th>
             </tr>
           </thead>
           <tbody>
@@ -71,7 +71,7 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
                   onClick={() => onSelectTask(task)}
                 >
                   {/* Status checkbox */}
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-2 py-3 text-center">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -103,7 +103,7 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
                   </td>
 
                   {/* Object name + CRM link */}
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     {task.objectId > 0 ? (
                       obj ? (
                         <a
@@ -111,7 +111,7 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-accent-600 hover:text-accent-700 hover:underline text-xs font-medium truncate block max-w-[120px]"
+                          className="text-accent-600 hover:text-accent-700 hover:underline text-sm font-medium truncate block max-w-[120px]"
                           title={obj.name}
                         >
                           {obj.name}
@@ -120,14 +120,14 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
                         <span className="inline-block w-16 h-3 bg-warm-200 rounded animate-pulse" />
                       )
                     ) : (
-                      <span className="text-warm-400 text-xs">--</span>
+                      <span className="text-warm-400 text-sm">--</span>
                     )}
                   </td>
 
                   {/* Task description */}
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <span
-                      className={`text-warm-800 text-xs block truncate max-w-[200px] ${isCompleted ? 'line-through' : ''}`}
+                      className={`text-warm-800 text-sm block truncate max-w-[200px] ${isCompleted ? 'line-through' : ''}`}
                       title={task.description}
                     >
                       {task.description}
@@ -135,14 +135,14 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
                   </td>
 
                   {/* Type dot */}
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-2 py-3 text-center">
                     <TaskTypeDot type={task.type} />
                   </td>
 
                   {/* Assignee */}
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <span
-                      className="text-warm-600 text-xs truncate block max-w-[80px]"
+                      className="text-warm-600 text-sm truncate block max-w-[80px]"
                       title={task.assignee}
                     >
                       {task.assignee}
@@ -150,13 +150,13 @@ export function TaskTable({ tasks, objectNames, onToggleStatus, onSelectTask }: 
                   </td>
 
                   {/* Deadline */}
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     {deadlineDisplay ? (
-                      <span className={`text-xs font-medium ${deadlineDisplay.color}`}>
+                      <span className={`text-sm font-medium ${deadlineDisplay.color}`}>
                         {deadlineDisplay.text}
                       </span>
                     ) : (
-                      <span className="text-warm-400 text-xs">--</span>
+                      <span className="text-warm-400 text-sm">--</span>
                     )}
                   </td>
                 </tr>

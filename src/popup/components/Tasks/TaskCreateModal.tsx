@@ -183,7 +183,7 @@ export function TaskCreateModal({
                 <button
                   key={lt}
                   onClick={() => handleLinkTypeChange(lt)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
                     linkType === lt
                       ? 'bg-accent-100 text-accent-700 ring-1 ring-accent-300'
                       : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
