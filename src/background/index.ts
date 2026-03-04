@@ -1,6 +1,7 @@
 import { sevantaApi, type SearchedContact } from '../lib/api';
 import type { MessageType, MessageResponse, Schema, ContactSchema, Deal } from '../lib/types';
-import { SCHEMA_CACHE_TTL_MS } from '../lib/constants';
+import type { CrmTask, CrmUser } from '../lib/tasks';
+import { SCHEMA_CACHE_TTL_MS, USER_LIST_CACHE_TTL_MS } from '../lib/constants';
 import type { DealigenceCompanyData, TabInfo } from '../lib/dealigence/types';
 import {
   extractSlugFromUrl,
@@ -21,6 +22,7 @@ import {
 // Cache schemas in memory
 let cachedSchema: Schema | null = null;
 let cachedContactSchema: ContactSchema | null = null;
+let cachedUsers: { data: CrmUser[]; fetchedAt: number } | null = null;
 
 // Handle messages from popup
 chrome.runtime.onMessage.addListener(
@@ -89,6 +91,27 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
 
     case 'GET_ACTIVE_TAB_INFO':
       return handleGetActiveTabInfo();
+
+    case 'LIST_TASKS':
+      return handleListTasks(message.statusIds, message.assignee);
+
+    case 'CREATE_TASK':
+      return handleCreateTask(message.data);
+
+    case 'UPDATE_TASK':
+      return handleUpdateTask(message.taskId, message.data);
+
+    case 'LIST_USERS':
+      return handleListUsers();
+
+    case 'GET_DEAL_NAME':
+      return handleGetDealName(message.dealId);
+
+    case 'GET_CONTACT_NAME':
+      return handleGetContactName(message.contactId);
+
+    case 'SEARCH_DEALS_BY_TEXT':
+      return handleSearchDealsByText(message.searchText);
 
     default:
       return { success: false, error: 'Unknown message type' };
@@ -1028,6 +1051,123 @@ async function handleGetActiveTabInfo(): Promise<MessageResponse<TabInfo>> {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get tab info',
+    };
+  }
+}
+
+async function handleListTasks(
+  statusIds: number[],
+  assignee?: string
+): Promise<MessageResponse<CrmTask[]>> {
+  try {
+    const tasks = await sevantaApi.listTasks(statusIds, assignee);
+    return { success: true, data: tasks };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list tasks',
+    };
+  }
+}
+
+async function handleCreateTask(
+  data: Record<string, string>
+): Promise<MessageResponse<{ taskId?: string }>> {
+  try {
+    const result = await sevantaApi.createTask(data);
+    if (result.success) {
+      return { success: true, data: { taskId: result.taskId } };
+    }
+    return { success: false, error: result.error };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Create task failed',
+    };
+  }
+}
+
+async function handleUpdateTask(
+  taskId: number,
+  data: Record<string, string>
+): Promise<MessageResponse<{ success: boolean }>> {
+  try {
+    const result = await sevantaApi.updateTask(taskId, data);
+    if (result.success) {
+      return { success: true, data: { success: true } };
+    }
+    return { success: false, error: result.error };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Update task failed',
+    };
+  }
+}
+
+async function handleListUsers(): Promise<MessageResponse<CrmUser[]>> {
+  try {
+    // Return cached users if not expired
+    if (cachedUsers && Date.now() - cachedUsers.fetchedAt < USER_LIST_CACHE_TTL_MS) {
+      return { success: true, data: cachedUsers.data };
+    }
+
+    // Try chrome.storage cache
+    const stored = await chrome.storage.local.get('userList');
+    if (stored.userList?.data && Date.now() - stored.userList.fetchedAt < USER_LIST_CACHE_TTL_MS) {
+      cachedUsers = stored.userList;
+      return { success: true, data: cachedUsers!.data };
+    }
+
+    // Fetch fresh
+    const users = await sevantaApi.listUsers();
+    cachedUsers = { data: users, fetchedAt: Date.now() };
+    await chrome.storage.local.set({ userList: cachedUsers });
+    return { success: true, data: users };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list users',
+    };
+  }
+}
+
+async function handleGetDealName(
+  dealId: string
+): Promise<MessageResponse<{ id: string; name: string } | null>> {
+  try {
+    const result = await sevantaApi.getDealName(dealId);
+    return { success: true, data: result };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get deal name',
+    };
+  }
+}
+
+async function handleGetContactName(
+  contactId: string
+): Promise<MessageResponse<{ id: string; name: string } | null>> {
+  try {
+    const result = await sevantaApi.getContactName(contactId);
+    return { success: true, data: result };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get contact name',
+    };
+  }
+}
+
+async function handleSearchDealsByText(searchText: string): Promise<MessageResponse<Deal[]>> {
+  try {
+    const deals = await sevantaApi.searchDealsByText(searchText);
+    return { success: true, data: deals };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Deal search failed',
     };
   }
 }

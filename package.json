@@ -1,6 +1,6 @@
 {
   "name": "sevanta-uploader",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Bulk upload companies to Sevanta Dealflow CRM",
   "type": "module",
   "scripts": {

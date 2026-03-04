@@ -136,7 +136,14 @@ export type MessageType =
   | { type: 'EXTRACT_IVC_DATA'; tabId: number }
   | { type: 'EXTRACT_TIMELESS_DATA'; tabId: number }
   | { type: 'GET_ACTIVE_TAB_INFO' }
-  | { type: 'GET_DEAL_CONTACTS'; dealId: string };
+  | { type: 'GET_DEAL_CONTACTS'; dealId: string }
+  | { type: 'LIST_TASKS'; statusIds: number[]; assignee?: string }
+  | { type: 'CREATE_TASK'; data: Record<string, string> }
+  | { type: 'UPDATE_TASK'; taskId: number; data: Record<string, string> }
+  | { type: 'LIST_USERS' }
+  | { type: 'GET_DEAL_NAME'; dealId: string }
+  | { type: 'GET_CONTACT_NAME'; contactId: string }
+  | { type: 'SEARCH_DEALS_BY_TEXT'; searchText: string };
 
 export interface MessageResponse<T = unknown> {
   success: boolean;

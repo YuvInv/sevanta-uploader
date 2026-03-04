@@ -1,4 +1,5 @@
 import type { Schema, ContactSchema, Deal, SchemaField } from './types';
+import type { CrmTask, CrmUser } from './tasks';
 import {
   API_BASE_URL,
   RATE_LIMIT_DELAY_MS,
@@ -590,6 +591,184 @@ export async function getContactsForDeal(dealId: string): Promise<SearchedContac
   }));
 }
 
+// Task API types
+interface TaskListResponse {
+  status?: string;
+  data?: CrmTask[];
+  count_returned?: number;
+  count_total?: number;
+  [key: string]: unknown;
+}
+
+interface UserListResponse {
+  status?: string;
+  data?: Array<{ UserID?: number; id?: number; Name?: string; name?: string }>;
+  [key: string]: unknown;
+}
+
+interface SingleDealResponse {
+  status?: string;
+  data?: {
+    CompanyID?: number;
+    'Deal Name'?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface SingleContactResponse {
+  status?: string;
+  data?: {
+    ContactID?: number;
+    'Contact Name'?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+// List tasks with filters
+export async function listTasks(statusIds: number[], assignee?: string): Promise<CrmTask[]> {
+  const params = new URLSearchParams();
+  params.append('_x[]', '*');
+  for (const id of statusIds) {
+    params.append('TaskStatusID[]', id.toString());
+  }
+  if (assignee) {
+    params.append('AssignedUserID[]', assignee);
+  }
+  const response = await apiRequest<TaskListResponse>(`/task/list?${params.toString()}`);
+  return response.data || [];
+}
+
+// Create a new task
+export async function createTask(
+  data: Record<string, string>
+): Promise<{ success: boolean; taskId?: string; error?: string }> {
+  try {
+    const formData = new URLSearchParams();
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null && value !== '') {
+        formData.append(key, value);
+      }
+    }
+
+    const response = await fetch(`${API_BASE_URL}/task/add`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+
+    const result = (await response.json()) as {
+      status?: string;
+      error?: string;
+      TaskID?: number;
+      id?: string;
+    };
+
+    if (result.error) {
+      return { success: false, error: result.error };
+    }
+
+    if (result.status === 'ok' || result.TaskID || result.id) {
+      return {
+        success: true,
+        taskId: result.TaskID?.toString() || result.id,
+      };
+    }
+
+    return { success: false, error: 'Unknown response format' };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// Update an existing task
+export async function updateTask(
+  taskId: number,
+  data: Record<string, string>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const formData = new URLSearchParams();
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null && value !== '') {
+        formData.append(key, value);
+      }
+    }
+
+    const response = await fetch(`${API_BASE_URL}/task/${taskId}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+
+    const result = (await response.json()) as { status?: string; error?: string };
+
+    if (result.error) {
+      return { success: false, error: result.error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// List all users
+export async function listUsers(): Promise<CrmUser[]> {
+  const response = await apiRequest<UserListResponse>('/user/list');
+  const rawData = response.data || [];
+  return rawData.map((u) => ({
+    id: (u.UserID || u.id || '').toString(),
+    name: u.Name || u.name || '',
+  }));
+}
+
+// Get deal name by ID (lightweight)
+export async function getDealName(dealId: string): Promise<{ id: string; name: string } | null> {
+  try {
+    const response = await apiRequest<SingleDealResponse>(`/deal/${dealId}?_x[]=CompanyName`);
+    if (response.data) {
+      return {
+        id: (response.data.CompanyID || dealId).toString(),
+        name: response.data['Deal Name'] || '',
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Get contact name by ID (lightweight)
+export async function getContactName(
+  contactId: string
+): Promise<{ id: string; name: string } | null> {
+  try {
+    const response = await apiRequest<SingleContactResponse>(`/contact/${contactId}?_x[]=Name`);
+    if (response.data) {
+      return {
+        id: (response.data.ContactID || contactId).toString(),
+        name: response.data['Contact Name'] || '',
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Export for use in background service worker
 export const sevantaApi = {
   checkConnection,
@@ -604,4 +783,10 @@ export const sevantaApi = {
   searchContacts,
   getContactsForDeal,
   addDealComment,
+  listTasks,
+  createTask,
+  updateTask,
+  listUsers,
+  getDealName,
+  getContactName,
 };

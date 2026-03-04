@@ -1,4 +1,4 @@
-export type AppMode = 'upload' | 'lookup' | 'dealigence';
+export type AppMode = 'upload' | 'lookup' | 'dealigence' | 'tasks';
 
 interface TabNavProps {
   mode: AppMode;
@@ -78,6 +78,30 @@ export function TabNav({ mode, onModeChange }: TabNavProps) {
             />
           </svg>
           Lookup
+        </span>
+      </button>
+      <button
+        onClick={() => onModeChange('tasks')}
+        className={`
+          flex-1 px-4 py-2.5 rounded-lg text-base font-medium
+          transition-all duration-200
+          ${
+            mode === 'tasks'
+              ? 'bg-white text-warm-800 shadow-sm'
+              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50'
+          }
+        `}
+      >
+        <span className="flex items-center justify-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+            />
+          </svg>
+          Tasks
         </span>
       </button>
     </nav>
