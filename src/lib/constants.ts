@@ -24,3 +24,8 @@ export const MAX_CSV_FILE_SIZE_DISPLAY = '10MB';
 // Validation
 export const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 export const URL_PROTOCOL_REGEX = /^https?:\/\//i;
+
+// Task management
+export const TASK_TYPEAHEAD_DEBOUNCE_MS = 300;
+export const OBJECT_NAME_BATCH_SIZE = 5;
+export const USER_LIST_CACHE_TTL_MS = 3600000; // 1 hour

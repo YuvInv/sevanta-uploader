@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { CsvUpload } from './components/CsvUpload';
 import { ColumnMapper } from './components/ColumnMapper';
@@ -10,92 +10,15 @@ import { DuplicateCheckProgress } from './components/DuplicateCheckProgress';
 import { TabNav, type AppMode } from './components/TabNav';
 import { ContactLookup } from './components/ContactLookup';
 import { QuickUpload } from './components/QuickUpload';
+import { Tasks } from './components/Tasks';
 import { useSevantaApi } from './hooks/useSevantaApi';
 import { useValidation } from './hooks/useValidation';
 import { useDuplicateCheck } from './hooks/useDuplicateCheck';
 import { useUploadWorkflow } from './hooks/useUploadWorkflow';
-import { isDealigenceCompanyPage } from '../lib/dealigence/urlUtils';
-import { isIvcCompanyPage } from '../lib/ivc/urlUtils';
-import { isTimelessMemoPage } from '../lib/timeless/urlUtils';
 import logo from '../assets/icons/inv-logo.png';
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('upload');
-
-  // Initial check for Dealigence page on mount - auto-switch to Quick Upload
-  useEffect(() => {
-    let mounted = true;
-
-    const checkInitialPage = async () => {
-      try {
-        const response = await chrome.runtime.sendMessage({ type: 'GET_ACTIVE_TAB_INFO' });
-        if (mounted && response?.success && response.data) {
-          if (
-            response.data.isDealigenceCompanyPage ||
-            response.data.isIvcCompanyPage ||
-            response.data.isTimelessMemoPage
-          ) {
-            setMode('dealigence');
-          }
-        }
-      } catch {
-        // Ignore - stay on default tab
-      }
-    };
-
-    checkInitialPage();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Listen for navigation/tab switches - auto-switch to Quick Upload on supported pages
-  useEffect(() => {
-    const handleMessage = (message: {
-      type: string;
-      url?: string;
-      isDealigenceCompanyPage?: boolean;
-      isIvcCompanyPage?: boolean;
-      isTimelessMemoPage?: boolean;
-    }) => {
-      if (message.type === 'DEALIGENCE_URL_CHANGED' && message.url) {
-        if (isDealigenceCompanyPage(message.url)) {
-          setMode('dealigence');
-        } else {
-          setMode('upload');
-        }
-      }
-      if (message.type === 'IVC_URL_CHANGED' && message.url) {
-        if (isIvcCompanyPage(message.url)) {
-          setMode('dealigence');
-        } else {
-          setMode('upload');
-        }
-      }
-      if (message.type === 'TIMELESS_URL_CHANGED' && message.url) {
-        if (isTimelessMemoPage(message.url)) {
-          setMode('dealigence');
-        } else {
-          setMode('upload');
-        }
-      }
-      if (message.type === 'TAB_ACTIVATED') {
-        if (
-          message.isDealigenceCompanyPage ||
-          message.isIvcCompanyPage ||
-          message.isTimelessMemoPage
-        ) {
-          setMode('dealigence');
-        } else {
-          setMode('upload');
-        }
-      }
-    };
-
-    chrome.runtime.onMessage.addListener(handleMessage);
-    return () => chrome.runtime.onMessage.removeListener(handleMessage);
-  }, []);
 
   const {
     connected,
@@ -181,6 +104,9 @@ export default function App() {
 
         {/* Contact Lookup Mode */}
         {mode === 'lookup' && <ContactLookup connected={connected} />}
+
+        {/* Tasks Mode */}
+        {mode === 'tasks' && <Tasks connected={connected} />}
 
         {/* Company Upload Mode */}
         {mode === 'upload' && (
