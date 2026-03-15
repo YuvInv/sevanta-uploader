@@ -6,13 +6,15 @@
  * - Create as a new company anyway
  */
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { IvcCompanyData, IvcStakeholder } from '../../../lib/ivc/types';
 import type { DuplicateCheckMatch } from '../../hooks/useQuickUploadDuplicateCheck';
 import { useContactCheck, namesMatch } from '../../hooks/useContactCheck';
 
 interface IvcDuplicateMatchProps {
   data: IvcCompanyData;
+  effectiveCompanyName: string;
+  onCompanyNameChange: (name: string | null) => void;
   matches: DuplicateCheckMatch[];
   onAddContacts: (dealId: string, management: IvcStakeholder[]) => void;
   onAddComment: (dealId: string) => void;
@@ -212,6 +214,8 @@ function EditableContactList({
 
 export function IvcDuplicateMatch({
   data,
+  effectiveCompanyName,
+  onCompanyNameChange,
   matches,
   onAddContacts,
   onAddComment,
@@ -225,6 +229,31 @@ export function IvcDuplicateMatch({
   const { existingNames, isChecking: isCheckingContacts } = useContactCheck(
     selectedDealId ?? undefined
   );
+
+  // Editable company name
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameDraft, setEditNameDraft] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const startEditingName = useCallback(() => {
+    setEditNameDraft(effectiveCompanyName);
+    setIsEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  }, [effectiveCompanyName]);
+
+  const commitNameEdit = useCallback(() => {
+    const trimmed = editNameDraft.trim();
+    if (trimmed && trimmed !== data.companyName) {
+      onCompanyNameChange(trimmed);
+    } else {
+      onCompanyNameChange(null);
+    }
+    setIsEditingName(false);
+  }, [editNameDraft, data.companyName, onCompanyNameChange]);
+
+  const cancelNameEdit = useCallback(() => {
+    setIsEditingName(false);
+  }, []);
 
   const hasManagement = data.management.length > 0;
   const newManagement = hasManagement
@@ -255,10 +284,43 @@ export function IvcDuplicateMatch({
               />
             </svg>
           </div>
-          <div>
-            <h3 className="font-medium text-caution-800 text-sm">
-              &ldquo;{data.companyName}&rdquo; found in CRM
-            </h3>
+          <div className="flex-1 min-w-0">
+            {isEditingName ? (
+              <input
+                ref={nameInputRef}
+                value={editNameDraft}
+                onChange={(e) => setEditNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitNameEdit();
+                  if (e.key === 'Escape') cancelNameEdit();
+                }}
+                onBlur={commitNameEdit}
+                className="font-medium text-caution-800 text-sm bg-transparent border-b-2 border-caution-400 outline-none w-full"
+              />
+            ) : (
+              <button
+                onClick={startEditingName}
+                className="group flex items-center gap-1 text-left"
+                title="Click to edit company name"
+              >
+                <h3 className="font-medium text-caution-800 text-sm">
+                  &ldquo;{effectiveCompanyName}&rdquo; found in CRM
+                </h3>
+                <svg
+                  className="w-3.5 h-3.5 text-caution-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            )}
             <p className="text-caution-700 text-xs mt-0.5">
               Select a match to update it, or create as a new company.
             </p>
@@ -346,7 +408,7 @@ export function IvcDuplicateMatch({
               <EditableContactList
                 key={selectedDealId}
                 initialContacts={newManagement}
-                existingCount={existingNames.length}
+                existingCount={data.management.length - newManagement.length}
                 totalCount={data.management.length}
                 isUploading={!!isUploading}
                 onUpload={(edited) => onAddContacts(selectedDealId, edited)}

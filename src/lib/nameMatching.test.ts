@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   normalizeCompanyName,
   stripCommonSuffixes,
+  stripDisplaySuffixes,
   doCompanyNamesFuzzyMatch,
 } from './nameMatching';
 
@@ -75,6 +76,42 @@ describe('stripCommonSuffixes', () => {
     expect(stripCommonSuffixes('inc')).toBe('inc');
     // But DOES strip when there's a dash (e.g., from normalization)
     expect(stripCommonSuffixes('company-ltd')).toBe('company');
+  });
+});
+
+describe('stripDisplaySuffixes', () => {
+  it('strips Ltd. suffix preserving original casing', () => {
+    expect(stripDisplaySuffixes('Ionix.IO Ltd.')).toBe('Ionix.IO');
+    expect(stripDisplaySuffixes('NovaLink Space Ltd.')).toBe('NovaLink Space');
+  });
+
+  it('strips Inc suffix', () => {
+    expect(stripDisplaySuffixes('Acme Inc')).toBe('Acme');
+    expect(stripDisplaySuffixes('Acme Inc.')).toBe('Acme');
+  });
+
+  it('strips LLC, Corp, Limited, etc.', () => {
+    expect(stripDisplaySuffixes('TechCo LLC')).toBe('TechCo');
+    expect(stripDisplaySuffixes('TechCo Corp')).toBe('TechCo');
+    expect(stripDisplaySuffixes('TechCo Corp.')).toBe('TechCo');
+    expect(stripDisplaySuffixes('TechCo Limited')).toBe('TechCo');
+    expect(stripDisplaySuffixes('TechCo Incorporated')).toBe('TechCo');
+    expect(stripDisplaySuffixes('TechCo Corporation')).toBe('TechCo');
+    expect(stripDisplaySuffixes('TechCo Co.')).toBe('TechCo');
+  });
+
+  it('preserves names without suffixes', () => {
+    expect(stripDisplaySuffixes('Ionix.IO')).toBe('Ionix.IO');
+    expect(stripDisplaySuffixes('Acme')).toBe('Acme');
+  });
+
+  it('handles empty strings', () => {
+    expect(stripDisplaySuffixes('')).toBe('');
+  });
+
+  it('is case-insensitive for suffix matching', () => {
+    expect(stripDisplaySuffixes('Acme LTD')).toBe('Acme');
+    expect(stripDisplaySuffixes('Acme ltd')).toBe('Acme');
   });
 });
 
@@ -167,6 +204,10 @@ describe('doCompanyNamesFuzzyMatch', () => {
     it('does NOT match similar but different companies', () => {
       expect(doCompanyNamesFuzzyMatch('Acme Corp', 'Acme Industries')).toBe(false);
       expect(doCompanyNamesFuzzyMatch('Tech Solutions', 'Tech Services')).toBe(false);
+    });
+
+    it('matches IVC names with display suffixes against CRM names', () => {
+      expect(doCompanyNamesFuzzyMatch('Ionix.IO Ltd.', 'Ionix.IO')).toBe(true);
     });
   });
 });

@@ -11,6 +11,7 @@ import {
   doCompanyNamesFuzzyMatch,
   normalizeCompanyName,
   stripCommonSuffixes,
+  stripDisplaySuffixes,
 } from './nameMatching';
 
 // Rate limiting state
@@ -266,10 +267,12 @@ export async function checkDuplicate(
     const stripped = stripCommonSuffixes(normalized);
     const base = stripped || normalized || companyName;
 
-    // Query variations: original name first, then normalized fallback
+    // Query variations: original name first, display-stripped (most likely CRM match), then slug fallback
+    const displayStripped = stripDisplaySuffixes(companyName);
     const queryVariations = [
-      companyName, // "NovaLink Space Ltd." — original name, most likely to match
-      base.replace(/-/g, ' '), // "novalink space" — suffix-stripped fallback
+      companyName, // "Ionix.IO Ltd." — original name
+      displayStripped, // "Ionix.IO" — most likely CRM match
+      base.replace(/-/g, ' '), // "ionix io" — normalized slug fallback
     ].filter((q, i, arr) => q.length > 2 && arr.indexOf(q) === i);
 
     let nameMatches: Deal[] = [];
@@ -569,25 +572,35 @@ export async function addDealComment(
 }
 
 /**
- * Get contacts linked to a specific deal/company by CompanyID.
- * Returns contact names so we can check which people already exist.
+ * Get contacts linked to a specific deal/company.
+ * Uses GET /deal/{id}?_x[]=contacts which returns linked contacts reliably.
+ * (The contact/list?filter[CompanyID] approach is unreliable — contacts don't
+ * store CompanyID as a filterable field, so the API returns unrelated results.)
  */
 export async function getContactsForDeal(dealId: string): Promise<SearchedContact[]> {
-  const params = new URLSearchParams();
-  params.append('filter[CompanyID]', dealId);
-  params.append('_x[]', 'Name');
-  params.append('_x[]', 'Email');
-  params.append('_x[]', 'Company');
-  params.append('_x[]', 'CompanyID');
+  interface DealWithContacts {
+    status?: string;
+    data?: {
+      contacts?: Array<{
+        ContactID?: number | string;
+        'Contact Name'?: string;
+        Email?: string;
+        Company?: string;
+        [key: string]: unknown;
+      }>;
+      [key: string]: unknown;
+    };
+  }
 
-  const response = await apiRequest<ContactSearchResponse>(`/contact/list?${params.toString()}`);
-  const rawData = response.data || [];
-  return rawData.map((item) => ({
+  const response = await apiRequest<DealWithContacts>(`/deal/${dealId}?_x[]=contacts`);
+  const contacts = response.data?.contacts || [];
+
+  return contacts.map((item) => ({
     contactId: item.ContactID?.toString() || '',
     name: item['Contact Name'] || '',
     email: item.Email || undefined,
     company: item.Company || undefined,
-    companyId: item.CompanyID?.toString() || undefined,
+    companyId: dealId,
   }));
 }
 

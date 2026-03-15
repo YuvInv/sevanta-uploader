@@ -2,7 +2,7 @@
  * Preview card showing extracted IVC company data aligned with CRM fields
  */
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { IvcCompanyData, IvcStakeholder } from '../../../lib/ivc/types';
 import { parseTotalCapital, mapSector, mapStage } from '../../../lib/ivc/transformers';
 import type { DuplicateCheckResult } from '../../hooks/useQuickUploadDuplicateCheck';
@@ -10,6 +10,8 @@ import { DuplicateCheckBanner } from '../DealigenceQuickUpload/DuplicateCheckBan
 
 interface IvcPreviewProps {
   data: IvcCompanyData;
+  effectiveCompanyName: string;
+  onCompanyNameChange: (name: string | null) => void;
   onUpload: () => void;
   isUploading?: boolean;
   duplicateCheck: DuplicateCheckResult;
@@ -74,6 +76,8 @@ function FieldRow({ label, value, muted }: { label: string; value: string; muted
 
 export function IvcPreview({
   data,
+  effectiveCompanyName,
+  onCompanyNameChange,
   onUpload,
   isUploading,
   duplicateCheck,
@@ -81,6 +85,31 @@ export function IvcPreview({
   onDuplicateOverride,
 }: IvcPreviewProps) {
   const [showSourceDetails, setShowSourceDetails] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameDraft, setEditNameDraft] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const startEditingName = useCallback(() => {
+    setEditNameDraft(effectiveCompanyName);
+    setIsEditingName(true);
+    // Focus after render
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  }, [effectiveCompanyName]);
+
+  const commitNameEdit = useCallback(() => {
+    const trimmed = editNameDraft.trim();
+    if (trimmed && trimmed !== data.companyName) {
+      onCompanyNameChange(trimmed);
+    } else {
+      // Edited back to original → clear override
+      onCompanyNameChange(null);
+    }
+    setIsEditingName(false);
+  }, [editNameDraft, data.companyName, onCompanyNameChange]);
+
+  const cancelNameEdit = useCallback(() => {
+    setIsEditingName(false);
+  }, []);
 
   // Compute CRM values for display
   const capitalAmount = parseTotalCapital(data.totalCapital);
@@ -105,8 +134,41 @@ export function IvcPreview({
         {/* Header */}
         <div className="bg-gradient-to-r from-accent-50 to-warm-50 px-5 py-4 border-b border-warm-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-warm-800">{data.companyName}</h2>
-            <span className="text-xs font-medium text-warm-500 bg-warm-100 px-2 py-0.5 rounded-full">
+            {isEditingName ? (
+              <input
+                ref={nameInputRef}
+                value={editNameDraft}
+                onChange={(e) => setEditNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitNameEdit();
+                  if (e.key === 'Escape') cancelNameEdit();
+                }}
+                onBlur={commitNameEdit}
+                className="text-xl font-semibold text-warm-800 bg-transparent border-b-2 border-accent-400 outline-none flex-1 mr-2"
+              />
+            ) : (
+              <button
+                onClick={startEditingName}
+                className="group flex items-center gap-1.5 text-left"
+                title="Click to edit company name"
+              >
+                <h2 className="text-xl font-semibold text-warm-800">{effectiveCompanyName}</h2>
+                <svg
+                  className="w-4 h-4 text-warm-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            )}
+            <span className="text-xs font-medium text-warm-500 bg-warm-100 px-2 py-0.5 rounded-full flex-shrink-0">
               IVC
             </span>
           </div>
