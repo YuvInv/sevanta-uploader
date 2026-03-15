@@ -33,7 +33,27 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
     reset: resetUpload,
   } = useIvcUpload();
 
-  const duplicateData = data ? { companyName: data.companyName, website: data.website } : undefined;
+  // Editable company name: override keyed to extraction identity
+  // When extraction data changes (new company), the key won't match and override is ignored
+  const extractionKey = data ? data.sourceUrl : null;
+  const [nameOverride, setNameOverride] = useState<{ key: string; name: string } | null>(null);
+  const companyNameOverride = nameOverride?.key === extractionKey ? nameOverride.name : null;
+  const effectiveCompanyName = companyNameOverride ?? data?.companyName ?? '';
+
+  const handleCompanyNameChange = useCallback(
+    (name: string | null) => {
+      if (name === null || !extractionKey) {
+        setNameOverride(null);
+      } else {
+        setNameOverride({ key: extractionKey, name });
+      }
+    },
+    [extractionKey]
+  );
+
+  const duplicateData = data
+    ? { companyName: effectiveCompanyName, website: data.website }
+    : undefined;
   const { duplicateCheck } = useQuickUploadDuplicateCheck(duplicateData);
 
   // Reset upload state when extraction resets (company navigation)
@@ -44,8 +64,10 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
   }, [state.step, uploadStep, resetUpload]);
 
   // Track "create new anyway" per company using key pattern (no useEffect needed)
+  // When effectiveCompanyName changes (via override), currentCompanyKey changes,
+  // so createNewChosen automatically becomes false — no effect needed.
   const [createNewForKey, setCreateNewForKey] = useState<string | null>(null);
-  const currentCompanyKey = data ? `${data.companyName}|${data.website ?? ''}` : null;
+  const currentCompanyKey = data ? `${effectiveCompanyName}|${data.website ?? ''}` : null;
   const createNewChosen = createNewForKey !== null && createNewForKey === currentCompanyKey;
 
   const canUpload =
@@ -53,8 +75,11 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
 
   const handleUploadClick = useCallback(async () => {
     if (!data) return;
-    await upload(data);
-  }, [data, upload]);
+    // Use effective (possibly overridden) company name for upload
+    const uploadData =
+      companyNameOverride !== null ? { ...data, companyName: effectiveCompanyName } : data;
+    await upload(uploadData);
+  }, [data, upload, companyNameOverride, effectiveCompanyName]);
 
   const handleUploadAnother = useCallback(() => {
     resetUpload();
@@ -62,14 +87,15 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
   }, [resetUpload, retry]);
 
   const successSubtitle = useMemo(() => {
+    const name = effectiveCompanyName || 'company';
     if (successAction === 'added-contacts') {
-      return `Contacts added to ${data?.companyName ?? 'company'} in your CRM.`;
+      return `Contacts added to ${name} in your CRM.`;
     }
     if (successAction === 'added-comment') {
-      return `Data added as a comment on ${data?.companyName ?? 'company'} in your CRM.`;
+      return `Data added as a comment on ${name} in your CRM.`;
     }
     return undefined;
-  }, [successAction, data?.companyName]);
+  }, [successAction, effectiveCompanyName]);
 
   // Not connected
   if (!connected) {
@@ -121,7 +147,7 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
     return (
       <UploadSuccess
         dealId={createdDealId}
-        companyName={data?.companyName}
+        companyName={effectiveCompanyName || data?.companyName}
         subtitle={successSubtitle}
         onUploadAnother={handleUploadAnother}
       />
@@ -150,6 +176,8 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
       return (
         <IvcDuplicateMatch
           data={data}
+          effectiveCompanyName={effectiveCompanyName}
+          onCompanyNameChange={handleCompanyNameChange}
           matches={duplicateCheck.matches}
           onAddContacts={uploadContactsToExisting}
           onAddComment={(dealId) => addCommentToExisting(dealId, data)}
@@ -162,6 +190,8 @@ export function IvcQuickUpload({ connected }: IvcQuickUploadProps) {
     return (
       <IvcPreview
         data={data}
+        effectiveCompanyName={effectiveCompanyName}
+        onCompanyNameChange={handleCompanyNameChange}
         onUpload={handleUploadClick}
         isUploading={isUploading}
         duplicateCheck={duplicateCheck}

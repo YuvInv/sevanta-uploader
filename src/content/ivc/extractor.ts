@@ -4,6 +4,7 @@
  */
 
 import type { IvcCompanyData, IvcStakeholder } from '../../lib/ivc/types';
+import { stripDisplaySuffixes } from '../../lib/nameMatching';
 import * as sel from './selectors';
 
 /** Strip honorific prefixes (Mr., Ms., Dr., Prof., etc.) from names */
@@ -74,7 +75,7 @@ function extractTags(): string[] {
  */
 export function extractIvcCompanyData(): IvcCompanyData {
   return {
-    companyName: getText(sel.COMPANY_NAME) || 'Unknown Company',
+    companyName: stripDisplaySuffixes(getText(sel.COMPANY_NAME) || 'Unknown Company'),
     description: getText(sel.DESCRIPTION),
     website: extractWebsite(),
     linkedinUrl: extractLinkedin(),

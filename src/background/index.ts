@@ -728,7 +728,13 @@ async function extractIvcDataFromPage(tabId: number): Promise<IvcCompanyData | n
           .filter((t): t is string => !!t);
 
         return {
-          companyName: getText('[id$="HeaderCard1_lFullName"]') || 'Unknown Company',
+          // Strip legal suffixes (mirrors stripDisplaySuffixes() from nameMatching.ts)
+          companyName: (getText('[id$="HeaderCard1_lFullName"]') || 'Unknown Company')
+            .replace(
+              /\s+(?:Ltd\.?|Inc\.?|LLC|Corp\.?|Co\.?|Limited|Incorporated|Corporation)\s*$/i,
+              ''
+            )
+            .trim(),
           description: getText('[id$="GeneralData1_lDisc"]'),
           website,
           linkedinUrl,
