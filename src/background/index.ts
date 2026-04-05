@@ -330,7 +330,11 @@ async function extractFoundersFromPage(
           .map(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (item: any) => {
-              const props = item.tooltip?.props?.children?.props;
+              const children = item.tooltip?.props?.children;
+              // Handle both single element (old) and array (new Dealigence structure)
+              const props = Array.isArray(children)
+                ? children.find((c: { props?: { name?: string } }) => c?.props?.name)?.props
+                : children?.props;
               if (!props?.name) return null;
               return {
                 name: props.name as string,
