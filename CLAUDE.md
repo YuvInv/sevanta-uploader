@@ -185,7 +185,7 @@ POST /deal/{id}/addComment   - Add comment (POST param: 'comment')
 ```
 
 **Deal List Filters:**
-- `filter[FieldName]=value` - Filter by field (use dbname)
+- `FieldName[]=rawKey` - Server-side filter by dropdown field (PHP array notation with raw option key, e.g., `StageID[]=0` for A1, `StatusID[]=1` for Active). NOTE: `filter[FieldName]=value` does NOT work.
 - `_text=string` - Search all text fields
 - `_ss=string` - Semantic search (returns top 20 matches with semantic_score)
 - `RangeStageID=Portfolio` - Range filter example
@@ -238,11 +238,11 @@ GET /user/list         - Get all users
 - **Schema** returns `dbname` (e.g., "CompanyName") and `label` (e.g., "Deal Name")
 - **List responses** return data with LABELS as keys (e.g., `"Deal Name": "Acme"`)
 - **Create/POST** expects DBNAMES (e.g., `CompanyName=Acme`)
-- **Filters** use DBNAMES (e.g., `filter[CompanyName]=Acme`)
+- **Filters** use DBNAMES with array notation and raw option keys (e.g., `StageID[]=0` for A1). The `filter[FieldName]=value` syntax does NOT work.
 
 ### Search Quirks (IMPORTANT)
-- **`filter[FieldName]` may not work reliably** for some fields (e.g., `filter[Email]` doesn't always find exact matches)
-- **Prefer `_text=` search** for finding records - it searches across all text fields and is more reliable
+- **`filter[FieldName]=value` is silently ignored** — use `FieldName[]=rawKey` for server-side dropdown filtering
+- **Prefer `_text=` search** for finding records by text - it searches across all text fields and is more reliable
 - When searching by email, use `_text=email@example.com` then filter results client-side for exact match
 
 ### CRM URL Formats
